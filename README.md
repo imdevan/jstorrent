@@ -10,3 +10,5 @@ https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghalig
 
 Also try the partner extension (right click contextmenu for adding magnet: links):
 https://chrome.google.com/webstore/detail/jstorrent-helper-extensio/bnceafpojmnimbnhamaeedgomdcgnbjk
+
+http://jstorrent.com
