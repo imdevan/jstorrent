@@ -3,12 +3,10 @@ jstorrent
 
 javascript torrent client primarily for chrome web store
 
-Sorry, the source code has been removed from github for now due to licensing issues.
+Sorry, the source code has been removed from github for now due to licensing issues (I worked on it while at former employer)
 
-Available on Chrome web store
-https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghaligalgb
+It's also been DMCAd out of the Chrome Web Store.
 
-Also try the partner extension (right click contextmenu for adding magnet: links):
-https://chrome.google.com/webstore/detail/jstorrent-helper-extensio/bnceafpojmnimbnhamaeedgomdcgnbjk
+I will consider rewriting this from scratch, if time permits!
 
 http://jstorrent.com
