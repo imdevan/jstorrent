@@ -9,4 +9,6 @@ It's also been DMCAd out of the Chrome Web Store.
 
 I will consider rewriting this from scratch, if time permits!
 
+https://twitter.com/jstorrent (follow to show your support for a rewrite)
+
 http://jstorrent.com
