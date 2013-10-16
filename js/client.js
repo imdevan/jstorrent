@@ -1,6 +1,7 @@
 // torrent client !
 
 function Client(opts) {
+    this.torrents = {}
 }
 
 Client.prototype = {
@@ -11,9 +12,25 @@ Client.prototype = {
 	// parse url
 	console.log('client add by url',url)
 
-	var tracker = new jstorrent.HTTPTrackerClient({torrent:torrent, url:url})
-	var torrent = new jstorrent.Torrent({tracker:tracker})
+	var torrent = new jstorrent.Torrent({url:url, client:this})
 
+	if (this.has_torrent(torrent)) {
+	    // we already had this torrent, maybe add the trackers to it...
+	} else {
+	    this.add_torrent( torrent )
+	    torrent.start()
+	}
+    },
+    check: function(torrent) {
+	console.assert(torrent.hashhex.toLowerCase() == torrent.hashhex)
+    },
+    has_torrent: function(torrent) {
+	this.check(torrent)
+	return this.torrents[this.hashhex] !== undefined
+    },
+    add_torrent: function(torrent) {
+	this.check(torrent)
+	this.torrents[ torrent.hashhex ] = torrent
     }
 }
 

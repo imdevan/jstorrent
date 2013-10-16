@@ -1,0 +1,46 @@
+{
+    "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDCvpsh4qvVEOcUZPeucJJ5VASn8fIOGsoQIXnIewzRcqi3Nwj/4WttouI8Fp2OlNxjH6rkaFOSaUPv5n0j20M7clmTjFPmJtbdKKBdVnE5g1jRpkzwMPMV8fpP5IyyTy0hSkK1FAWuxnlBmOMLSAeqCsVH4cYO9s2ilFMNMEG04wIDAQAB",
+    "name": "JSTorrent (Revival)",
+    "description": "Javascript Torrent Client (Revival)",
+    "version": "0.4.1",
+    "manifest_version": 2,
+    "offline_enabled": true,
+    "file_handlers": {
+        "any": {
+            "types": [
+                "application/x-bittorrent"
+            ],
+            "extensions": [
+                "torrent"
+            ],
+            "title": "Open with JSTorrent (Revival)"
+        }
+    },
+    "permissions": [
+        {"fileSystem":["write"]},
+        {"socket":[
+            "tcp-connect",
+            "udp-bind::",
+            "tcp-listen::",
+            "udp-send-to::"
+        ]},
+        "storage",
+        "http://*/",
+        "https://*/",
+        "https://www.googleapis.com/"
+    ],
+    "oauth2": {
+        "client_id": "432934632994-7if8sp8g5mc0gojarmeq8aaet04494hj.apps.googleusercontent.com",
+        "scopes": ["https://www.googleapis.com/auth/drive.file"]
+    },
+    "app": {
+        "background": {
+            "scripts": ["background.js"]
+        }
+    },
+    "icons": { 
+        "16": "icon16.png", 
+        "48": "icon48.png", 
+        "128": "icon128.png" 
+    }
+}
