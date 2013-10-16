@@ -26,6 +26,7 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
         if (sender.id == jstorrent_extension_id) {
 	    console.log('receive message from partner extension')
 	}
+    });
 
 });
 
