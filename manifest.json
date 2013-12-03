@@ -25,6 +25,8 @@
             "udp-send-to::"
         ]},
         "storage",
+        "idle",
+        "notifications",
         "http://*/",
         "https://*/",
         "https://www.googleapis.com/"

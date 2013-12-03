@@ -20,8 +20,11 @@ function parse_magnet(url) {
 function Torrent(opts) {
     this.client = opts.client;
     this.hashhex = null
+    this.hashbytes = null
     this.magnet_info = null
     this.trackers = null
+    this.swarm = new Swarm({torrent:this});
+    
 
     if (opts.url) {
 	// initialize torrent from a URL...
@@ -30,6 +33,13 @@ function Torrent(opts) {
 
 	this.magnet_info = parse_magnet(opts.url);
 	this.hashhex = this.magnet_info.hashhex
+
+        this.hashbytes = []
+        for (var i=0; i<20; i++) {
+            this.hashbytes.push(
+                parseInt(this.hashhex.slice(i*2, i*2 + 2), 16)
+            )
+        }
     }
     console.log('inited torrent',this)
 }
@@ -57,6 +67,10 @@ Torrent.prototype = {
 	    // initialize my trackers
 	    this.initialize_trackers()
 	}
+
+	this.trackers[0].announce(); 
+	return;
+
 	for (var i=0; i<this.trackers.length; i++) {
 	    this.trackers[i].announce()
 	}

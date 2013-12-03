@@ -1,14 +1,26 @@
 jstorrent
 =========
 
-javascript torrent client primarily for chrome web store
+This is the rewrite branch!
 
-Sorry, the source code has been removed from github for now due to licensing issues (I worked on it while at former employer)
-
-It's also been DMCAd out of the Chrome Web Store.
-
-I will consider rewriting this from scratch, if time permits!
-
-https://twitter.com/jstorrent (follow to show your support for a rewrite)
+https://twitter.com/jstorrent
 
 http://jstorrent.com
+
+
+Documentation
+
+Options page
+=======
+
+Option - global upload rate limiting etc
+Option - download while machine is idle (screen locked)
+Option - show system notifications when torrents complete etc
+
+Todo
+=======
+- see if able to add contextmenu to chromeos
+- implement i8n
+- use chrome.identity and GCM for remote control (pushMessaging)
+- use chrome.socket.getInfo to get host info when connected by host name
+- use chrome.system.storage to detect external media, support downloading to external media?

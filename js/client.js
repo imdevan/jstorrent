@@ -2,12 +2,18 @@
 
 function Client(opts) {
     this.torrents = {}
+
+    this.peeridbytes = []
+    for (var i=0; i<20; i++) {
+        this.peeridbytes.push( 
+            Math.floor( Math.random() * 256 )
+        )
+    }
 }
 
 Client.prototype = {
     add_from_url: function(url) {
 	// adds a torrent from a text input url
-
 
 	// parse url
 	console.log('client add by url',url)
