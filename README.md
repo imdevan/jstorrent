@@ -9,6 +9,8 @@ Sorry, the source code has been removed from github for now due to licensing iss
 
 The Chrome 31 based rewrite is in the "fresh" branch.
 
+https://plus.google.com/105605890151842939367 (Official Google+ Page)
+
 https://twitter.com/jstorrent (follow to show your support for a rewrite)
 
 http://jstorrent.com
