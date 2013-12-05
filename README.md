@@ -7,8 +7,7 @@ https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghalig
 
 Sorry, the source code has been removed from github for now due to licensing issues (I worked on it while at former employer)
 
-
-I will consider rewriting this from scratch, if time permits!
+The Chrome 31 based rewrite is in the "fresh" branch.
 
 https://twitter.com/jstorrent (follow to show your support for a rewrite)
 
