@@ -6,23 +6,50 @@ function Tracker(opts) {
     this.scheme = this.url.split('/')[0].split(':')[0].toLowerCase();
     this.host = parts[0];
     this.port = parseInt(parts[1]);
-
+    this.state = null;
+    this.lasterror = null;
     this.connection = null;
 
+    this.errors = 0
+    this.responses = 0
+    this.timeouts = 0
+    this.announcing = false
+    this.announce_callback = null
+    this.announce_timeout = 3000;
+    this.announce_timeout_hit = false
+    this.announce_timeout_callback = null
 }
 jstorrent.Tracker = Tracker;
 
 Tracker.prototype = {
-    announce: function() {
-	console.log('tracker announce!', this.scheme, this.host, this.port)
+    set_state: function(state) {
+        if (state == 'error') {
+            console.error('tracker',this.url,state, this.lasterror);
+        } else {
+            console.log('tracker',this.url,state, this.lasterror);
+        }
+        this.state = state;
+    },
+    announce: function(callback) {
+        if (this.announcing) { return }
+        this.lasterror = null
+        this.announce_callback = callback
+        this.announce_timeout_callback = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
 
 	if (! this.connection) {
+            this.set_state('get_connection')
 	    this.get_connection( _.bind(function(connectionInfo, err) {
-                console.log('tracker got connection',connectionInfo.connectionId)
+                if (err) {
+                    this.set_error(err); return
+                }
+                this.connection = connectionInfo
+                //console.log('tracker got connection',connectionInfo.connectionId)
 
                 var announceRequest = this.get_announce_payload( connectionInfo.connectionId );
-
+                this.set_state('write_announce')
                 chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
+
+                    this.set_state('read_announce')
                     // check error condition?
                     chrome.socket.read( connectionInfo.socketId, null, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
                 }, this))
@@ -30,9 +57,37 @@ Tracker.prototype = {
 
 
 	    },this) );
-	}
+	} else {
+            this.set_error('re-using tracker udp connection not yet supported')
+        }
+    },
+    set_error: function(err) {
+        var callback = this.announce_callback
+        if (this.announce_timeout_callback) { 
+            clearTimeout( this.announce_timeout_callback );
+            this.announce_timeout_callback = null
+        }
+        this.announce_callback = null
+        this.errors++
+        this.lasterror = err;
+        this.set_state('error')
+        if (callback) { callback(null, err) }
+    },
+    on_announce_timeout: function() {
+        this.announce_timeout_callback = null
+        this.announcing = false
+        this.timeouts++
+        this.set_error('timeout')
     },
     on_announce_response: function(connectionInfo, announceRequest, readResponse) {
+        clearTimeout( this.announce_timeout_callback )
+        var callback = this.announce_callback
+        this.announce_callback = null
+        this.announce_timeout_callback = null
+        this.announcing = false
+        this.responses++
+
+        this.set_state('on_announce_response')
         var v = new DataView(readResponse.data);
         var resp = v.getUint32(4*0)
         var respTransactionId = v.getUint32(4*1);
@@ -43,8 +98,7 @@ Tracker.prototype = {
         console.assert( respTransactionId == announceRequest.transactionId )
 
         var countPeers = (readResponse.data.byteLength - 20)/6
-        console.log('announce sayz leechers',leechers,',seeders',seeders,',interval',respInterval)
-        console.log('got',countPeers,'peers');
+        console.log('announce says leechers',leechers,'seeders',seeders,'interval',respInterval, 'peers',countPeers)
 
         for (var i=0; i<countPeers; i++) {
             var ipbytes = [v.getUint8( 20 + (i*6) ),
@@ -53,8 +107,14 @@ Tracker.prototype = {
                       v.getUint8( 20 + (i*6) + 3)]
             var port = v.getUint16( 20 + (i*6) + 4 )
             var ip = ipbytes.join('.')
-            console.log('got peer',ip,port)
+            //console.log('got peer',ip,port)
+            //this.torrent.swarm.add_peer( { ip:ip, port:port } )
+            var peer = new jstorrent.Peer({torrent: this.torrent, host:ip, port:port})
+            this.torrent.swarm.add( peer )
         }
+        this.torrent.set('numswarm', this.torrent.swarm.length )
+
+        if (callback) { callback(countPeers) }
     }
 }
 
@@ -110,12 +170,16 @@ UDPTracker.prototype = {
     },
     get_connection_data: function() {
 	// bittorrent udp protocol connection header info
-        var protocol_id = [0, 0, 4, 23, 39, 16, 25, 128]
+        var payload = new Uint8Array([0, 0, 4, 23, 39, 16, 25, 128, /* hard coded protocol id */
+                                      0,0,0,0, /* action */
+                                      0,0,0,0 /* transaction id */
+                                     ]);
         var action = 0
         var transaction_id = Math.floor(Math.random() * Math.pow(2,32))
-        var packed = jspack.Pack(">II", [action, transaction_id])
-        var payload = new Uint8Array(protocol_id.concat(packed)).buffer
-        return {payload:payload, transaction_id:transaction_id}
+        var v = new DataView(payload.buffer)
+        v.setUint32(8, action);
+        v.setUint32(12, transaction_id)
+        return {payload:payload.buffer, transaction_id:transaction_id}
     },
     get_connection: function(callback) {
         chrome.socket.create('udp', {}, _.bind(function(sockInfo) {
@@ -127,15 +191,20 @@ UDPTracker.prototype = {
 
                     chrome.socket.read( sockId, null, _.bind( function(sockReadResult) {
 
-                        console.log('udp get connection response',sockReadResult)
+                        //console.log('udp get connection response',sockReadResult, 'len',sockReadResult.data.byteLength)
 
-                        var resp = new DataView( sockReadResult.data );
-                        var respAction = resp.getUint32(0);
-                        var respTransactionId = resp.getUint32(4)
-                        var connectionId = [resp.getUint32(8), resp.getUint32(12)]
+                        if (sockReadResult.data.byteLength < 16) {
+                            callback( null, {error:'error udp connection response', result: sockReadResult } )
+                        } else {
 
-                        console.assert( connRequest.transaction_id == respTransactionId );
-                        callback( {connectionId:connectionId, socketId:sockInfo.socketId}, null )
+                            var resp = new DataView( sockReadResult.data );
+                            var respAction = resp.getUint32(0);
+                            var respTransactionId = resp.getUint32(4)
+                            var connectionId = [resp.getUint32(8), resp.getUint32(12)]
+
+                            console.assert( connRequest.transaction_id == respTransactionId );
+                            callback( {connectionId:connectionId, socketId:sockInfo.socketId}, null )
+                        }
 
                     }, this));
 

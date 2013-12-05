@@ -20,80 +20,28 @@ function onadd(evt) {
     if (evt) evt.preventDefault()
 }
 
-function onready() {
-    window.client = new jstorrent.Client;
+function onappready() {
+    window.client = app.get_client()
+
+    if (window.example_url_2) {
+        document.getElementById("url").value = example_url_2
+    }
 
     document.getElementById("torrentGrid").style.width = gui_opts.width;
     document.getElementById("torrentGrid").style.height = gui_opts.height;
 
     document.getElementById("url").value = example_url
     document.getElementById("add-form").addEventListener('submit', onadd)
-    window.UI = new UI()
+
+    window.UI = new UI({client:client})
+
     onadd()
     bind_events()
 }
 
-formatters = {
-    checkbox: function() {
-	return "<input type='checkbox' />"
-    }
-}
-
-var grid;
-  var columns = [
-//      {id: "selection", name: "", width: 25, formatter: formatters.checkbox },
-      {id: "title", name: "Title", field: "title"},
-      {id: "duration", name: "Duration", field: "duration"},
-      {id: "%", name: "% Complete", field: "percentComplete"},
-      {id: "start", name: "Start", field: "start"},
-      {id: "finish", name: "Finish", field: "finish"},
-      {id: "effort-driven", name: "Effort Driven", field: "effortDriven"}
-  ];
-
-var options = {
-    enableCellNavigation: true,
-    enableColumnReorder: false,
-};
-
-function create_grid() {
-    var data = [];
-    for (var i = 0; i < 4; i++) {
-	data[i] = {
-	    title: "Task " + i,
-	    duration: "5 days",
-	    percentComplete: Math.round(Math.random() * 100),
-	    start: "01/01/2009",
-	    finish: "01/05/2009",
-	    effortDriven: (i % 5 == 0)
-	};
-    }
-
-    grid = new Slick.Grid("#torrentGrid", data, columns, options);
-    grid.setSelectionModel(new Slick.RowSelectionModel());
-
-    grid.onSelectedRowsChanged.subscribe( function(evt, data) {
-        var selected = data.rows;
-	console.log('selection change',selected);
-
-	UI.handle_selection_change(data.rows);
-
-    });
-
-    grid.onMouseEnter.subscribe(function (e) {
-	var hash = {};
-	var cols = grid.getColumns();
-
-	hash[grid.getCellFromEvent(e).row] = {}
-	for (var i = 0; i < cols.length; ++i) {
-            hash[grid.getCellFromEvent(e).row][cols[i].id] = "hover";
-	}
-	grid.setCellCssStyles("hover", hash);
-    });
-
-    grid.onMouseLeave.subscribe(function (e) {
-	grid.removeCellCssStyles("hover");
-    });
-    return grid
+function onready() {
+    window.app = new jstorrent.App;
+    app.initialize( onappready )
 }
 
 function click_detail(tab, evt) {
@@ -101,8 +49,6 @@ function click_detail(tab, evt) {
     $('#detail-tabs li').removeClass('active')
     UI.set_detail(tab)
     $('#detail-' + tab).parent().addClass('active')
-
-
 }
 
 function bind_events() {
@@ -110,6 +56,9 @@ function bind_events() {
     tabs.forEach(function(tab) {
 	document.getElementById('detail-' + tab).addEventListener('click', click_detail.bind(this, tab));
     });
+    $('#button-options').click( function(evt) {
+        app.focus_or_open_options();
+    })
 }
 
 
@@ -120,29 +69,3 @@ function InfoView(opts) {
 
 
 
-function UI() {
-    // creates user interface
-
-    this.grid = create_grid()
-    this.detailview = null
-    this.detailtype = null
-
-}
-
-UI.prototype = {
-    set_detail: function(type) {
-	this.detailtype = type
-    },
-    single_selection_context: function(evt) {
-	var rows = this.grid.getSelectedRows();
-	if (rows.length > 0) {
-	    return this.grid.getDataItem(rows[0]);
-	}
-    },
-    handle_selection_change: function(rows) {
-	var data = this.single_selection_context();
-	if (! this.detailview) {
-	    new InfoView({torrent:data})
-	}
-    }
-}

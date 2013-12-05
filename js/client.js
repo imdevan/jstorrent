@@ -1,7 +1,8 @@
 // torrent client !
 
 function Client(opts) {
-    this.torrents = {}
+    this.torrents = new jstorrent.Collection({client:this, itemClass: jstorrent.Torrent})
+    this.app = opts.app
 
     this.peeridbytes = []
     for (var i=0; i<20; i++) {
@@ -9,34 +10,42 @@ function Client(opts) {
             Math.floor( Math.random() * 256 )
         )
     }
+    setInterval( _.bind(this.frame,this), 1000 )
 }
 
 Client.prototype = {
+    set_ui: function(ui) {
+        this.ui = ui
+    },
     add_from_url: function(url) {
 	// adds a torrent from a text input url
 
 	// parse url
 	console.log('client add by url',url)
 
+        // valid url?
 	var torrent = new jstorrent.Torrent({url:url, client:this})
 
-	if (this.has_torrent(torrent)) {
+        if (torrent.invalid) {
+            app.notify('torrent url invalid');
+        } else if (this.has_torrent(torrent)) {
 	    // we already had this torrent, maybe add the trackers to it...
 	} else {
 	    this.add_torrent( torrent )
 	    torrent.start()
 	}
     },
-    check: function(torrent) {
-	console.assert(torrent.hashhex.toLowerCase() == torrent.hashhex)
-    },
     has_torrent: function(torrent) {
-	this.check(torrent)
-	return this.torrents[this.hashhex] !== undefined
+	return this.torrents.get(this.hashhexlower) !== undefined
     },
     add_torrent: function(torrent) {
-	this.check(torrent)
-	this.torrents[ torrent.hashhex ] = torrent
+	this.torrents.set( torrent.hashhexlower, torrent )
+    },
+    frame: function() {
+        // TODO -- only do a frame when there is at least one started torrent
+        this.torrents.each( function(torrent) {
+            torrent.frame()
+        })
     }
 }
 

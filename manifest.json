@@ -17,7 +17,7 @@
         }
     },
     "permissions": [
-        {"fileSystem":["write"]},
+        {"fileSystem":["write","directory","retainEntries"]},
         {"socket":[
             "tcp-connect",
             "udp-bind::",
@@ -25,6 +25,7 @@
             "udp-send-to::"
         ]},
         "storage",
+        "system.storage",
         "idle",
         "notifications",
         "http://*/",
