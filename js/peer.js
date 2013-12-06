@@ -1,3 +1,22 @@
+function Peer(opts) {
+    jstorrent.Item.apply(this, arguments)
+    this.torrent = opts.torrent
+    this.host = opts.host
+    this.port = opts.port
+    this.set('address', this.get_key())
+    this.set('connected_ever', false)
+}
+jstorrent.Peer = Peer
+Peer.prototype = {
+    get_key: function() {
+        return this.host + ':' + this.port
+    }
+}
+for (var method in jstorrent.Item.prototype) {
+    jstorrent.Peer.prototype[method] = jstorrent.Item.prototype[method]
+}
+
+
 function PeerConnections(opts) {
     jstorrent.Collection.apply(this, arguments)
 }
@@ -9,14 +28,14 @@ for (var method in jstorrent.Collection.prototype) {
 }
 
 
-
-
-function Peer(opts) {
+function PeerConnection(opts) {
     jstorrent.Item.apply(this, arguments)
 
-    this.torrent = opts.torrent
-    this.host = opts.host // not necessarily an IP!
-    this.port = opts.port
+    this.peer = opts.peer
+
+    this.set('address', this.peer.get_key())
+    this.set('bytes_sent', 0)
+    this.set('bytes_received', 0)
 
     // inefficient that we create this for everybody in the swarm... (not actual peer objects)
     // but whatever, good enough for now
@@ -29,11 +48,11 @@ function Peer(opts) {
     this.writing_length = 0
 }
 
-jstorrent.Peer = Peer;
+jstorrent.PeerConnection = PeerConnection;
 
-Peer.prototype = {
+PeerConnection.prototype = {
     get_key: function() {
-        return this.host + ':' + this.port
+        return this.peer.host + ':' + this.peer.port
     },
     on_connect_timeout: function() {
         console.error('connect timeout!')
@@ -54,20 +73,22 @@ Peer.prototype = {
         console.log('peer connect!')
         console.assert( ! this.connecting )
         this.connecting = true;
+        this.set('state','connecting')
         chrome.socket.create('tcp', {}, _.bind(this.oncreate, this))
     },
     oncreate: function(sockInfo) {
         this.sockInfo = sockInfo;
         this.log('peer oncreate')
         this.connect_timeout_callback = setTimeout( _.bind(this.on_connect_timeout, this), this.connect_timeout_delay )
-        chrome.socket.connect( sockInfo.socketId, this.host, this.port, _.bind(this.onconnect, this) )
+        chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
         if (! this.sockInfo) {
             console.log('onconnect, but we already timed out')
         }
         this.log('peer onconnect',connectInfo);
-
+        this.set('state','connected')
+        this.peer.set('connected_ever',true)
         if (this.connect_timeout_callback) {
             clearTimeout( this.connect_timeout_callback )
             this.connect_timeout_callback = null
@@ -85,8 +106,8 @@ Peer.prototype = {
         }
         // handshake flags, null for now
         bytes = bytes.concat( [0,0,0,0,0,0,0,0] )
-        bytes = bytes.concat( this.torrent.hashbytes )
-        bytes = bytes.concat( this.torrent.client.peeridbytes )
+        bytes = bytes.concat( this.peer.torrent.hashbytes )
+        bytes = bytes.concat( this.peer.torrent.client.peeridbytes )
         console.assert( bytes.length == 68 )
         this.write( new Uint8Array( bytes ).buffer )
     },
@@ -124,6 +145,7 @@ Peer.prototype = {
             })
             this.error('did not write everything')
         } else {
+            this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
             this.writing = false
             this.writing_length = 0
         }
@@ -133,13 +155,12 @@ Peer.prototype = {
             console.error('onwrite for socket forcibly or otherwise closed')
             return
         }
-
+        this.set('bytes_received', this.get('bytes_received') + readResult.data.byteLength)
         this.log('on_peer_data',readResult,readResult.data.byteLength)
-        this.close('no real reason')
+        //this.close('no real reason')
     }
 }
 
-
 for (var method in jstorrent.Item.prototype) {
-    jstorrent.Peer.prototype[method] = jstorrent.Item.prototype[method]
+    jstorrent.PeerConnection.prototype[method] = jstorrent.Item.prototype[method]
 }

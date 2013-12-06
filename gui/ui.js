@@ -3,7 +3,7 @@ function UI(opts) {
 
     var formatters = {
         checkbox: function() {
-	    return "<input type='checkbox' />"
+            return "<input type='checkbox' />"
         }
     }
     var columns = [
@@ -18,16 +18,63 @@ function UI(opts) {
     ];
     this.torrenttable = new SlickCollectionTable( { collection: this.client.torrents,
                                                     domid: 'torrentGrid',
-                                                    formatters: formatters,
+//                                                    formatters: formatters,
                                                     columns: columns
                                                   } )
 
-    this.detailview = null
+    this.detailtable = null
     this.detailtype = null
+
+
+    this.coldefs = {
+        'peers':[
+                {id:"address", name: "Address"},
+                {id:"state", name: "State"},
+                {id:"percent", name: "Percent"},
+                {id:"bytes_sent", name: "Bytes Sent"},
+                {id:"bytes_received", name: "Bytes Received"},
+                {id:"last_message", name: "Last Message"},
+        ],
+        'swarm':[
+                {id:"address", name: "Address"},
+                {id:"connected_ever", name: "Ever Connected"},
+                {id:"state", name: "State"},
+                {id:"percent", name: "Percent"},
+                {id:"bytes_sent", name: "Bytes Sent"},
+                {id:"bytes_received", name: "Bytes Received"},
+                {id:"last_message", name: "Last Message"},
+            ]
+    }
 }
 
 UI.prototype = {
-    set_detail: function(type) {
-	this.detailtype = type
+    get_selected_torrent: function() {
+        var idx = this.torrenttable.grid.getSelectedRows()[0]
+        var torrent = this.client.torrents.get_at(idx)
+        return torrent
+    },
+    set_detail: function(type, torrent) {
+        console.log('set detail',type,torrent)
+        this.detailtype = type
+
+        if (this.detailtable) {
+            this.detailtable.destroy()
+            this.detailtable = null
+        }
+
+        var domid = 'detailGrid'
+
+        if (type == 'peers') {
+            this.detailtable = new SlickCollectionTable({collection: torrent.peers,
+                                                         domid: domid,
+                                                         columns: this.coldefs.peers
+                                                        });
+        } else if (type == 'swarm') {
+            this.detailtable = new SlickCollectionTable({collection: torrent.swarm,
+                                                         domid: domid,
+                                                         columns: this.coldefs.swarm
+                                                        });
+        }
+
     }
 }

@@ -109,7 +109,7 @@ Disk Usage
 </nav>
 
 
-<div class="alert alert-info">
+<div id="alert-place" class="alert alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Warning!</strong> Error
 </div>
@@ -169,7 +169,7 @@ Disk Usage
 
 <div style="clear:both"></div>
 
-Select Detail View: 
+<!--Select Detail View: -->
 <ul class="nav nav-tabs" id="detail-tabs">
 
   <li class="active">
@@ -190,6 +190,14 @@ Select Detail View:
     <a href="#" id="detail-peers">
       <span class="glyphicon glyphicon-user"></span>
       Peers
+    </a>
+  </li>
+
+
+  <li>
+    <a href="#" id="detail-swarm">
+      <span class="glyphicon glyphicon-user"></span>
+      Swarm
     </a>
   </li>
 
@@ -215,6 +223,8 @@ Select Detail View:
   </li>
 
 </ul>
+
+<div id="detailGrid" style="border: 1px solid blue"></div>
 
 </body>
 </html>

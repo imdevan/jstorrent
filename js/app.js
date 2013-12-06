@@ -6,11 +6,15 @@ function App() {
     this.options_window = null
     this.options = new jstorrent.Options({app:this});
     this.download_location = null
+    this.client = null
 }
 
 jstorrent.App = App
 
 App.prototype = {
+    suspend: function() {
+        this.client.stop()
+    },
     external_storage_attached: function(storageInfo) {
         console.log('external storage attached',storageInfo)
     },
@@ -53,7 +57,7 @@ App.prototype = {
         },this))
     },
     get_client: function() {
-        var client = new jstorrent.Client({app:this});
-        return client
+        this.client = new jstorrent.Client({app:this});
+        return this.client
     }
 }

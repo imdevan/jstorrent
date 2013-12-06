@@ -36,11 +36,16 @@ function SlickCollectionTable(opts) {
 	var hash = {};
 	var cols = grid.getColumns();
 
-	hash[grid.getCellFromEvent(e).row] = {}
-	for (var i = 0; i < cols.length; ++i) {
-            hash[grid.getCellFromEvent(e).row][cols[i].id] = "hover";
-	}
-	grid.setCellCssStyles("hover", hash);
+        var cell = grid.getCellFromEvent(e)
+        if (cell) {
+	    hash[cell.row] = {}
+	    for (var i = 0; i < cols.length; ++i) {
+                hash[grid.getCellFromEvent(e).row][cols[i].id] = "hover";
+	    }
+	    grid.setCellCssStyles("hover", hash);
+        } else {
+            console.warn('unable to get cell from hover event')
+        }
     });
 
     grid.onMouseLeave.subscribe(function (e) {
@@ -54,6 +59,12 @@ function SlickCollectionTable(opts) {
 }
 
 SlickCollectionTable.prototype = {
+    destroy: function() {
+        // destroy
+        this.grid.destroy()
+        $("#"+this.domid).empty()
+        
+    },
     single_selection_context: function(evt) {
 	var rows = this.grid.getSelectedRows();
 	if (rows.length > 0) {

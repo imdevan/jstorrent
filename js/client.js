@@ -10,10 +10,13 @@ function Client(opts) {
             Math.floor( Math.random() * 256 )
         )
     }
-    setInterval( _.bind(this.frame,this), 1000 )
+    this.interval = setInterval( _.bind(this.frame,this), 1000 )
 }
 
 Client.prototype = {
+    stop: function() {
+        clearInterval( this.interval )
+    },
     set_ui: function(ui) {
         this.ui = ui
     },

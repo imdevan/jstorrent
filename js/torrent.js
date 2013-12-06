@@ -116,10 +116,11 @@ Torrent.prototype = {
         if (this.should_add_peers() && this.swarm.length > 0) {
             var idx = Math.floor( Math.random() * this.swarm.length )
             var peer = this.swarm.get_at(idx)
+            var peerconn = new jstorrent.PeerConnection({peer:peer})
             console.log('should add peer!', idx, peer)
-            if (! this.peers.contains(peer)) {
-                this.peers.add( peer )
-                peer.connect()
+            if (! this.peers.contains(peerconn)) {
+                this.peers.add( peerconn )
+                peerconn.connect()
             }
 
         }
