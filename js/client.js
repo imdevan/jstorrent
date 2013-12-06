@@ -21,28 +21,23 @@ Client.prototype = {
         this.ui = ui
     },
     add_from_url: function(url) {
-	// adds a torrent from a text input url
+        // adds a torrent from a text input url
 
-	// parse url
-	console.log('client add by url',url)
+        // parse url
+        console.log('client add by url',url)
 
         // valid url?
-	var torrent = new jstorrent.Torrent({url:url, client:this})
+        var torrent = new jstorrent.Torrent({url:url, client:this})
 
         if (torrent.invalid) {
             app.notify('torrent url invalid');
-        } else if (this.has_torrent(torrent)) {
-	    // we already had this torrent, maybe add the trackers to it...
-	} else {
-	    this.add_torrent( torrent )
-	    torrent.start()
-	}
-    },
-    has_torrent: function(torrent) {
-	return this.torrents.get(this.hashhexlower) !== undefined
-    },
-    add_torrent: function(torrent) {
-	this.torrents.set( torrent.hashhexlower, torrent )
+        } else if (this.torrents.contains(torrent)) {
+            console.warn('already have this torrent!')
+            // we already had this torrent, maybe add the trackers to it...
+        } else {
+            this.torrents.add( torrent )
+            torrent.start()
+        }
     },
     frame: function() {
         // TODO -- only do a frame when there is at least one started torrent

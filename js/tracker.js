@@ -1,7 +1,7 @@
 function Tracker(opts) {
+    jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.url = opts.url
-    console.log("INIT TRACKER CLIENT W OPTS",opts)
     var parts = this.url.split('/')[2].split(':');
     this.scheme = this.url.split('/')[0].split(':')[0].toLowerCase();
     this.host = parts[0];
@@ -22,6 +22,9 @@ function Tracker(opts) {
 jstorrent.Tracker = Tracker;
 
 Tracker.prototype = {
+    get_key: function() {
+        return this.url
+    },
     set_state: function(state) {
         if (state == 'error') {
             console.error('tracker',this.url,state, this.lasterror);
@@ -94,6 +97,8 @@ Tracker.prototype = {
         var respInterval = v.getUint32(4*2);
         var leechers = v.getUint32(4*3);
         var seeders = v.getUint32(4*4);
+        this.set('leechers',leechers)
+        this.set('seeders',seeders)
 
         console.assert( respTransactionId == announceRequest.transactionId )
 
@@ -110,13 +115,19 @@ Tracker.prototype = {
             //console.log('got peer',ip,port)
             //this.torrent.swarm.add_peer( { ip:ip, port:port } )
             var peer = new jstorrent.Peer({torrent: this.torrent, host:ip, port:port})
-            this.torrent.swarm.add( peer )
+            if (! this.torrent.swarm.contains( peer )) {
+                this.torrent.swarm.add( peer )
+            }
         }
         this.torrent.set('numswarm', this.torrent.swarm.length )
 
         if (callback) { callback(countPeers) }
     }
 }
+for (var method in jstorrent.Item.prototype) {
+    jstorrent.Tracker.prototype[method] = jstorrent.Item.prototype[method]
+}
+
 
 function HTTPTracker() {
     Tracker.apply(this, arguments)

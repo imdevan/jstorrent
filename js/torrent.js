@@ -1,4 +1,3 @@
-
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
 
@@ -6,18 +5,13 @@ function Torrent(opts) {
     this.hashhexlower = null
     this.hashbytes = null
     this.magnet_info = null
-    this.trackers = null
+
     this.invalid = false;
     this.started = false;
 
-    // attributes ...
-    // this.size = null
-    // this.percent = null
-
-    //this.numpeers = null // derived attribute
-    //this.numswarm = null // derived attribute
     this.settings = new jstorrent.TorrentSettings({torrent:this})
 
+    this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.Peer})
     this.peers.on('connect_timeout', _.bind(this.on_peer_connect_timeout,this))
@@ -37,6 +31,11 @@ function Torrent(opts) {
 
         if (this.magnet_info.dn) {
             this.set('name', this.magnet_info.dn[0])
+        }
+
+        if (this.magnet_info.tr) {
+	    // initialize my trackers
+	    this.initialize_trackers()
         }
 
 	this.hashhexlower = this.magnet_info.hashhexlower
@@ -78,17 +77,16 @@ Torrent.prototype = {
         }
     },
     initialize_trackers: function() {
-	this.trackers = []
-	var url
+	var url, tracker
 	if (this.magnet_info && this.magnet_info.tr) {
 	    for (var i=0; i<this.magnet_info.tr.length; i++) {
 		url = this.magnet_info.tr[i];
 		if (url.toLowerCase().match('^udp')) {
-		    this.trackers.push( new jstorrent.UDPTracker( {url:url, torrent: this} ) )
+                    tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
 		} else {
-		    this.trackers.push( new jstorrent.HTTPTracker( {url:url, torrent: this} ) )
+                    tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
 		}
-
+		this.trackers.add( tracker )
 	    }
 	}
     },
@@ -96,17 +94,13 @@ Torrent.prototype = {
         this.set('state','started')
         this.started = true
 	console.log('torrent start')
-	if (! this.trackers) {
-	    // initialize my trackers
-	    this.initialize_trackers()
-	}
 
         // todo // check if should re-announce, etc etc
-	this.trackers[4].announce(); 
-	return;
+	//this.trackers.get_at(4).announce(); 
+	//return;
 
 	for (var i=0; i<this.trackers.length; i++) {
-	    this.trackers[i].announce()
+	    this.trackers.get_at(i).announce()
 	}
     },
     frame: function() {

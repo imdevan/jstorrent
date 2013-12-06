@@ -1,32 +1,19 @@
 function UI(opts) {
     this.client = opts.client
 
-    var formatters = {
-        checkbox: function() {
-            return "<input type='checkbox' />"
-        }
-    }
-    var columns = [
-        //      {id: "selection", name: "", width: 25, formatter: formatters.checkbox },
-
-        {id: "name", name: "Name"},
-        {id: "size", name: "Size"},
-        {id: "state", name: "State"},
-        {id: "percent", name: "% Complete"},
-        {id: "numpeers", name: "Peers", width:400},
-        {id: "numswarm", name: "Swarm"}
-    ];
-    this.torrenttable = new SlickCollectionTable( { collection: this.client.torrents,
-                                                    domid: 'torrentGrid',
-//                                                    formatters: formatters,
-                                                    columns: columns
-                                                  } )
-
     this.detailtable = null
     this.detailtype = null
 
-
     this.coldefs = {
+        'torrent': [
+        //      {id: "selection", name: "", width: 25, formatter: formatters.checkbox },
+            {id: "name", name: "Name", width:400},
+            {id: "size", name: "Size"},
+            {id: "state", name: "State"},
+            {id: "percent", name: "% Complete"},
+            {id: "numpeers", name: "Peers"},
+            {id: "numswarm", name: "Swarm"}
+        ],
         'peers':[
                 {id:"address", name: "Address"},
                 {id:"state", name: "State"},
@@ -43,11 +30,40 @@ function UI(opts) {
                 {id:"bytes_sent", name: "Bytes Sent"},
                 {id:"bytes_received", name: "Bytes Received"},
                 {id:"last_message", name: "Last Message"},
-            ]
+        ],
+        'trackers':[
+            {id:'url'},
+            {id:'announces'},
+            {id:'seeders'},
+            {id:'leechers'}
+        ]
     }
+
+    this.torrenttable = new SlickCollectionTable( { collection: this.client.torrents,
+                                                    domid: 'torrentGrid',
+                                                    columns: this.coldefs.torrent
+                                                  } )
+    this.torrenttable.grid.onSelectedRowsChanged.subscribe( _.bind(this.handle_torrent_selection_change,this))
+
+
 }
 
 UI.prototype = {
+    handle_torrent_selection_change: function(evt, data) {
+        var selected = data.rows;
+	console.log('selection change',selected);
+
+        if (selected.length > 0) {
+            var torrent = this.client.torrents.get_at(selected[0])
+            this.set_detail(this.detailtype, torrent)
+        } else {
+            if (this.detailtable) {
+                this.detailtable.destroy()
+                this.detailtable = null
+            }
+        }
+        
+    },
     get_selected_torrent: function() {
         var idx = this.torrenttable.grid.getSelectedRows()[0]
         var torrent = this.client.torrents.get_at(idx)
@@ -74,7 +90,11 @@ UI.prototype = {
                                                          domid: domid,
                                                          columns: this.coldefs.swarm
                                                         });
+        } else if (type == 'trackers') {
+            this.detailtable = new SlickCollectionTable({collection: torrent.trackers,
+                                                         domid: domid,
+                                                         columns: this.coldefs.trackers
+                                                        });
         }
-
     }
 }

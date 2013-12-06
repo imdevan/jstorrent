@@ -21,6 +21,13 @@ function SlickCollectionTable(opts) {
 
     var collectiondata = this.collection.data()
 
+    for (var i=0; i<this.columns.length; i++) {
+        if (! this.columns[i].name) {
+            // set column title to just be the ID if no name is given
+            this.columns[i].name =this.columns[i].id
+        }
+    }
+
     grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
@@ -64,18 +71,6 @@ SlickCollectionTable.prototype = {
         this.grid.destroy()
         $("#"+this.domid).empty()
         
-    },
-    single_selection_context: function(evt) {
-	var rows = this.grid.getSelectedRows();
-	if (rows.length > 0) {
-	    return this.grid.getDataItem(rows[0]);
-	}
-    },
-    handle_selection_change: function(rows) {
-	var data = this.single_selection_context();
-	if (! this.detailview) {
-	    new InfoView({torrent:data})
-	}
     },
     on_change: function(item, attr, p1,p2,p3) {
         console.log('collection item change',item,attr,p1,p2,p3)

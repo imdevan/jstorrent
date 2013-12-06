@@ -3,8 +3,6 @@ function Peer(opts) {
     this.torrent = opts.torrent
     this.host = opts.host
     this.port = opts.port
-    this.set('address', this.get_key())
-    this.set('connected_ever', false)
 }
 jstorrent.Peer = Peer
 Peer.prototype = {
