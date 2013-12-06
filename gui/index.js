@@ -41,7 +41,7 @@ function onappready() {
     bind_events()
 
     if (jstorrent.options.add_torrents_on_start) {
-        client.add_from_url( example_url )
+        //client.add_from_url( example_url )
         client.add_from_url( example_url_2 )
     }
 }

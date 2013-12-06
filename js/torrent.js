@@ -9,6 +9,9 @@ function Torrent(opts) {
     this.invalid = false;
     this.started = false;
 
+    this.infodict = null
+    this.infodict_buffer = null
+
     this.settings = new jstorrent.TorrentSettings({torrent:this})
 
     this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
@@ -59,6 +62,9 @@ Torrent.prototype = {
         } else {
             this.peers.remove(peer)
         }
+    },
+    has_infodict: function() {
+        return this.infodict ? true : false
     },
     on_peer_error: function(peer) {
         console.log('peer error...')

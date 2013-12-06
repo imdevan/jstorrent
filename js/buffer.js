@@ -15,7 +15,14 @@ Buffer.prototype = {
         this._size = this._size + data.byteLength
         this.deque.push(data)
     },
-    consume: function(sz) {
+    consume_any_max: function(maxsz) {
+        if (this.size() <= maxsz) {
+            return this.consume(this.size())
+        } else {
+            return this.consume(maxsz)
+        }
+    },
+    consume: function(sz,putback) {
         // returns a single array buffer of size sz
         if (sz > this._size) {
             console.assert(false)
@@ -54,6 +61,11 @@ Buffer.prototype = {
                 this.deque[0] = remain.buffer
                 break
             }
+        }
+        if (putback) {
+            this.deque = [ret.buffer].concat(this.deque)
+        } else {
+            this._size -= sz
         }
         return ret.buffer
     },

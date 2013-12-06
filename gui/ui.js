@@ -34,6 +34,8 @@ function UI(opts) {
         'trackers':[
             {id:'url'},
             {id:'announces'},
+            {id:'errors'},
+            {id:'timeouts'},
             {id:'seeders'},
             {id:'leechers'}
         ]

@@ -1,4 +1,7 @@
 function Tracker(opts) {
+    // TODO -- make sure we are destroying sockets and there aren't
+    // double error conditions with timeouts and socket reads
+    // returning also
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.url = opts.url
@@ -10,12 +13,12 @@ function Tracker(opts) {
     this.lasterror = null;
     this.connection = null;
 
-    this.errors = 0
+    this.set('errors',0)
     this.responses = 0
     this.timeouts = 0
     this.announcing = false
     this.announce_callback = null
-    this.announce_timeout = 3000;
+    this.announce_timeout = 10000;
     this.announce_timeout_hit = false
     this.announce_timeout_callback = null
 }
@@ -71,7 +74,7 @@ Tracker.prototype = {
             this.announce_timeout_callback = null
         }
         this.announce_callback = null
-        this.errors++
+        this.set('errors',this.get('errors')+1)
         this.lasterror = err;
         this.set_state('error')
         if (callback) { callback(null, err) }
@@ -205,6 +208,7 @@ UDPTracker.prototype = {
                         //console.log('udp get connection response',sockReadResult, 'len',sockReadResult.data.byteLength)
 
                         if (sockReadResult.data.byteLength < 16) {
+                            console.log('tracker udp sock read bytelength',sockReadResult.data.byteLength)
                             callback( null, {error:'error udp connection response', result: sockReadResult } )
                         } else {
 

@@ -8,7 +8,7 @@ jstorrent.Item = Item
 
 Item.prototype = {
     trigger: function(k,newval,oldval) {
-        console.log('item trigger',k,newval,oldval)
+        //console.log('item trigger',k,newval,oldval)
         if (this._event_listeners[k]) {
             if (k == 'change' && newval === oldval) {
                 return

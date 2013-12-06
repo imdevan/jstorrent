@@ -3,7 +3,7 @@ jstorrent = window.jstorrent || {}
 
 jstorrent.options = {
     load_options_on_start: false,
-    add_torrents_on_start: false,
+    add_torrents_on_start: true,
     run_unit_tests: false
 }
 bind = Function.prototype.bind
@@ -13,6 +13,14 @@ function reload() {
     chrome.runtime.reload()
 }
 
+function ui82str(arr) {
+    var length = arr.length
+    var str = ""
+    for (var i=0; i<length; i++) {
+        str += String.fromCharCode(arr[i])
+    }
+    return str
+}
 
 function parse_magnet(url) {
     var uri = url.slice(url.indexOf(':')+2)
