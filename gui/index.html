@@ -28,6 +28,7 @@
   <script src="../js/torrent.js"></script>
   <script src="../js/torrentsettings.js"></script>
   <script src="../js/protocol.js"></script>
+  <script src="../js/buffer.js"></script>
   <script src="../js/peer.js"></script>
   <script src="../js/swarm.js"></script>
   <script src="../js/client.js"></script>
@@ -120,17 +121,17 @@ Disk Usage
 <div class="btn-toolbar">
 
 <div class="btn-group">
-  <button type="button" class="btn btn-default">
+  <button id="button-start" type="button" class="btn btn-default">
     <span class="glyphicon glyphicon-play"></span>
-    Play
+    Start
   </button>
 
-  <button type="button" class="btn btn-default">
+  <button id="button-stop" type="button" class="btn btn-default">
     <span class="glyphicon glyphicon-stop"></span>
     Stop
   </button>
 
-  <button type="button" class="btn btn-default">
+  <button id="button-remove" type="button" class="btn btn-default">
     <span class="glyphicon glyphicon-remove"></span>
     Remove
   </button>

@@ -49,6 +49,14 @@ function UI(opts) {
 }
 
 UI.prototype = {
+    get_selected_torrents: function() {
+        var rows = this.torrenttable.grid.getSelectedRows()
+        var torrents = []
+        for (var i=0; i<rows.length; i++) {
+            torrents.push( this.client.torrents.get_at(i) )
+        }
+        return torrents
+    },
     handle_torrent_selection_change: function(evt, data) {
         var selected = data.rows;
 	console.log('selection change',selected);

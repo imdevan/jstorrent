@@ -7,13 +7,35 @@ function App() {
     this.options = new jstorrent.Options({app:this});
     this.download_location = null
     this.client = null
+    this.UI = null
 }
 
 jstorrent.App = App
 
 App.prototype = {
+    set_ui: function(UI) {
+        this.UI = UI
+    },
     suspend: function() {
         this.client.stop()
+    },
+    toolbar_start: function() {
+        var torrents = this.UI.get_selected_torrents()
+        for (var i=0; i<torrents.length; i++) {
+            torrent.start()
+        }
+    },
+    toolbar_stop: function() {
+        var torrents = this.UI.get_selected_torrents()
+        for (var i=0; i<torrents.length; i++) {
+            torrent.stop()
+        }
+    },
+    toolbar_remove: function() {
+        var torrents = this.UI.get_selected_torrents()
+        for (var i=0; i<torrents.length; i++) {
+            torrent.remove()
+        }
     },
     external_storage_attached: function(storageInfo) {
         console.log('external storage attached',storageInfo)

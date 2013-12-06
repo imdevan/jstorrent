@@ -2,6 +2,7 @@ jstorrent.protocol = {
     protocolName: 'BitTorrent protocol',
     pieceSize: 16384,
     maxPacketSize: 32768,
+    handshakeLength: 68,
     messages: [
         'CHOKE',
         'UNCHOKE',
@@ -24,5 +25,9 @@ jstorrent.protocol = {
         'HOLE_PUNCH',
         '-',
         'UTORRENT_MSG'
-    ]
+    ],
+    parseHandshake: function(buf) {
+        debugger
+    }
 }
+

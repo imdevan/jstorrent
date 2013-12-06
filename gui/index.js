@@ -36,11 +36,14 @@ function onappready() {
     document.getElementById("add-form").addEventListener('submit', onadd)
 
     window.UI = new UI({client:client})
+    window.app.set_ui(UI)
 
     bind_events()
 
-    client.add_from_url( example_url )
-    client.add_from_url( example_url_2 )
+    if (jstorrent.options.add_torrents_on_start) {
+        client.add_from_url( example_url )
+        client.add_from_url( example_url_2 )
+    }
 }
 
 function onready() {
@@ -67,6 +70,15 @@ function bind_events() {
     });
     $('#button-options').click( function(evt) {
         app.focus_or_open_options();
+    })
+    $('#button-stop').click( function(evt) {
+        app.toolbar_stop()
+    })
+    $('#button-start').click( function(evt) {
+        app.toolbar_start()
+    })
+    $('#button-remove').click( function(evt) {
+        app.toolbar_remove()
     })
 }
 

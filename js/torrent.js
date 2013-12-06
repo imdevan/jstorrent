@@ -103,6 +103,14 @@ Torrent.prototype = {
 	    this.trackers.get_at(i).announce()
 	}
     },
+    stop: function() {
+        this.set('state','stopped')
+        this.started = false
+    },
+    remove: function() {
+        this.stop()
+        this.client.torrents.remove(this)
+    },
     frame: function() {
         if (! this.started) { return }
         //console.log('torrent frame!')

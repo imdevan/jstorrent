@@ -31,6 +31,8 @@ function PeerConnection(opts) {
 
     this.peer = opts.peer
 
+    this.peerHandshake = null
+
     this.set('address', this.peer.get_key())
     this.set('bytes_sent', 0)
     this.set('bytes_received', 0)
@@ -44,6 +46,9 @@ function PeerConnection(opts) {
 
     this.writing = false
     this.writing_length = 0
+
+    this.readBuffer = new jstorrent.Buffer
+    this.writeBuffer = new jstorrent.Buffer
 }
 
 jstorrent.PeerConnection = PeerConnection;
@@ -106,7 +111,7 @@ PeerConnection.prototype = {
         bytes = bytes.concat( [0,0,0,0,0,0,0,0] )
         bytes = bytes.concat( this.peer.torrent.hashbytes )
         bytes = bytes.concat( this.peer.torrent.client.peeridbytes )
-        console.assert( bytes.length == 68 )
+        console.assert( bytes.length == jstorrent.protocol.handshakeLength )
         this.write( new Uint8Array( bytes ).buffer )
     },
     write: function(data) {
@@ -155,7 +160,19 @@ PeerConnection.prototype = {
         }
         this.set('bytes_received', this.get('bytes_received') + readResult.data.byteLength)
         this.log('on_peer_data',readResult,readResult.data.byteLength)
+
+        this.readBuffer.add( readResult.data )
+        this.checkBuffer()
         //this.close('no real reason')
+    },
+    checkBuffer: function() {
+        // checks if there are messages
+        if (! this.peerHandshake) {
+            if (this.readBuffer.size() >= jstorrent.protocol.handshakeLength) {
+                var buf = this.readBuffer.consume(jstorrent.protocol.handshakeLength)
+                this.peerHandshake = jstorrent.protocol.parseHandshake(buf)
+            }
+        }
     }
 }
 

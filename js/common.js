@@ -2,7 +2,9 @@
 jstorrent = window.jstorrent || {}
 
 jstorrent.options = {
-    load_options_on_start: false
+    load_options_on_start: false,
+    add_torrents_on_start: false,
+    run_unit_tests: false
 }
 bind = Function.prototype.bind
 

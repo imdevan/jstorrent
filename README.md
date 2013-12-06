@@ -24,3 +24,7 @@ Todo
 - use chrome.identity and GCM for remote control (pushMessaging)
 - use chrome.socket.getInfo to get host info when connected by host name
 - use chrome.system.storage to detect external media, support downloading to external media?
+
+Ideas
+=======
+- disk cache for serving torrent data (seeding)
