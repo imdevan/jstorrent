@@ -6,6 +6,7 @@ jstorrent.protocol = {
     handshakeLength: 68,
     extensionMessages: { ut_metadata: 2,
                          ut_pex: 3},
+    extensionMessageHandshakeCode: 0,
     extensionMessageCodes: {}, // populated just below
     messages: [
         'CHOKE',

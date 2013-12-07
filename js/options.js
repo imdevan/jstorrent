@@ -24,8 +24,13 @@ var app_options = {
     },
 
     'maxconns': {
-        'default': 2,
+        'default': 4,
         'type':'int'
+    },
+
+    'new_torrents_auto_start': {
+        'default': true,
+        'type': 'bool'
     }
     
 }

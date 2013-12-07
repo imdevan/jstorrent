@@ -67,7 +67,7 @@ Torrent.prototype = {
         return this.infodict ? true : false
     },
     on_peer_error: function(peer) {
-        console.log('peer error...')
+        console.log('on_peer error')
         if (!this.peers.contains(peer)) {
             console.warn('peer wasnt in list')
         } else {
@@ -105,9 +105,21 @@ Torrent.prototype = {
 	//this.trackers.get_at(4).announce(); 
 	//return;
 
-	for (var i=0; i<this.trackers.length; i++) {
-	    this.trackers.get_at(i).announce()
-	}
+        if (! jstorrent.options.disable_trackers) {
+	    for (var i=0; i<this.trackers.length; i++) {
+	        this.trackers.get_at(i).announce()
+	    }
+        }
+        if (jstorrent.options.manual_peer_connect_on_start) {
+            var hosts = jstorrent.options.manual_peer_connect_on_start[this.hashhexlower]
+            if (hosts) {
+                for (var i=0; i<hosts.length; i++) {
+                    var host = hosts[i]
+                    var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
+                    this.swarm.add(peer)
+                }
+            }
+        }
     },
     stop: function() {
         this.set('state','stopped')
@@ -124,15 +136,16 @@ Torrent.prototype = {
         if (this.should_add_peers() && this.swarm.length > 0) {
             var idx = Math.floor( Math.random() * this.swarm.length )
             var peer = this.swarm.get_at(idx)
+
             var peerconn = new jstorrent.PeerConnection({peer:peer})
-            console.log('should add peer!', idx, peer)
+            //console.log('should add peer!', idx, peer)
             if (! this.peers.contains(peerconn)) {
+                if (peer.get('only_connect_once')) { return }
                 this.peers.add( peerconn )
                 peerconn.connect()
             }
-
+            peer.set('only_connect_once',true)
         }
-
     },
     should_add_peers: function() {
         if (this.started) {

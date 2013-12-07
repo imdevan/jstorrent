@@ -73,20 +73,20 @@ SlickCollectionTable.prototype = {
         
     },
     on_change: function(item, attr, p1,p2,p3) {
-        console.log('collection item change',item,attr,p1,p2,p3)
+        //console.log('collection item change',item,attr,p1,p2,p3)
         var idx = this.collection.indexOf( item.get_key() )
         //console.log('change at row',idx)
         this.grid.invalidateRow(idx)
         this.grid.render()
     },
     on_add: function(item) {
-        console.log('collection onadd')
+        //console.log('collection onadd')
         this.grid.updateRowCount()
         this.grid.invalidateAllRows()
         this.grid.render()
     },
     on_remove: function(item) {
-        console.log('collection onremove')
+        //console.log('collection onremove')
         this.grid.updateRowCount()
         this.grid.invalidateAllRows()
         this.grid.render()

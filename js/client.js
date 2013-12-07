@@ -36,7 +36,9 @@ Client.prototype = {
             // we already had this torrent, maybe add the trackers to it...
         } else {
             this.torrents.add( torrent )
-            torrent.start()
+            if (this.app.options.get('new_torrents_auto_start')) {
+                torrent.start()
+            }
         }
     },
     frame: function() {

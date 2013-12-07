@@ -54,8 +54,8 @@ Collection.prototype = {
         var key = v.get_key()
         var idx = this.keyeditems[key]
         console.assert(idx >= 0)
-        console.log('removing',v,key,idx)
-        console.log('items now',this.items)
+        //console.log('removing',v,key,idx)
+        //console.log('items now',this.items)
         // update all the indicies on the other items!        
         for (var k in this.keyeditems) {
             if (this.keyeditems[k] > idx) {
@@ -63,9 +63,9 @@ Collection.prototype = {
             }
         }
         delete this.keyeditems[key]
-        this.items.splice(idx, 1)
-        console.log('items now',this.items)
-        console.log('keyeditems now', this.keyeditems)
+        //this.items.splice(idx, 1)
+        //console.log('items now',this.items)
+        //console.log('keyeditems now', this.keyeditems)
         this.length--
         console.assert(this.length>=0)
     },
