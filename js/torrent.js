@@ -14,12 +14,15 @@ function Torrent(opts) {
     this.infodict_buffer = null
 
     this.numPieces = null
+    this.bitfield = null
+    this.bitfieldFirstMissing = null // first index where a piece is missing
 
     this.settings = new jstorrent.TorrentSettings({torrent:this})
 
     this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
-    this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.Peer})
+    this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.PeerConnection})
+    this.pieces = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Piece})
 
     this.connectionsServingInfodict = [] // maybe use a collection class for this instead
     this.connectionsServingInfodictLimit = 3 // only request concurrently infodict from 3 peers
@@ -62,9 +65,27 @@ function Torrent(opts) {
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    getPiece: function(num) {
+        var piece
+        if (this.pieces.contains(num)) {
+            piece = this.pieces.contains(num)
+        } else {
+            piece = new jstorrent.Piece({torrent:this, num:num})
+            this.pieces.add(piece)
+        }
+        return piece
+    },
     metadataPresentInitialize: function() {
         // call this when infodict is newly available
-        this.numPieces = this.infodict.pieces.length/20;
+        this.numPieces = this.infodict.pieces.length/20
+        this.bitfield = new Uint8Array(this.numPieces)
+        this.bitfieldFirstMissing = 0
+        this.recheckData()
+    },
+    recheckData: function() {
+        // checks registered or default torrent download location for
+        // torrent data
+        console.log('Re-check data')
     },
     on_peer_connect_timeout: function(peer) {
         console.log('peer connect timeout...')

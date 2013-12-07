@@ -202,6 +202,18 @@ PeerConnection.prototype = {
             }
         }
     },
+    couldRequestPieces: function() {
+        // called when everything is ready and we could request
+        // torrent pieces!
+        var piece
+        for (var pieceNum=this.torrent.bitfieldFirstMissing; pieceNum<this.torrent.numPieces; pieceNum++) {
+            if (this.peerBitfield[pieceNum]) {
+                piece = this.torrent.getPiece(pieceNum)
+            }
+        }
+
+        debugger
+    },
     newStateThink: function() {
         // thintk about the next thing we might want to write to the socket :-)
 
@@ -217,6 +229,10 @@ PeerConnection.prototype = {
                 if (this.torrent.started) {
                     if (! this.amInterested) {
                         this.sendMessage("INTERESTED")
+                    } else {
+                        if (! this.amChoked) {
+                            this.couldRequestPieces()
+                        }
                     }
                 }
             }
