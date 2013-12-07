@@ -9,14 +9,21 @@ function Torrent(opts) {
     this.invalid = false;
     this.started = false;
 
+    this.metadata = null
     this.infodict = null
     this.infodict_buffer = null
+
+    this.numPieces = null
 
     this.settings = new jstorrent.TorrentSettings({torrent:this})
 
     this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.Peer})
+
+    this.connectionsServingInfodict = [] // maybe use a collection class for this instead
+    this.connectionsServingInfodictLimit = 3 // only request concurrently infodict from 3 peers
+
     this.peers.on('connect_timeout', _.bind(this.on_peer_connect_timeout,this))
     this.peers.on('error', _.bind(this.on_peer_error,this))
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
@@ -55,6 +62,10 @@ function Torrent(opts) {
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    metadataPresentInitialize: function() {
+        // call this when infodict is newly available
+        this.numPieces = this.infodict.pieces.length/20;
+    },
     on_peer_connect_timeout: function(peer) {
         console.log('peer connect timeout...')
         if (!this.peers.contains(peer)) {

@@ -2,10 +2,21 @@ function PeerConnection(opts) {
     jstorrent.Item.apply(this, arguments)
 
     this.peer = opts.peer
+    this.torrent = opts.peer.torrent
+
+
+    // initial settings
+    this.amInterested = false
+    this.amChoked = true
+    this.peerInterested = false
+    this.peerChoked = true
 
     this.peerHandshake = null
     this.peerExtensionHandshake = null
     this.peerExtensionHandshakeCodes = {}
+    this.peerPort = null
+
+    this.peerBitfield = null
 
     this.set('address', this.peer.get_key())
     this.set('bytes_sent', 0)
@@ -13,6 +24,8 @@ function PeerConnection(opts) {
 
     // inefficient that we create this for everybody in the swarm... (not actual peer objects)
     // but whatever, good enough for now
+    this.registeredRequests = {}
+    this.infodictResponses = []
     this.handleAfterInfodict = []
     this.connect_timeout_delay = 10000
     this.connect_timeout_callback = null
@@ -93,20 +106,36 @@ PeerConnection.prototype = {
     sendExtensionHandshake: function() {
         var data = {v: jstorrent.protocol.reportedClientName,
                     m: jstorrent.protocol.extensionMessages}
-        if (this.peer.torrent.has_infodict()) {
+        if (this.torrent.has_infodict()) {
             data.metadata_size = this.torrent.infodict_buffer.byteLength
         }
         var arr = new Uint8Array(bencode( data )).buffer;
         this.sendMessage('UTORRENT_MSG', [new Uint8Array([0]).buffer, arr])
     },
     sendMessage: function(type, payloads) {
+        switch (type) {
+        case "INTERESTED":
+            this.amInterested = true
+            break
+        case "NOT_INTERESTED":
+            this.amInterested = false
+            break
+        case "CHOKE":
+            this.peerChoked = true
+            break
+        case "UNCHOKE":
+            this.peerChoked = false
+            break
+        }
+        
+        if (! payloads) { payloads = [] }
+        console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
             console.assert(payloads[i] instanceof ArrayBuffer)
             payloadsz += payloads[i].byteLength
         }
-        console.log('payload size',payloadsz)
         var b = new Uint8Array(payloadsz + 5)
         var v = new DataView(b.buffer, 0, 5)
         v.setUint32(0, payloadsz + 1) // this plus one is important :-)
@@ -116,7 +145,7 @@ PeerConnection.prototype = {
             b.set( new Uint8Array(payloads[i]), idx )
             idx += payloads[i].byteLength
         }
-        console.log('sending message', new Uint8Array(b))
+        //console.log('sending message', new Uint8Array(b))
         this.write(b)
     },
     sendHandshake: function() {
@@ -127,8 +156,8 @@ PeerConnection.prototype = {
         }
         // handshake flags, null for now
         bytes = bytes.concat( [0,0,0,0,0,0,0,0] )
-        bytes = bytes.concat( this.peer.torrent.hashbytes )
-        bytes = bytes.concat( this.peer.torrent.client.peeridbytes )
+        bytes = bytes.concat( this.torrent.hashbytes )
+        bytes = bytes.concat( this.torrent.client.peeridbytes )
         console.assert( bytes.length == jstorrent.protocol.handshakeLength )
         this.write( new Uint8Array( bytes ).buffer )
     },
@@ -168,8 +197,67 @@ PeerConnection.prototype = {
             // continue writing out write buffer
             if (this.writeBuffer.size() > 0) {
                 this.writeFromBuffer()
+            } else {
+                this.newStateThink()
             }
         }
+    },
+    newStateThink: function() {
+        // thintk about the next thing we might want to write to the socket :-)
+
+        if (this.torrent.has_infodict()) {
+
+            // we have valid infodict
+            if (this.handleAfterInfodict.length > 0) {
+                console.log('processing afterinfodict:',this.handleAfterInfodict)
+                var msg = this.handleAfterInfodict.shift()
+                //setTimeout( _.bind(function(){this.handleMessage(msg)},this), 1 )
+                this.handleMessage(msg)
+            } else {
+                if (this.torrent.started) {
+                    if (! this.amInterested) {
+                        this.sendMessage("INTERESTED")
+                    }
+                }
+            }
+        } else {
+            if (this.peerExtensionHandshake && 
+                this.peerExtensionHandshake.m && 
+                this.peerExtensionHandshake.m.ut_metadata &&
+                this.peerExtensionHandshake.metadata_size &&
+                this.torrent.connectionsServingInfodict.length == 0)
+            {
+                // we have no infodict and this peer does!
+                this.torrent.connectionsServingInfodict.push( this )
+                this.requestInfodict()
+            }
+        }
+    },
+    requestInfodict: function() {
+        var infodictBytes = this.peerExtensionHandshake.metadata_size
+        var d
+        var numChunks = Math.ceil( infodictBytes / jstorrent.protocol.pieceSize )
+        for (var i=0; i<numChunks; i++) {
+            this.infodictResponses.push(null)
+        }
+
+        for (var i=0; i<numChunks; i++) {
+            d = {
+                piece: i,
+                msg_type: jstorrent.protocol.infodictExtensionMessageNames.REQUEST,
+                total_size: infodictBytes
+            }
+            var code = this.peerExtensionHandshake.m.ut_metadata
+            var info = {}
+            this.registerExpectResponse('infodictRequest', i, info)
+            this.sendMessage('UTORRENT_MSG', [new Uint8Array([code]).buffer, new Uint8Array(bencode(d)).buffer])
+        }
+    },
+    registerExpectResponse: function(type, key, info) {
+        if (! this.registeredRequests[type]) {
+            this.registeredRequests[type] = {}
+        }
+        this.registeredRequests[type][key] = info
     },
     log: function() {
         var args = [this.sockInfo.socketId, this.peer.get_key()]
@@ -254,6 +342,25 @@ PeerConnection.prototype = {
         } else {
             method.apply(this,[msgData])
         }
+        // once a message is handled, there is new state, so check if
+        // we want to write something
+        this.newStateThink()
+    },
+    handle_UNCHOKE: function() {
+        this.amChoked = false
+    },
+    handle_CHOKE: function() {
+        this.amChoked = true
+    },
+    handle_INTERESTED: function() {
+        this.peerInterested = true
+    },
+    handle_NOT_INTERESTED: function() {
+        this.peerInterested = false
+    },
+    handle_PORT: function(msg) {
+        // peer's listening port
+        this.peerPort = msg
     },
     handle_UTORRENT_MSG: function(msg) {
         // extension message!
@@ -266,25 +373,116 @@ PeerConnection.prototype = {
                     this.peerExtensionHandshakeCodes[this.peerExtensionHandshake.m[key]] = key
                 }
             }
-        } else if (jstorrent.protocol.extensionMessages[extType]) {
-            var extMsgType = jstorrent.protocol.extensionMessages[extType]
-            debugger
+        } else if (jstorrent.protocol.extensionMessageCodes[extType]) {
+            var extMsgType = jstorrent.protocol.extensionMessageCodes[extType]
+
             if (extMsgType == 'ut_metadata') {
 
+                this.handle_UTORRENT_MSG_ut_metadata(msg, extMsgType)
+            } else {
+                debugger
             }
+        } else {
+            debugger
         }
         
     },
+    handle_UTORRENT_MSG_ut_metadata: function(msg, extMsgType) {
+        var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
+        var infodictCode = extMessageBencodedData.msg_type
+        var infodictMsgType = jstorrent.protocol.infodictExtensionMessageCodes[infodictCode]
+
+        if (infodictMsgType == 'DATA') {
+            // looks like response to metadata request! yay
+
+            var dataStartIdx = bencode(extMessageBencodedData).length;
+            var infodictDataChunk = new Uint8Array(msg.payload, 6 + dataStartIdx)
+            var infodictChunkNum = extMessageBencodedData.piece
+
+            if (this.registeredRequests['infodictRequest'][infodictChunkNum]) {
+                this.registeredRequests['infodictRequest'][infodictChunkNum].received = true
+                this.infodictResponses[infodictChunkNum] = infodictDataChunk
+
+                var ismissing = false // check if we received everything
+                for (var i=0; i<this.infodictResponses.length; i++) {
+                    if (this.infodictResponses[i] === null) {
+                        ismissing = true
+                    }
+                }
+                if (! ismissing) {
+                    // we have everything now! make sure it matches torrent hash
+                    this.processCompleteInfodictResponses()
+                }
+            } else {
+                console.error("was not expecting this torrent metadata piece")
+            }
+
+        } else {
+            debugger
+        }
+    },
+    processCompleteInfodictResponses: function() {
+        var b = new Uint8Array(this.peerExtensionHandshake.metadata_size)
+        var idx = 0
+        for (var i=0; i<this.infodictResponses.length; i++) {
+            b.set( this.infodictResponses[i], idx )
+            idx += this.infodictResponses[i].byteLength
+        }
+        console.assert(idx == this.peerExtensionHandshake.metadata_size)
+
+        var infodict = bdecode(ui82str(b))
+        var metadata = {info:infodict} // should perhaps add in the trackers and shit
+        var digest = new Digest.SHA1()
+        digest.update(b)
+        var receivedInfodictHash = new Uint8Array(digest.finalize())
+
+        if (ui82str(receivedInfodictHash) == ui82str(this.torrent.hashbytes)) {
+            console.log("%c Received valid infodict!", 'background:#3f3; color:#fff')
+            this.torrent.infodict_buffer = b
+            this.torrent.infodict = infodict
+            this.torrent.metadata = metadata
+            this.torrent.metadataPresentInitialize()
+        } else {
+            console.error('received metadata does not have correct infohash! bad!')
+            this.error('bad_metadata')
+        }
+        
+
+    },
+    doAfterInfodict: function(msg) {
+        console.warn('Deferring message until have infodict',msg.type)
+        this.handleAfterInfodict.push( msg )
+    },
+    handle_HAVE_ALL: function(msg) {
+        if (! this.torrent.has_infodict()) {
+            this.doAfterInfodict(msg)
+        } else {
+            console.log('handling HAVE_ALL')
+            if (! this.peerBitfield) {
+                var arr = []
+                for (var i=0; i<this.torrent.numPieces; i++) {
+                    arr.push(1)
+                }
+                // it would be cool to use an actual bitmask and save
+                // some space. but that's silly :-)
+                this.peerBitfield = new Uint8Array(arr)
+            } else {
+                for (var i=0; i<this.peerBitfield.byteLength; i++) {
+                    this.peerBitfield[i] = 1
+                }
+            }
+        }
+    },
     handle_BITFIELD: function(msg) {
-        if (! this.peer.torrent.has_infodict()) {
-            this.handleAfterInfodict.push( msg )
+        if (! this.torrent.has_infodict()) {
+            this.doAfterInfodict(msg)
         } else {
             debugger;
         }
     },
     handle_HAVE: function(msg) {
-        if (! this.peer.torrent.has_infodict()) {
-            this.handleAfterInfodict.push( msg )
+        if (! this.torrent.has_infodict()) {
+            this.doAfterInfodict(msg)
         } else {
             debugger;
         }

@@ -7,6 +7,9 @@ jstorrent.protocol = {
     extensionMessages: { ut_metadata: 2,
                          ut_pex: 3},
     extensionMessageHandshakeCode: 0,
+    infodictExtensionMessages: ['REQUEST','DATA','REJECT'],
+    infodictExtensionMessageNames: {}, // populated just below
+    infodictExtensionMessageCodes: {}, // populated just below
     extensionMessageCodes: {}, // populated just below
     messages: [
         'CHOKE',
@@ -33,6 +36,10 @@ jstorrent.protocol = {
     ],
     messageNames: {}, // populated just below
     messageCodes: {} // populated just below
+}
+for (var i=0; i<jstorrent.protocol.infodictExtensionMessages.length; i++) {
+    jstorrent.protocol.infodictExtensionMessageCodes[i] = jstorrent.protocol.infodictExtensionMessages[i]
+    jstorrent.protocol.infodictExtensionMessageNames[jstorrent.protocol.infodictExtensionMessages[i]] = i
 }
 for (var i=0; i<jstorrent.protocol.messages.length; i++) {
     jstorrent.protocol.messageCodes[i] = jstorrent.protocol.messages[i]
