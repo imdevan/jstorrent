@@ -1,4 +1,5 @@
 function Item() {
+    this.__name__ = arguments.callee.name
     this._attributes = {}
     this._collections = []
     this._event_listeners = {}

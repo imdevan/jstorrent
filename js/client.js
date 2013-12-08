@@ -1,15 +1,31 @@
 // torrent client !
 
 function Client(opts) {
+    /* 
+       initializing the client does several async things
+       - fetch several local storage items)
+       - calls retainEntry for each disk
+
+       want a callback for when all that is done
+    */
+
     this.app = opts.app
+    this.id = opts.id
 
-    this.torrents = new jstorrent.Collection({client:this, itemClass: jstorrent.Torrent})
-
+    this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
+    //this.torrents.fetch()
     // has methods for writing and reading to disk
-    this.diskio = new jstorrent.DiskIO({client:this})
+
+    // need a different disk io for each disk!
+
+    this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
+    this.disks.fetch()
+
+
+    //this.diskio = new jstorrent.DiskIO({client:this})
 
     // able to retreive piece data from a cache
-    this.diskcache = new jstorrent.DiskCache({client:this})
+    //this.diskcache = new jstorrent.DiskCache({client:this}) // better to call it a piece cache, perhaps...
 
     this.peeridbytes = []
     for (var i=0; i<20; i++) {

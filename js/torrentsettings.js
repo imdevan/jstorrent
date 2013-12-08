@@ -1,3 +1,5 @@
+// maybe don't use this anymore... use one of our fancier classes
+
 function TorrentSettings(opts) {
     this.torrent = opts.torrent
     this.key = 'tsettings-' + this.torrent.hashhexlower

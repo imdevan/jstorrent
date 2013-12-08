@@ -40,6 +40,7 @@ function UI(opts) {
             {id:'leechers'}
         ],
         'diskio':[
+            {id:'type'},
             {id:'torrent'},
             {id:'filename'},
             {id:'offset'},

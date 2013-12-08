@@ -67,7 +67,11 @@ App.prototype = {
     },
     set_default_download_location: function(entry) {
         console.log("Set default download location to",entry)
-        this.download_location = entry
+        var disk = new jstorrent.Disk({entry:entry})
+        this.client.disks.add(disk)
+        this.client.disks.setAttribute('default',disk.get_key())
+        this.client.disks.save()
+        //this.download_location = entry
     },
     notify: function(msg) {
         console.warn('notification:',msg);
@@ -79,7 +83,8 @@ App.prototype = {
         },this))
     },
     get_client: function() {
-        this.client = new jstorrent.Client({app:this});
+        // the "id" is used when persisting client to chrome.storage.local
+        this.client = new jstorrent.Client({app:this, id:'client01'});
         return this.client
     }
 }

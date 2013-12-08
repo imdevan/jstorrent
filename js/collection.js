@@ -1,6 +1,8 @@
 
 function Collection(opts) {
     // collection of items, good for use with a slickgrid
+    this.__name__ = opts.__name__ || arguments.callee.name
+
     this.opts = opts
 
     this.itemClass = opts.itemClass
@@ -8,11 +10,22 @@ function Collection(opts) {
     this.length = 0
     this.keyeditems = {}
     this.event_listeners = {}
+
+    this._attributes = {} // collection can have attributes too that
+                          // can also be persisted
 }
 
 jstorrent.Collection = Collection
 
 Collection.prototype = {
+    getAttribute: function(k) {
+        return this._attributes[k]
+    },
+    setAttribute: function(k,v) {
+        var oldval = this._attributes[k]
+        this._attributes[k] = v
+        this.trigger('change',k,v,oldval)
+    },
     data: function() {
         return this.items;
     },
@@ -34,9 +47,9 @@ Collection.prototype = {
         }
     },
     add: function(v) {
-        this.set(v.get_key(), v)
+        this.setItem(v.get_key(), v)
     },
-    set: function(k,v) {
+    setItem: function(k,v) {
         console.assert( ! this.keyeditems[k] )
         v._collections.push(this)
         this.items.push(v)
@@ -78,6 +91,55 @@ Collection.prototype = {
     },
     get_at: function(idx) {
         return this.items[idx]
+    },
+    getParentId: function() {
+        if (this.client) {
+            return this.client.id
+        } else if (this.opts && this.opts.client) {
+            return this.opts.client.id
+        } else if (this.opts && this.opts.parent) {
+            return this.parent.id
+        }
+    },
+    save: function() {
+        // save the collection so that it can be restored on next app restart
+        // also save our attributes!
+        var parentId = this.getParentId()
+        console.assert(parentId)
+        var key = parentId + ':' + this.__name__
+        var item
+        var obj = {}
+        var tostore = {attributes:this._attributes, items:{}}
+        for (var i=0; i<this.items.length; i++) {
+            item = this.items[i]
+            tostore.items[ item.get_key() ] = item._attributes
+        }
+        obj[key] = tostore
+        chrome.storage.local.set(obj)
+    },
+    fetch: function() {
+        // loads data
+        var parentId = this.getParentId()
+        console.assert(parentId)
+        var storeKey = parentId + ':' + this.__name__
+        chrome.storage.local.get(storeKey, _.bind(function(result) {
+            var item, itemAttributes
+            if (result[storeKey]) {
+                if (result[storeKey].attributes) {
+                    this._attributes = result[storeKey].attributes
+                }
+                if (result[storeKey].items) {
+                    for (var itemKey in result[storeKey].items) {
+                        itemAttributes = result[storeKey].items[itemKey]
+                        item = new this.itemClass({id: itemKey})
+                        console.assert(item.get_key() == itemKey)
+                        this.add(item)
+                    }
+                }
+            }
+
+        },this))
+
     },
     each: function(iterfunc) {
 

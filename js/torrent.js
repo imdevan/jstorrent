@@ -124,10 +124,16 @@ Torrent.prototype = {
 
         
     },
+    persistPieceResult: function(result) {
+        debugger
+    },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
-        if (this.storageReady()) {
-            var storage = this.getStorage()
+        var storage = this.getStorage()
+        if (storage) {
+
+            storage.diskio.writePiece(piece, _.bind(this.persistPieceResult,this))
+            return
             // cool we have a good storage area...
 
             /*
@@ -179,13 +185,13 @@ Torrent.prototype = {
         }
     },
     getStorage: function() {
-        // TODO -- per torrent specific settings
-        return this.client.app.download_location
-    },
-    storageReady: function() {
-        if (this.client.app.download_location) {
-            return true
+        var disk = this.get('disk')
+        if (! disk) {
+            var disk = this.client.disks.getAttribute('default')
         }
+
+        var storage = this.client.disks.get(disk)
+        if (storage) { return storage }
     },
     recheckData: function() {
         // checks registered or default torrent download location for
@@ -240,7 +246,7 @@ Torrent.prototype = {
 	}
     },
     start: function() {
-        if (! this.storageReady()) {
+        if (! this.getStorage()) {
             this.error('Disk Missing')
             return
         }
