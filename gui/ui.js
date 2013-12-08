@@ -2,7 +2,7 @@ function UI(opts) {
     this.client = opts.client
 
     this.detailtable = null
-    this.detailtype = null
+    this.detailtype = 'trackers'
 
     this.coldefs = {
         'torrent': [
@@ -41,12 +41,12 @@ function UI(opts) {
         ],
         'diskio':[
             {id:'type'},
+            {id:'state'},
             {id:'torrent'},
-            {id:'filename'},
-            {id:'offset'},
+            {id:'fileNum'},
+            {id:'fileOffset'},
             {id:'size'},
-            {id:'jobgroup'},
-            {id:'state'}
+            {id:'jobgroup'}
         ]
     }
 
@@ -99,21 +99,20 @@ UI.prototype = {
 
         var domid = 'detailGrid'
 
-        if (type == 'peers') {
-            this.detailtable = new SlickCollectionTable({collection: torrent.peers,
+        if (type == 'diskio') {
+            this.detailtable = new SlickCollectionTable({collection: torrent.getStorage().diskio,
                                                          domid: domid,
-                                                         columns: this.coldefs.peers
+                                                         columns: this.coldefs[type]
                                                         });
-        } else if (type == 'swarm') {
-            this.detailtable = new SlickCollectionTable({collection: torrent.swarm,
-                                                         domid: domid,
-                                                         columns: this.coldefs.swarm
-                                                        });
-        } else if (type == 'trackers') {
-            this.detailtable = new SlickCollectionTable({collection: torrent.trackers,
-                                                         domid: domid,
-                                                         columns: this.coldefs.trackers
-                                                        });
+        } else {
+            if (! torrent[type] || ! this.coldefs[type]) {
+                console.warn('invalid table definition for type',type)
+            } else {
+                this.detailtable = new SlickCollectionTable({collection: torrent[type],
+                                                             domid: domid,
+                                                             columns: this.coldefs[type]
+                                                            });
+            }
         }
     }
 }

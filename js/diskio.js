@@ -1,16 +1,16 @@
 function DiskIOJob(opts) {
     this.client = opts.client
     this.jobId = opts.jobId
+    this.opts = opts
 
     jstorrent.Item.apply(this, arguments)
 
-    this.set('type',this.opts.type)
-    this.set('torrent',this.opts.torrent)
-    this.set('filename',this.opts.filename)
-    this.set('offset',this.opts.offset)
-    this.set('size',this.opts.size)
-    this.set('jobgroup',this.opts.jobgroup)
-
+    this.set('type',opts.type)
+    this.set('torrent',opts.torrent)
+    this.set('fileNum',opts.fileNum)
+    this.set('fileOffset',opts.fileOffset)
+    this.set('size',opts.size)
+    this.set('jobgroup',opts.jobgroup)
     this.set('state','idle')
 }
 jstorrent.DiskIOJob = DiskIOJob
@@ -57,8 +57,8 @@ DiskIO.prototype = {
             job = new jstorrent.DiskIOJob( {type: 'read',
                                             jobId: this.jobIdCounter++,
                                             torrent: piece.torrent.hashhexlower,
-                                            filename: fileSpanInfo.fileNum,
-                                            offset: fileSpanInfo.offset,
+                                            fileNum: fileSpanInfo.fileNum,
+                                            fileOffset: fileSpanInfo.fileOffset,
                                             size: fileSpanInfo.size,
                                             jobgroup: jobGroup} )
             this.add(job)
@@ -80,7 +80,30 @@ DiskIO.prototype = {
         // writes piece to disk
 
         var filesSpanInfo = piece.getSpanningFilesInfo()
-        debugger
+        var job,fileSpanInfo
+        var jobs = []
+        var jobGroup = this.jobGroupCounter++
+        this.jobsLeftInGroup[jobGroup] = 0
+        this.jobGroupCallbacks[jobGroup] = callback
+        
+        for (var i=0; i<filesSpanInfo.length; i++) {
+            fileSpanInfo = filesSpanInfo[i]
+
+            // need to slice off the data from the piece here...
+            var buf = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size).buffer
+            job = new jstorrent.DiskIOJob( {type: 'write',
+                                            data: buf,
+                                            jobId: this.jobIdCounter++,
+                                            torrent: piece.torrent.hashhexlower,
+                                            fileNum: fileSpanInfo.fileNum,
+                                            fileOffset: fileSpanInfo.fileOffset,
+                                            size: fileSpanInfo.size,
+                                            jobgroup: jobGroup} )
+            this.add(job)
+            this.jobsLeftInGroup[jobGroup]++
+        }
+        this.thinkNewState()
+
     }
 }
 

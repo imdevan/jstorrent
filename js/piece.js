@@ -6,7 +6,8 @@ function Piece(opts) {
     this.numChunks = Math.ceil(this.size / jstorrent.protocol.chunkSize)
     this.chunkRequests = {} // keep track of chunk requests
     this.chunkResponses = {}
-
+    this.chunkResponsesChosen = null
+    this.data = null
     this.haveData = false
     // haveData is not the same as having written the data to disk...
     this.haveDataPersisted = false
@@ -42,6 +43,16 @@ Piece.prototype = {
                 var valid = this.checkChunkResponseHash()
                 if (valid) {
                     // perhaps also place in disk cache?
+
+                    this.data = new Uint8Array(this.size)
+                    var curData, curOffset=0
+
+                    for (var i=0; i<this.chunkResponsesChosen.length; i++) {
+                        curData = this.chunkResponsesChosen[i]
+                        this.data.set(curData, curOffset)
+                        curOffset += curData.length
+                    }
+                    this.data = this.data.buffer
                     this.torrent.persistPiece(this)
                 } else {
                     // what to do, mark a peer as nasty, mark as suspect?
@@ -54,17 +65,21 @@ Piece.prototype = {
     },
     checkChunkResponseHash: function(preferredPeer) {
         // TODO - allow this to prefer assembling from a specific peer
-        var responses
+        var responses, curChoice
         var digest = new Digest.SHA1()
+        this.chunkResponsesChosen = []
         for (var i=0; i<this.numChunks; i++) {
             responses = this.chunkResponses[i]
-            digest.update(responses[0].data)
+            curChoice = responses[0].data
+            digest.update(curChoice)
+            this.chunkResponsesChosen.push( curChoice )
         }
         var responseHash = ui82str(new Uint8Array(digest.finalize()))
         if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
             console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
             return true
         } else {
+            this.chunkResponsesChosen = null
             console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
             return false
         }
@@ -154,18 +169,19 @@ Piece.prototype = {
             if (intersection) {
                 var intersectionStart = intersection[0]
                 var intersectionEnd = intersection[1]
-                infos.push( {fileNum: curFileNum,
-                             offset: intersectionStart - curFileStartByte,
-                             size: intersectionEnd - curFileStartByte + 1} )
+                var info = {fileNum: curFileNum,
+                             pieceOffset: intersectionStart - startByte,
+                             fileOffset: intersectionStart - curFileStartByte,
+                             size: intersectionEnd - intersectionStart + 1}
+                //console.log(this.num, 'got spanning file info', info)
+                infos.push( info )
                 curFileNum++
             } else {
                 break
             }
         }
-        debugger
+        console.assert(infos.length > 0)
         return infos
-
-        
     },
     getSpanningFilesData: function(offset, size, callback) {
         // spawns diskIO for retreiving actual data from the disk

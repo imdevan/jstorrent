@@ -2,7 +2,7 @@ var gui_opts = {
     torrentGrid_width: 750,
     torrentGrid_height: 150,
     detailGrid_width: 750,
-    detailGrid_height: 350
+    detailGrid_height: 300
 }
 
 document.addEventListener("DOMContentLoaded", onready);
