@@ -22,19 +22,19 @@ App.prototype = {
     toolbar_start: function() {
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
-            torrent.start()
+            torrents[i].start()
         }
     },
     toolbar_stop: function() {
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
-            torrent.stop()
+            torrents[i].stop()
         }
     },
     toolbar_remove: function() {
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
-            torrent.remove()
+            torrents[i].remove()
         }
     },
     external_storage_attached: function(storageInfo) {

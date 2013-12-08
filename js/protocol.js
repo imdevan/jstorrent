@@ -2,6 +2,9 @@ jstorrent.protocol = {
     protocolName: 'BitTorrent protocol',
     reportedClientName: 'JSTorrent 2.0.0',
     pieceSize: 16384,
+    chunkSize: 16384,
+    socketReadBufferMax: 4096, // doesn't really belong in this file, but whatever
+    socketWriteBufferMax: 4096, // doesn't really belong in this file, but whatever
     maxPacketSize: 32768,
     handshakeLength: 68,
     extensionMessages: { ut_metadata: 2,

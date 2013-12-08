@@ -1,11 +1,11 @@
 function PeerConnection(opts) {
     jstorrent.Item.apply(this, arguments)
 
+    
     this.peer = opts.peer
     this.torrent = opts.peer.torrent
 
-
-    // initial settings
+    // initial bittorrent state settings
     this.amInterested = false
     this.amChoked = true
     this.peerInterested = false
@@ -15,28 +15,37 @@ function PeerConnection(opts) {
     this.peerExtensionHandshake = null
     this.peerExtensionHandshakeCodes = {}
     this.peerPort = null
-
     this.peerBitfield = null
 
     this.set('address', this.peer.get_key())
     this.set('bytes_sent', 0)
     this.set('bytes_received', 0)
 
-    // inefficient that we create this for everybody in the swarm... (not actual peer objects)
-    // but whatever, good enough for now
+    // piece/chunk requests
+    this.pieceChunkRequests = {}
+    this.pieceChunkRequestsLinear = [] // perhaps store them in linear
+                                       // request order to make
+                                       // timeouts easy to process
+    this.pieceChunkRequestCount = 0
+    this.pieceChunkRequestPipelineLimit = 4
+
+    // inefficient that we create this for everybody in the
+    // swarm... (not actual peer objects) but whatever, good enough
+    // for now
     this.registeredRequests = {}
     this.infodictResponses = []
     this.handleAfterInfodict = []
+
+    // connect state
     this.connect_timeout_delay = 10000
     this.connect_timeout_callback = null
     this.connecting = false
     this.connect_timeouts = 0
 
+    // read/write buffer stuff
     this.writing = false
     this.writing_length = 0
-
     this.reading = false
-
     this.readBuffer = new jstorrent.Buffer
     this.writeBuffer = new jstorrent.Buffer
 }
@@ -100,8 +109,9 @@ PeerConnection.prototype = {
     },
     doRead: function() {
         console.assert(! this.reading)
+        if (this.reading) { return }
         this.reading = true
-        chrome.socket.read( this.sockInfo.socketId, 4096, _.bind(this.onRead,this) )
+        chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
     },
     sendExtensionHandshake: function() {
         var data = {v: jstorrent.protocol.reportedClientName,
@@ -170,8 +180,8 @@ PeerConnection.prototype = {
     },
     writeFromBuffer: function() {
         console.assert(! this.writing)
-        var data = this.writeBuffer.consume_any_max(4096)
-        this.log('write',data.byteLength)
+        var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
+        //this.log('write',data.byteLength)
         this.writing = true
         this.writing_length = data.byteLength
         chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
@@ -182,7 +192,7 @@ PeerConnection.prototype = {
             return
         }
 
-        this.log('onWrite', writeResult)
+        //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
         if(writeResult.bytesWritten != this.writing_length) {
             console.error('bytes written does not match!')
@@ -202,17 +212,68 @@ PeerConnection.prototype = {
             }
         }
     },
+    registerChunkRequest: function(pieceNum, chunkNum, chunkOffset, chunkSize) {
+        this.pieceChunkRequestCount++
+        //console.log('registering chunk request',this.get_key(),pieceNum, chunkNum)
+        if (! this.pieceChunkRequests[pieceNum]) {
+            this.pieceChunkRequests[pieceNum] = {}
+        }
+        this.pieceChunkRequests[pieceNum][chunkNum] = [chunkOffset, chunkSize, new Date()]
+        // when to timeout request?
+    },
+    registerChunkResponse: function(pieceNum, offset, data) {
+        var chunkNum = offset / jstorrent.protocol.chunkSize
+        if (this.pieceChunkRequests[pieceNum] &&
+            this.pieceChunkRequests[pieceNum][chunkNum]) {
+            // we were expecting this
+            this.pieceChunkRequestCount--
+            delete this.pieceChunkRequests[pieceNum][chunkNum]
+            return true
+        } else {
+            console.warn('was not expecting this piece',pieceNum,offset)
+            return false
+        }
+    },
     couldRequestPieces: function() {
+        //console.log('couldRequestPieces')
+        if (this.pieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
+            return
+        }
         // called when everything is ready and we could request
         // torrent pieces!
-        var piece
+        var curPiece, payloads
+        var allPayloads = []
+
         for (var pieceNum=this.torrent.bitfieldFirstMissing; pieceNum<this.torrent.numPieces; pieceNum++) {
             if (this.peerBitfield[pieceNum]) {
-                piece = this.torrent.getPiece(pieceNum)
+                curPiece = this.torrent.getPiece(pieceNum)
+
+                while (this.pieceChunkRequestCount < this.pieceChunkRequestPipelineLimit) {
+                    //console.log('getting chunk requests for peer')
+                    payloads = curPiece.getChunkRequestsForPeer(1, this)
+                    if (payloads.length == 0) {
+                        break
+                    } else {
+                        allPayloads = allPayloads.concat(payloads)
+                    }
+                }
+            }
+
+            if (this.pieceChunkRequestCount >= this.pieceChunkRequestPipelineLimit) {
+                break
             }
         }
 
-        debugger
+        for (var i=0; i<allPayloads.length; i++) {
+            this.sendMessage("REQUEST", [allPayloads[i]])
+        }
+    },
+    registerExpectResponse: function(type, key, info) {
+        // used for non-PIECE type messages
+        if (! this.registeredRequests[type]) {
+            this.registeredRequests[type] = {}
+        }
+        this.registeredRequests[type][key] = info
     },
     newStateThink: function() {
         // thintk about the next thing we might want to write to the socket :-)
@@ -269,12 +330,6 @@ PeerConnection.prototype = {
             this.sendMessage('UTORRENT_MSG', [new Uint8Array([code]).buffer, new Uint8Array(bencode(d)).buffer])
         }
     },
-    registerExpectResponse: function(type, key, info) {
-        if (! this.registeredRequests[type]) {
-            this.registeredRequests[type] = {}
-        }
-        this.registeredRequests[type][key] = info
-    },
     log: function() {
         var args = [this.sockInfo.socketId, this.peer.get_key()]
         for (var i=0; i<arguments.length; i++) {
@@ -289,6 +344,12 @@ PeerConnection.prototype = {
         this.trigger('error')
     },
     onRead: function(readResult) {
+
+        if (! this.torrent.started) {
+            console.error('onRead, but torrent stopped')
+            this.close('torrent stopped')
+        }
+
         this.reading = false
         if (! this.sockInfo) {
             console.error('onwrite for socket forcibly or otherwise closed')
@@ -299,7 +360,7 @@ PeerConnection.prototype = {
             return
         } else {
             this.set('bytes_received', this.get('bytes_received') + readResult.data.byteLength)
-            this.log('onRead',readResult.data.byteLength)
+            //this.log('onRead',readResult.data.byteLength)
             this.readBuffer.add( readResult.data )
             this.checkBuffer()
             this.doRead() // TODO -- only if we are actually interested right now...
@@ -361,6 +422,15 @@ PeerConnection.prototype = {
         // once a message is handled, there is new state, so check if
         // we want to write something
         this.newStateThink()
+    },
+    handle_PIECE: function(msg) {
+        var v = new DataView(msg.payload, 5, 12)
+        var pieceNum = v.getUint32(0)
+        var chunkOffset = v.getUint32(4)
+        // does not send size, inherent in message. could be smaller than chunk size though!
+        var data = new Uint8Array(msg.payload, 5+8)
+        console.assert(data.length <= jstorrent.protocol.chunkSize)
+        this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
     },
     handle_UNCHOKE: function() {
         this.amChoked = false

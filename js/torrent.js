@@ -13,6 +13,9 @@ function Torrent(opts) {
     this.infodict = null
     this.infodict_buffer = null
 
+    this.multifile = null
+    this.fileOffsets = []
+    this.size = null
     this.numPieces = null
     this.bitfield = null
     this.bitfieldFirstMissing = null // first index where a piece is missing
@@ -65,10 +68,17 @@ function Torrent(opts) {
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    getPieceSize: function(num) {
+        if (num == this.numPieces - 1) {
+            return this.size - this.infodict['piece length'] * num
+        } else {
+            return this.infodict['piece length']
+        }
+    },
     getPiece: function(num) {
         var piece
-        if (this.pieces.contains(num)) {
-            piece = this.pieces.contains(num)
+        if (this.pieces.get(num)) {
+            piece = this.pieces.get(num)
         } else {
             piece = new jstorrent.Piece({torrent:this, num:num})
             this.pieces.add(piece)
@@ -80,7 +90,53 @@ Torrent.prototype = {
         this.numPieces = this.infodict.pieces.length/20
         this.bitfield = new Uint8Array(this.numPieces)
         this.bitfieldFirstMissing = 0
+        if (this.infodict.files) {
+            this.multifile = true
+            this.size = 0
+            for (var i=0; i<this.infodict.files.length; i++) {
+                this.fileOffsets.push(this.size)
+                this.size += this.infodict.files[i].length
+            }
+        } else {
+            this.multifile = false
+            this.size = this.infodict.length
+        }
         this.recheckData()
+    },
+    persistPiece: function(piece) {
+        // saves this piece to disk, and update our bitfield.
+        if (this.storageReady()) {
+            var storage = this.getStorage()
+            // cool we have a good storage area...
+
+            /*
+
+              figure out which files this spans
+              figure out which slices of this piece get written to each file
+
+
+              |--|----|---|--|-|--|-----| (some files)
+                ____________              (piece span, notice it fills up entirely except at edges)
+              
+             */
+
+
+
+            
+            
+
+        } else {
+            this.error('Storage missing')
+        }
+    },
+    getStorage: function() {
+        // TODO -- per torrent specific settings
+        return this.client.app.download_location
+    },
+    storageReady: function() {
+        if (this.client.app.download_location) {
+            return true
+        }
     },
     recheckData: function() {
         // checks registered or default torrent download location for
@@ -97,6 +153,12 @@ Torrent.prototype = {
     },
     has_infodict: function() {
         return this.infodict ? true : false
+    },
+    error: function(msg) {
+        this.set('state','error')
+        this.lasterror = msg
+        console.error('torrent error:',msg)
+        this.started = false
     },
     on_peer_error: function(peer) {
         console.log('on_peer error')
@@ -129,6 +191,10 @@ Torrent.prototype = {
 	}
     },
     start: function() {
+        if (! this.storageReady()) {
+            this.error('Disk Missing')
+            return
+        }
         this.set('state','started')
         this.started = true
 	console.log('torrent start')

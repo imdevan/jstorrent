@@ -42,7 +42,7 @@ function onappready() {
 
     if (jstorrent.options.add_torrents_on_start) {
         //client.add_from_url( example_url )
-        client.add_from_url( example_url_2 )
+        //client.add_from_url( example_url_2 )
         if (jstorrent.options.manual_infohash_on_start) {
             client.add_from_url( 'magnet:?xt=urn:btih:' + jstorrent.options.manual_infohash_on_start[0] )
         }
