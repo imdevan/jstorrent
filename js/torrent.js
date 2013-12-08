@@ -13,10 +13,12 @@ function Torrent(opts) {
     this.infodict = null
     this.infodict_buffer = null
 
+    this.pieceLength = null
     this.multifile = null
     this.fileOffsets = []
     this.size = null
     this.numPieces = null
+    this.numFiles = null
     this.bitfield = null
     this.bitfieldFirstMissing = null // first index where a piece is missing
 
@@ -70,9 +72,10 @@ jstorrent.Torrent = Torrent
 Torrent.prototype = {
     getPieceSize: function(num) {
         if (num == this.numPieces - 1) {
-            return this.size - this.infodict['piece length'] * num
+            return this.size - this.pieceLength * num
         } else {
-            return this.infodict['piece length']
+            return this.pieceLength
+            //return this.infodict['piece length']
         }
     },
     getPiece: function(num) {
@@ -90,14 +93,17 @@ Torrent.prototype = {
         this.numPieces = this.infodict.pieces.length/20
         this.bitfield = new Uint8Array(this.numPieces)
         this.bitfieldFirstMissing = 0
+        this.pieceLength = this.infodict['piece length']
         if (this.infodict.files) {
             this.multifile = true
+            this.numFiles = this.infodict.files.length
             this.size = 0
-            for (var i=0; i<this.infodict.files.length; i++) {
+            for (var i=0; i<this.numFiles; i++) {
                 this.fileOffsets.push(this.size)
                 this.size += this.infodict.files[i].length
             }
         } else {
+            this.numFiles = 1
             this.multifile = false
             this.size = this.infodict.length
         }

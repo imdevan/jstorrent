@@ -80,6 +80,7 @@ DiskIO.prototype = {
         // writes piece to disk
 
         var filesSpanInfo = piece.getSpanningFilesInfo()
+        debugger
     }
 }
 

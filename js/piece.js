@@ -62,10 +62,10 @@ Piece.prototype = {
         }
         var responseHash = ui82str(new Uint8Array(digest.finalize()))
         if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
-            console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff')
+            console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
             return true
         } else {
-            console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff')
+            console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
             return false
         }
     },
@@ -133,6 +133,37 @@ Piece.prototype = {
         if (offset === undefined) { offset = 0 }
         if (size === undefined) { size = this.size }
 
+        var startByte = this.torrent.pieceLength * this.num + offset
+        var endByte = this.torrent.pieceLength * this.num + offset + size - 1
+
+        var infos = []
+
+        var idx = bisect_right(this.torrent.fileOffsets, startByte)
+        var curFileNum = idx-1
+        var curFileStartByte, curFileEndByte
+        while (curFileNum < this.torrent.numFiles) {
+            curFileStartByte = this.torrent.fileOffsets[curFileNum]
+
+            if (curFileNum == this.torrent.numFiles - 1) {
+                curFileEndByte = this.torrent.size - 1
+            } else {
+                curFileEndByte = this.torrent.fileOffsets[curFileNum + 1] - 1
+            }
+            var intersection = intersect( curFileStartByte, curFileEndByte,
+                                          startByte, endByte )
+            if (intersection) {
+                var intersectionStart = intersection[0]
+                var intersectionEnd = intersection[1]
+                infos.push( {fileNum: curFileNum,
+                             offset: intersectionStart - curFileStartByte,
+                             size: intersectionEnd - curFileStartByte + 1} )
+                curFileNum++
+            } else {
+                break
+            }
+        }
+        debugger
+        return infos
 
         
     },

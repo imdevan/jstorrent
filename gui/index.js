@@ -44,7 +44,10 @@ function onappready() {
         //client.add_from_url( example_url )
         //client.add_from_url( example_url_2 )
         if (jstorrent.options.manual_infohash_on_start) {
-            client.add_from_url( 'magnet:?xt=urn:btih:' + jstorrent.options.manual_infohash_on_start[0] )
+
+            setTimeout( function() {
+                client.add_from_url( 'magnet:?xt=urn:btih:' + jstorrent.options.manual_infohash_on_start[0] )
+            }, 1000);
         }
     }
 }

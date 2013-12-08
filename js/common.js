@@ -48,3 +48,34 @@ function parse_magnet(url) {
     d['hashhexlower'] = hash.toLowerCase()
     return d;
 }
+
+// from python land, assumes arr is sorted
+function bisect_left(arr, x, lo, hi) {
+    var mid
+    if (lo === undefined) { lo=0 }
+    if (hi === undefined) { hi=arr.length }
+    while (lo < hi) {
+        mid = Math.floor((lo+hi)/2)
+        if (arr[mid] < x) { lo = mid+1 }
+        else { hi = mid }
+    }
+    return lo
+}
+
+function bisect_right(arr, x, lo, hi) {
+    var mid
+    if (lo === undefined) { lo=0 }
+    if (hi === undefined) { hi=arr.length }
+    while (lo < hi) {
+        mid = Math.floor((lo+hi)/2)
+        if (x < arr[mid]) { hi = mid }
+        else { lo = mid+1 }
+    }
+    return lo
+}
+
+function intersect(a,b, c,d) {
+    // intersects intervals [a,b], and [c,d]
+    if (b < c || d < a) { return null }
+    else { return [Math.max(a,c), Math.min(b,d)] }
+}
