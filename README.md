@@ -1,21 +1,41 @@
-jstorrent
+JSTorrent
 =========
 
-This is the rewrite branch!
+https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghaligalgb (Chrome Web Store)
 
-https://twitter.com/jstorrent
+---
+
+This is the rewrite branch! Totally rewritten from scratch. This is
+about the third time I've written a torrent client, so it should be
+the least buggy of them all :-)
+
+
+Websites:
+----
+
+https://google.com/+jstorrent (Official Google+ Page)
+
+https://twitter.com/jstorrent (Twitter Page)
 
 http://jstorrent.com
 
-
 Documentation
+
+Special New Features
+=======
+
+- Support downloading directly to directory of choice
+  - download to external media (usb drives)
+  - Per-torrent download directories
+  - multiple download directories
 
 Options page
 =======
 
 Option - global upload rate limiting etc
-Option - download while machine is idle (screen locked)
+Option - whether to download while machine is idle (screen locked)
 Option - show system notifications when torrents complete etc
+... more options ...
 
 Todo
 =======
