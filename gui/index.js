@@ -67,7 +67,7 @@ function click_detail(tab, evt) {
 }
 
 function bind_events() {
-    var tabs = ['info','files','peers','swarm','trackers','pieces','warning']
+    var tabs = ['info','files','peers','swarm','trackers','pieces','warning', 'diskio']
     tabs.forEach(function(tab) {
 	document.getElementById('detail-' + tab).addEventListener('click', click_detail.bind(this, tab));
     });

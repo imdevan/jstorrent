@@ -38,6 +38,14 @@ function UI(opts) {
             {id:'timeouts'},
             {id:'seeders'},
             {id:'leechers'}
+        ],
+        'diskio':[
+            {id:'torrent'},
+            {id:'filename'},
+            {id:'offset'},
+            {id:'size'},
+            {id:'jobgroup'},
+            {id:'state'}
         ]
     }
 

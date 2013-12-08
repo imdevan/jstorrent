@@ -127,6 +127,25 @@ Piece.prototype = {
             chunkOffset += jstorrent.protocol.chunkSize
         }
         return payloads
+    },
+    getSpanningFilesInfo: function(offset, size) {
+        // returns a list of [fileNum, fileOffset, size]
+        if (offset === undefined) { offset = 0 }
+        if (size === undefined) { size = this.size }
+
+
+        
+    },
+    getSpanningFilesData: function(offset, size, callback) {
+        // spawns diskIO for retreiving actual data from the disk
+
+        var filesSpanInfo = this.getSpanningFilesInfo()
+        // create a bunch of diskio jobs
+
+        this.torrent.diskio.readPiece(this, offset, size, function(data) {
+            debugger
+        })
+
     }
 }
 for (var method in jstorrent.Item.prototype) {

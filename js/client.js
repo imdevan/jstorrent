@@ -1,8 +1,15 @@
 // torrent client !
 
 function Client(opts) {
-    this.torrents = new jstorrent.Collection({client:this, itemClass: jstorrent.Torrent})
     this.app = opts.app
+
+    this.torrents = new jstorrent.Collection({client:this, itemClass: jstorrent.Torrent})
+
+    // has methods for writing and reading to disk
+    this.diskio = new jstorrent.DiskIO({client:this})
+
+    // able to retreive piece data from a cache
+    this.diskcache = new jstorrent.DiskCache({client:this})
 
     this.peeridbytes = []
     for (var i=0; i<20; i++) {

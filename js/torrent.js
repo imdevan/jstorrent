@@ -103,6 +103,27 @@ Torrent.prototype = {
         }
         this.recheckData()
     },
+    getPieceData: function(pieceNum, offset, size, callback) {
+        // used for serving PIECE requests
+
+        var cachehit = this.client.diskcache.checkHave(pieceNum, offset, size)
+        if (cachehit) {
+            var data = this.client.diskcache.retreiveFromCache(pieceNum, offset, size)
+            callback(data)
+        } else {
+            var piece = this.getPiece(pieceNum)
+
+
+            piece.getSpanningFilesData(offset, size, function(spanningFilesData) {
+                // more useful function :-)
+            })
+
+            // create diskIO jobs for each file
+            
+        }
+
+        
+    },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
         if (this.storageReady()) {
@@ -119,10 +140,38 @@ Torrent.prototype = {
                 ____________              (piece span, notice it fills up entirely except at edges)
               
              */
+            var diskIOJobs = []
 
+            var fileSpan, buf
+            var filesSpanInfo = piece.getSpanningFilesInfo()
 
+            for (var i=0; i<filesSpanInfo; i++) {
+                fileSpan = filesSpanInfo[i]
+                debugger
 
-            
+                var buf = new Uint8Array(1).buffer
+
+                var job = { torrentHash: this.hashhexlower,
+                            pieceNum: piece.num,
+                            data: buf,
+                            fileName: 'Foo Bar/Test 123/blah.txt',
+                            fileSkipped: false,
+                            fileOffset: 0 }
+
+                diskIOJobs.push(job)
+            }
+
+            /* if ANY file was skipped, then simply write entire piece to disk into a hidden file
+
+               torrent.getPieceData(pieceNum, offset, length) needs to know how it can find it...
+               
+
+             */
+            this.client.diskio.addPieceWriteJobs(piece, diskIOJobs)
+            // what to do with skipped files?
+
+            // need a way for diskio to notify torrent/piece that it was persisted...
+
             
 
         } else {
