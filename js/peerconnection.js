@@ -239,6 +239,11 @@ PeerConnection.prototype = {
         if (this.pieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
             return
         }
+
+        if (this.torrent.unflushedPieceDataSize > this.torrent.client.app.options.get('max_unflushed_piece_data')) {
+            return
+        }
+
         // called when everything is ready and we could request
         // torrent pieces!
         var curPiece, payloads

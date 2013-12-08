@@ -31,6 +31,11 @@ var app_options = {
     'new_torrents_auto_start': {
         'default': false,
         'type': 'bool'
+    },
+
+    'max_unflushed_piece_data': {
+        'default': 16384 * 5,
+        'type': 'int'
     }
     
 }

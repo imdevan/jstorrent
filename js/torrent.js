@@ -13,6 +13,8 @@ function Torrent(opts) {
     this.infodict = null
     this.infodict_buffer = null
 
+    this.unflushedPieceDataSize = 0
+
     this.pieceLength = null
     this.multifile = null
     this.fileOffsets = []
@@ -28,6 +30,7 @@ function Torrent(opts) {
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.PeerConnection})
     this.pieces = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Piece})
+    this.files = new jstorrent.Collection({torrent:this, itemClass:jstorrent.File})
 
     this.connectionsServingInfodict = [] // maybe use a collection class for this instead
     this.connectionsServingInfodictLimit = 3 // only request concurrently infodict from 3 peers
@@ -70,6 +73,16 @@ function Torrent(opts) {
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    getFile: function(num) {
+        var file
+        if (this.files.get(num)) {
+            file = this.files.get(num)
+        } else {
+            file = new jstorrent.File({torrent:this, num:num})
+            this.files.add(file)
+        }
+        return file
+    },
     getPieceSize: function(num) {
         if (num == this.numPieces - 1) {
             return this.size - this.pieceLength * num
@@ -132,58 +145,16 @@ Torrent.prototype = {
     },
     persistPieceResult: function(result) {
         debugger
+        this.unflushedPieceDataSize -= result.piece.size
     },
     persistPiece: function(piece) {
+        this.unflushedPieceDataSize += piece.size
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
         if (storage) {
 
             storage.diskio.writePiece(piece, _.bind(this.persistPieceResult,this))
             return
-            // cool we have a good storage area...
-
-            /*
-
-              figure out which files this spans
-              figure out which slices of this piece get written to each file
-
-
-              |--|----|---|--|-|--|-----| (some files)
-                ____________              (piece span, notice it fills up entirely except at edges)
-              
-             */
-            var diskIOJobs = []
-
-            var fileSpan, buf
-            var filesSpanInfo = piece.getSpanningFilesInfo()
-
-            for (var i=0; i<filesSpanInfo; i++) {
-                fileSpan = filesSpanInfo[i]
-                debugger
-
-                var buf = new Uint8Array(1).buffer
-
-                var job = { torrentHash: this.hashhexlower,
-                            pieceNum: piece.num,
-                            data: buf,
-                            fileName: 'Foo Bar/Test 123/blah.txt',
-                            fileSkipped: false,
-                            fileOffset: 0 }
-
-                diskIOJobs.push(job)
-            }
-
-            /* if ANY file was skipped, then simply write entire piece to disk into a hidden file
-
-               torrent.getPieceData(pieceNum, offset, length) needs to know how it can find it...
-               
-
-             */
-            this.client.diskio.addPieceWriteJobs(piece, diskIOJobs)
-            // what to do with skipped files?
-
-            // need a way for diskio to notify torrent/piece that it was persisted...
-
             
 
         } else {

@@ -47,6 +47,15 @@ function UI(opts) {
             {id:'fileOffset'},
             {id:'size'},
             {id:'jobgroup'}
+        ],
+        'files':[
+            {id:'num'},
+            {id:'name'}
+        ],
+        'pieces':[
+            {id:'num'},
+            {id:'have'},
+            {id:'size'}
         ]
     }
 

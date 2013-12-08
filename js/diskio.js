@@ -44,7 +44,6 @@ jstorrent.DiskIO = DiskIO
 DiskIO.prototype = {
     readPiece: function(piece, offset, size, callback) {
         // reads a bunch of piece data from all the spanning files
-
         var filesSpanInfo = piece.getSpanningFilesInfo(offset, size)
         var job,fileSpanInfo
         var jobs = []
@@ -55,6 +54,7 @@ DiskIO.prototype = {
         for (var i=0; i<filesSpanInfo.length; i++) {
             fileSpanInfo = filesSpanInfo[i]
             job = new jstorrent.DiskIOJob( {type: 'read',
+                                            piece: piece,
                                             jobId: this.jobIdCounter++,
                                             torrent: piece.torrent.hashhexlower,
                                             fileNum: fileSpanInfo.fileNum,
@@ -69,7 +69,16 @@ DiskIO.prototype = {
     thinkNewState: function() {
         if (! this.diskActive) {
             // pop off a job and do it!
-            
+            var job = this.get_at(0)
+            job.set('state','active')
+            this.diskActive = true
+            var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
+
+            file.getEntry( function(){
+                debugger
+            })
+
+            //debugger
         }
     },
     jobDone: function(job, data) {
@@ -93,6 +102,7 @@ DiskIO.prototype = {
             var buf = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size).buffer
             job = new jstorrent.DiskIOJob( {type: 'write',
                                             data: buf,
+                                            piece: piece,
                                             jobId: this.jobIdCounter++,
                                             torrent: piece.torrent.hashhexlower,
                                             fileNum: fileSpanInfo.fileNum,
@@ -103,7 +113,6 @@ DiskIO.prototype = {
             this.jobsLeftInGroup[jobGroup]++
         }
         this.thinkNewState()
-
     }
 }
 
