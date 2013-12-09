@@ -11,6 +11,8 @@ function PeerConnection(opts) {
     this.peerInterested = false
     this.peerChoked = true
 
+    this.set('amChoked',true)
+
     this.peerHandshake = null
     this.peerExtensionHandshake = null
     this.peerExtensionHandshakeCodes = {}
@@ -131,6 +133,7 @@ PeerConnection.prototype = {
         this.sendMessage('UTORRENT_MSG', [new Uint8Array([0]).buffer, arr])
     },
     sendMessage: function(type, payloads) {
+        this.set('last_message_sent',type)
         switch (type) {
         case "INTERESTED":
             this.amInterested = true
@@ -147,7 +150,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',[type, payloads])
+        console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -164,7 +167,7 @@ PeerConnection.prototype = {
             idx += payloads[i].byteLength
         }
         //console.log('sending message', new Uint8Array(b))
-        this.write(b)
+        this.write(b.buffer)
     },
     sendHandshake: function() {
         var bytes = []
@@ -183,6 +186,7 @@ PeerConnection.prototype = {
     },
     write: function(data) {
         console.assert(data.byteLength > 0)
+        console.assert(data instanceof ArrayBuffer)
         this.writeBuffer.add(data)
         if (! this.writing) {
             this.writeFromBuffer()
@@ -311,7 +315,6 @@ PeerConnection.prototype = {
         this.registeredRequests[type][key] = info
     },
     newStateThink: function() {
-        //console.log('newStateThink')
         // thintk about the next thing we might want to write to the socket :-)
         this.checkBuffer()
 
@@ -455,12 +458,13 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        //console.log('handling message',data)
+        console.log('handling message',data)
 
         this.handleMessage(data)
     },
     handleMessage: function(msgData) {
         var method = this['handle_' + msgData.type]
+        this.set('last_message_received',msgData.type)
         if (! method) {
             this.unhandledMessage(msgData)
         } else {
@@ -469,6 +473,10 @@ PeerConnection.prototype = {
         // once a message is handled, there is new state, so check if
         // we want to write something
         this.newStateThink()
+    },
+    handle_REQUEST: function(msg) {
+        //:-) todo -- make this work better haha
+        this.sendMessage("REJECT_REQUEST", msg.payload)
     },
     handle_PIECE: function(msg) {
         var v = new DataView(msg.payload, 5, 12)
@@ -480,6 +488,7 @@ PeerConnection.prototype = {
         this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
     },
     handle_UNCHOKE: function() {
+        this.set('amChoked',false)
         this.amChoked = false
     },
     handle_CHOKE: function() {
@@ -509,6 +518,7 @@ PeerConnection.prototype = {
         if (extType == jstorrent.protocol.extensionMessageHandshakeCode) {
             // bencoded extension message handshake follows
             this.peerExtensionHandshake = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
+            this.set('peerClientName',this.peerExtensionHandshake.v)
             if (this.peerExtensionHandshake.m) {
                 for (var key in this.peerExtensionHandshake.m) {
                     this.peerExtensionHandshakeCodes[this.peerExtensionHandshake.m[key]] = key

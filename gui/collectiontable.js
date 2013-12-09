@@ -39,12 +39,15 @@ function SlickCollectionTable(opts) {
     grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
+    grid.onDblClick.subscribe( _.bind(function(evt, data) {
+        //this.handleDoubleClick(evt.row, evt.cell)
+        //console.log('dblclick',evt,data)
+    },this))
+
     grid.onSelectedRowsChanged.subscribe( _.bind(function(evt, data) {
         var selected = data.rows;
 	//console.log('selection change',selected);
-
 	//this.handle_selection_change(data.rows);
-
     },this));
 
     grid.onMouseEnter.subscribe(function (e) {
@@ -84,6 +87,8 @@ SlickCollectionTable.prototype = {
         //console.log('collection item change',item,attr,p1,p2,p3)
         var idx = this.collection.indexOf( item.get_key() )
         //console.log('change at row',idx)
+
+        // TODO -- make more efficient, only update specific column
         this.grid.invalidateRow(idx)
         this.grid.render()
     },

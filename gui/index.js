@@ -43,7 +43,8 @@ function onappready() {
     if (jstorrent.options.add_torrents_on_start) {
 
         setTimeout( function() {
-            client.add_from_url( window.example_url_betas )
+            //client.add_from_url( window.example_url_betas )
+            client.add_from_url( window.example_url_southpark )
         }, 1000);
 
         //client.add_from_url( example_url )

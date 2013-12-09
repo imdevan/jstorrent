@@ -12,6 +12,7 @@ function Buffer() {
 jstorrent.Buffer = Buffer
 Buffer.prototype = {
     add: function(data) {
+        console.assert(data instanceof ArrayBuffer)
         this._size = this._size + data.byteLength
         this.deque.push(data)
     },
@@ -37,6 +38,7 @@ Buffer.prototype = {
 
         while (consumed < sz) {
             curbuf = this.deque[0]
+            console.assert(curbuf instanceof ArrayBuffer)
 
             if (consumed + curbuf.byteLength <= sz) {
                 // curbuf fits in completely to return buffer
@@ -120,7 +122,38 @@ function test_buffer2() {
     console.assert(adata[5] == 6)
 }
 
+function test_buffer3() {
+    var b = new Buffer;
+    b.add( new Uint8Array([1,2,3,4]).buffer )
+    b.add( new Uint8Array([5,6,7]).buffer )
+    b.add( new Uint8Array([8,9,10,11,12]).buffer )
+    var data
+    data = b.consume_any_max(1024);
+    var adata = new Uint8Array(data)
+    console.assert(data.byteLength == 12)
+    for (var i=0;i<12;i++) {
+        console.assert(adata[i] == i+1)
+    }
+}
+
+function test_buffer4() {
+    var b = new Buffer;
+    b.add( new Uint8Array([1,2,3,4]).buffer )
+    b.add( new Uint8Array([5,6,7]).buffer )
+    b.add( new Uint8Array([8,9,10,11,12]).buffer )
+    var data
+    data = b.consume_any_max(10);
+    var adata = new Uint8Array(data)
+    console.assert(data.byteLength == 10)
+    for (var i=0;i<10;i++) {
+        console.assert(adata[i] == i+1)
+    }
+}
+
+
 if (jstorrent.options.run_unit_tests) {
     test_buffer()
     test_buffer2()
+    test_buffer3()
+    test_buffer4()
 }
