@@ -6,7 +6,6 @@ function UI(opts) {
 
     this.coldefs = {
         'torrent': [
-        //      {id: "selection", name: "", width: 25, formatter: formatters.checkbox },
             {id: "name", name: "Name", width:400},
             {id: "size", name: "Size"},
             {id: "state", name: "State"},
@@ -50,13 +49,15 @@ function UI(opts) {
             {id:'jobGroup'}
         ],
         'files':[
-            {id:'num'},
-            {id:'path'}
+            {attr:'num'},
+            {attr:'name'}
         ],
         'pieces':[
-            {id:'num'},
-            {id:'have'},
-            {id:'size'}
+            {attr:'num'},
+            {attr:'size'},
+            {attr:'haveData'},
+            {attr:'haveDataPersisted'},
+            {attr:'numChunks'}
         ]
     }
 

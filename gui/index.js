@@ -43,7 +43,7 @@ function onappready() {
     if (jstorrent.options.add_torrents_on_start) {
 
         setTimeout( function() {
-            client.add_from_url( window.example_url_southpark )
+            client.add_from_url( window.example_url_betas )
         }, 1000);
 
         //client.add_from_url( example_url )
@@ -91,8 +91,41 @@ function bind_events() {
     $('#button-remove').click( function(evt) {
         app.toolbar_remove()
     })
+
+    // apparently for drop to work everywhere, you have to prevent default for enter/over/leave
+    // but we lose the cool icon hmm -- tried dropEffect "copy" everywhere, seems to work
+    // http://www.quirksmode.org/blog/archives/2009/09/the_html5_drag.html
+    document.body.addEventListener("dragover", dragOver, false);
+    document.body.addEventListener("dragleave", dragLeave, false);
+    document.body.addEventListener("dragenter", dragEnter, false);
+    document.body.addEventListener("drop", drop, false);
 }
 
+function dragOver(evt) {
+    //console.log(arguments.callee.name)
+    evt.dataTransfer.dropEffect = 'copy'
+    evt.preventDefault();
+    return false;
+}
+function dragLeave(evt) {
+    //console.log(arguments.callee.name)
+    evt.dataTransfer.dropEffect = 'copy'
+    evt.preventDefault();
+    return false;
+}
+function dragEnter(evt) {
+    //console.log(arguments.callee.name)
+    evt.dataTransfer.dropEffect = 'copy'
+    evt.preventDefault();
+    return false;
+}
+function drop(evt) {
+    console.log(arguments.callee.name)
+    evt.dataTransfer.dropEffect = 'copy'
+    evt.preventDefault();
+    app.handleDrop(evt)
+    return false;
+}
 
 function InfoView(opts) {
     this.torrent = opts.torrent

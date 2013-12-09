@@ -26,7 +26,6 @@ for (var method in jstorrent.Item.prototype) {
     jstorrent.DiskIOJob.prototype[method] = jstorrent.Item.prototype[method]
 }
 
-
 function DiskIO(opts) {
     this.client = opts.client
     this.filesystem = opts.filesystem

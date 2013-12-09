@@ -6,11 +6,11 @@ function File(opts) {
     if (this.torrent.multifile) {
         // should we prepend torrent name?
         var path = this.torrent.infodict.files[this.num].path;
-        this.set('path', path.join('/'))
-        this.set('name', path[path.length=1])
+        this.path = path
+        this.name = path[path.length-1]
     } else {
-        this.set('path', [this.torrent.infodict.name])
-        this.set('name', this.torrent.infodict.name)
+        this.path = [this.torrent.infodict.name]
+        this.name = this.torrent.infodict.name
     }
 
 }
@@ -22,7 +22,7 @@ File.prototype = {
     getEntry: function(callback) {
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
-        var path = this.get('path').slice()
+        var path = this.path.slice()
 
         function recurse(e) {
             if (path.length == 0) {

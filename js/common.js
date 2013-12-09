@@ -3,7 +3,7 @@ jstorrent = window.jstorrent || {}
 
 jstorrent.options = {
     load_options_on_start: false,
-    add_torrents_on_start: true,
+//    add_torrents_on_start: true,
     run_unit_tests: false,
     disable_trackers: false,
     manual_peer_connect_on_start: {
@@ -11,6 +11,7 @@ jstorrent.options = {
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
         '726ff42f84356c9aeb27dfa379678c89f0e62149': ['127.0.0.1:9090'],
     },
+    always_add_special_peer: '127.0.0.1:9090'
     //manual_infohash_on_start: ['726ff42f84356c9aeb27dfa379678c89f0e62149']
 }
 bind = Function.prototype.bind

@@ -8,7 +8,14 @@ function SlickCollectionTable(opts) {
         getFormatter: function(column) {
             return function(row,cell,val,col,data) {
                 //console.log('called render on data',data, column.name)
-                return data.get(column.id)
+                if (column.id) {
+                    return data.get(column.id)
+                } else if (column.func) {
+                    return func(data,column)
+                } else if (column.attr) {
+                    return data[column.attr]
+                }
+
             }
         }
     }
@@ -25,7 +32,7 @@ function SlickCollectionTable(opts) {
     for (var i=0; i<this.columns.length; i++) {
         if (! this.columns[i].name) {
             // set column title to just be the ID if no name is given
-            this.columns[i].name =this.columns[i].id
+            this.columns[i].name = this.columns[i].id || this.columns[i].attr
         }
     }
 

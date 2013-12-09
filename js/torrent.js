@@ -25,7 +25,6 @@ function Torrent(opts) {
     this.bitfieldFirstMissing = null // first index where a piece is missing
 
     this.settings = new jstorrent.TorrentSettings({torrent:this})
-
     this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.PeerConnection})
@@ -103,10 +102,12 @@ Torrent.prototype = {
     },
     metadataPresentInitialize: function() {
         // call this when infodict is newly available
+
         this.numPieces = this.infodict.pieces.length/20
         this.bitfield = new Uint8Array(this.numPieces)
         this.bitfieldFirstMissing = 0
         this.pieceLength = this.infodict['piece length']
+
         if (this.infodict.files) {
             this.multifile = true
             this.numFiles = this.infodict.files.length
@@ -121,6 +122,14 @@ Torrent.prototype = {
             this.multifile = false
             this.size = this.infodict.length
         }
+        this.set('name', this.infodict.name)
+        this.set('size',this.size)
+
+        for (var i=0; i<this.peers.items.length; i++) {
+            // send new extension handshake to everybody, because now it has ut_metadata...
+            this.peers.items[i].sendExtensionHandshake()
+        }
+
         this.recheckData()
     },
     getPieceData: function(pieceNum, offset, size, callback) {
@@ -246,6 +255,7 @@ Torrent.prototype = {
             //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
+            this.set('numpeers',this.peers.items.length)
         }
     },
     initialize_trackers: function() {
@@ -275,11 +285,20 @@ Torrent.prototype = {
 	//this.trackers.get_at(4).announce(); 
 	//return;
 
-        if (! jstorrent.options.disable_trackers) {
-	    for (var i=0; i<this.trackers.length; i++) {
-	        this.trackers.get_at(i).announce()
-	    }
+        if (jstorrent.options.always_add_special_peer) {
+            var host = jstorrent.options.always_add_special_peer
+            var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
+            this.swarm.add(peer)
         }
+
+        setTimeout( _.bind(function(){
+            // HACK delay this a little so manual peers kick in first, before frame
+            if (! jstorrent.options.disable_trackers) {
+	        for (var i=0; i<this.trackers.length; i++) {
+	            this.trackers.get_at(i).announce()
+	        }
+            }
+        },this), 1000)
         if (jstorrent.options.manual_peer_connect_on_start) {
             var hosts = jstorrent.options.manual_peer_connect_on_start[this.hashhexlower]
             if (hosts) {
@@ -312,6 +331,7 @@ Torrent.prototype = {
             if (! this.peers.contains(peerconn)) {
                 if (peer.get('only_connect_once')) { return }
                 this.peers.add( peerconn )
+                this.set('numpeers',this.peers.items.length)
                 peerconn.connect()
             }
             peer.set('only_connect_once',true)

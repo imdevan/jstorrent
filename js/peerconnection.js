@@ -75,7 +75,7 @@ PeerConnection.prototype = {
         this.trigger('disconnect')
     },
     connect: function() {
-        //console.log('peer connect!', this.get_key())
+        console.log('try connect!', this.get_key())
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -116,6 +116,11 @@ PeerConnection.prototype = {
         chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
     },
     sendExtensionHandshake: function() {
+        if (this.peerHandshake &&
+            (this.peerHandshake.reserved[5] & 0x10) == 0) {
+            // will not send extension handshake to people that don't have 0x10 in 6th byte...
+            return
+        }
         var data = {v: jstorrent.protocol.reportedClientName,
 //                    p: 6666, // our listening port
                     m: jstorrent.protocol.extensionMessages}
@@ -200,8 +205,12 @@ PeerConnection.prototype = {
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
         if(writeResult.bytesWritten != this.writing_length) {
-            console.error('bytes written does not match!')
-            debugger
+            console.error('bytes written does not match!', writeResult.bytesWritten)
+            if (writeResult.bytesWritten < 0) {
+                
+            } else {
+                debugger
+            }
             chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
                 console.log('socket info -',socketStatus)
             })
@@ -320,7 +329,9 @@ PeerConnection.prototype = {
                         this.sendMessage("INTERESTED")
                     } else {
                         if (! this.amChoked) {
-                            this.couldRequestPieces()
+                            if (this.peerBitfield) {
+                                this.couldRequestPieces()
+                            }
                         }
                     }
                 }
@@ -356,7 +367,7 @@ PeerConnection.prototype = {
             d = {
                 piece: i,
                 msg_type: jstorrent.protocol.infodictExtensionMessageNames.REQUEST,
-                total_size: infodictBytes
+                total_size: infodictBytes // do we need to send this?
             }
             var code = this.peerExtensionHandshake.m.ut_metadata
             var info = {}
@@ -552,7 +563,22 @@ PeerConnection.prototype = {
             } else {
                 console.error("was not expecting this torrent metadata piece")
             }
+        } else if (infodictMsgType == 'REQUEST') {
+            var code = this.peerExtensionHandshake.m.ut_metadata
+            var pieceRequested = extMessageBencodedData.piece
 
+            var d = { msg_type: jstorrent.protocol.infodictExtensionMessageNames.DATA,
+                      total_size: this.torrent.infodict_buffer.byteLength, // do we need to send this?
+                      piece: pieceRequested }
+
+            var slice = new Uint8Array(this.torrent.infodict_buffer, 
+                                       jstorrent.protocol.chunkSize * pieceRequested,
+                                       jstorrent.protocol.chunkSize * (pieceRequested + 1))
+            console.log('sending metadata payload')
+            this.sendMessage("UTORRENT_MSG",
+                             [new Uint8Array([code]).buffer,
+                              new Uint8Array(bencode(d)).buffer,
+                              slice.buffer])
         } else {
             debugger
         }

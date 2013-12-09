@@ -16,6 +16,33 @@ App.prototype = {
     set_ui: function(UI) {
         this.UI = UI
     },
+    handleDrop: function(evt) {
+        console.log('handleDrop')
+        // handle drop in file event
+        var files = evt.dataTransfer.files, file, item
+        
+        if (files) {
+            for (var i=0; i<files.length; i++) {
+                file = files[i]
+                console.log('drop found file',file)
+                // check if ends in .torrent, etc...
+            }
+        }
+        var items = evt.dataTransfer.items
+        if (items) {
+            for (var i=0; i<items.length; i++) {
+                item = items[i]
+                //console.log('drop found item',item)
+                if (item.kind == 'file') {
+                    var entry = item.webkitGetAsEntry()
+                    console.log('was able to extract entry.',entry)
+                    // cool, now I can call chrome.fileSystem.retainEntry ...
+                } else {
+                    //console.log('extracted entry as...',item.webkitGetAsEntry()) // returns null
+                }
+            }
+        }
+    },
     suspend: function() {
         this.client.stop()
     },
