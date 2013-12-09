@@ -116,6 +116,7 @@ Torrent.prototype = {
                 this.size += this.infodict.files[i].length
             }
         } else {
+            this.fileOffsets = [0]
             this.numFiles = 1
             this.multifile = false
             this.size = this.infodict.length

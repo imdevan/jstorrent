@@ -80,7 +80,7 @@ UI.prototype = {
     },
     handle_torrent_selection_change: function(evt, data) {
         var selected = data.rows;
-	console.log('selection change',selected);
+	//console.log('selection change',selected);
 
         if (selected.length > 0) {
             var torrent = this.client.torrents.get_at(selected[0])
@@ -99,7 +99,7 @@ UI.prototype = {
         return torrent
     },
     set_detail: function(type, torrent) {
-        console.log('set detail',type,torrent)
+        //console.log('set detail',type,torrent)
         this.detailtype = type
 
         if (this.detailtable) {

@@ -24,7 +24,7 @@ var app_options = {
     },
 
     'maxconns': {
-        'default': 1,
+        'default': 4,
         'type':'int'
     },
 

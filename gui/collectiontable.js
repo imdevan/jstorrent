@@ -34,7 +34,7 @@ function SlickCollectionTable(opts) {
 
     grid.onSelectedRowsChanged.subscribe( _.bind(function(evt, data) {
         var selected = data.rows;
-	console.log('selection change',selected);
+	//console.log('selection change',selected);
 
 	//this.handle_selection_change(data.rows);
 
@@ -52,7 +52,7 @@ function SlickCollectionTable(opts) {
 	    }
 	    grid.setCellCssStyles("hover", hash);
         } else {
-            console.warn('unable to get cell from hover event')
+            //console.warn('unable to get cell from hover event')
         }
     });
 

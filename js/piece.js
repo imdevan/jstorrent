@@ -93,11 +93,11 @@ Piece.prototype = {
 
                              var responseHash = ui82str(result.hash)
                              if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
-                                 console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
+                                 console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
                                  callback(true)
                              } else {
                                  this.chunkResponsesChosen = null
-                                 console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
+                                 console.log('%cBAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
                                  callback(false)
                              }
 

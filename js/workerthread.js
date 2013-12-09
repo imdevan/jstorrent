@@ -22,9 +22,7 @@ if (self.jstorrent) {
             delete msg._id
             var callback = this.callbacks[id]
             delete this.callbacks[id]
-
             callback(msg)
-            console.log('got msg from worker',msg)
         },
         send: function(msg, callback) {
             var id = this.messageCounter++
@@ -32,7 +30,6 @@ if (self.jstorrent) {
             this.callbacks[id] = callback
             this.worker.postMessage(msg)
         },
-
     }
 
 } else {

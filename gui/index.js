@@ -63,7 +63,7 @@ function onready() {
 }
 
 function click_detail(tab, evt) {
-    console.log('click detail',tab,evt);
+    //console.log('click detail',tab,evt);
     $('#detail-tabs li').removeClass('active')
     var torrent = UI.get_selected_torrent()
     if (torrent) {

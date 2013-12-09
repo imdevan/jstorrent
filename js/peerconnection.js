@@ -64,14 +64,14 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
-        this.log('closing',reason)
+        //this.log('closing',reason)
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null
         this.trigger('disconnect')
     },
     connect: function() {
-        console.log('peer connect!', this.get_key())
+        //console.log('peer connect!', this.get_key())
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -113,9 +113,8 @@ PeerConnection.prototype = {
     },
     sendExtensionHandshake: function() {
         var data = {v: jstorrent.protocol.reportedClientName,
-                    p: 6666,
+//                    p: 6666, // our listening port
                     m: jstorrent.protocol.extensionMessages}
-        console.log('ext message data',data)
         if (this.torrent.has_infodict()) {
             data.metadata_size = this.torrent.infodict_buffer.byteLength
         }
@@ -139,7 +138,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',[type, payloads])
+        //console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -170,7 +169,7 @@ PeerConnection.prototype = {
         bytes = bytes.concat( this.torrent.client.peeridbytes )
         console.assert( bytes.length == jstorrent.protocol.handshakeLength )
         var payload = new Uint8Array( bytes ).buffer
-        console.log('Sending Handshake',['HANDSHAKE',payload])
+        //console.log('Sending Handshake',['HANDSHAKE',payload])
         this.write( payload )
     },
     write: function(data) {
@@ -259,7 +258,9 @@ PeerConnection.prototype = {
 
                 while (this.pieceChunkRequestCount < this.pieceChunkRequestPipelineLimit) {
                     //console.log('getting chunk requests for peer')
-                    payloads = curPiece.getChunkRequestsForPeer(8, this)
+
+                    // what's ideal batch number?
+                    payloads = curPiece.getChunkRequestsForPeer(2, this)
                     if (payloads.length == 0) {
                         break
                     } else {
@@ -427,7 +428,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        console.log('handling message',data)
+        //console.log('handling message',data)
 
         this.handleMessage(data)
     },
@@ -503,7 +504,8 @@ PeerConnection.prototype = {
     },
     handle_UTORRENT_MSG_ut_pex: function(msg) {
         var data = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
-        console.log('ut_pex data', data)
+        // TODO -- use this data :-)
+        //console.log('ut_pex data', data)
     },
     handle_UTORRENT_MSG_ut_metadata: function(msg) {
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))

@@ -103,9 +103,9 @@ DiskIO.prototype = {
         var _this = this
 
         entry.createWriter( function(writer) {
-            console.log('createdWriter')
+            //console.log('createdWriter')
             writer.onwrite = function(evt) {
-                console.log('diskio wrote',evt.loaded,'/',evt.total,writer)
+                console.log(job.opts.jobId, 'diskio wrote',evt.loaded,'/',evt.total)
                 _this.jobDone(job, evt)
             }
             writer.onerror = function(evt) {
@@ -115,10 +115,48 @@ DiskIO.prototype = {
             writer.write(new Blob([job.opts.data]))
         })
     },
+    needToPad: function(job, entry, numZeroes, metaData) {
+        console.log(job.opts.jobId,'needToPad')
+        // since .seek doesn't allow seeking past end of file, we pad
+        // with arbitrary data (zeroes)
+        var _this = this
+        var writtenSoFar = 0
+        var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
+
+        function next() {
+            console.assert(numZeroes)
+            console.assert(metaData)
+            console.assert(job)
+            console.assert(entry)
+
+            var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
+            console.log(job.opts.jobId,'needToPad.next',curZeroes)
+            console.assert(curZeroes > 0)
+
+            var buf = new Uint8Array(curZeroes)
+            entry.createWriter( function(writer) {
+                writer.onwrite = function(evt) {
+                    console.log('%cZERO PAD - diskio wrote','background:#00f;color:#fff',evt.loaded,'/',evt.total)
+                    if (writtenSoFar == numZeroes) {
+                        _this.doJobReadyToWrite(entry, job)
+                    } else {
+                        next()
+                    }
+                }
+                writer.onerror = function(evt) {
+                    _this.jobError(job, evt)
+                }
+                writer.seek(metaData.size + writtenSoFar)
+                writtenSoFar += curZeroes
+                writer.write( new Blob([buf]) )
+            })
+        }
+        next()
+    },
     doJob: function() {
         var _this = this
         var job = this.get_at(0)
-        console.log('%cdoing job id','color:#0ff',job.opts.jobId, 'group',job.opts.jobGroup)
+        console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup)
         job.set('state','active')
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 
@@ -130,9 +168,9 @@ DiskIO.prototype = {
                         if (job.opts.fileOffset <= metaData.size) {
                             _this.doJobReadyToWrite(entry, job)
                         } else {
-                            padZeroes
-                            debugger
+                            var numZeroes = job.opts.fileOffset - metaData.size
 
+                            _this.needToPad( job, entry, numZeroes, metaData )
                         }
                     })
                 } else {
