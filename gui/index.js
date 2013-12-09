@@ -41,6 +41,11 @@ function onappready() {
     bind_events()
 
     if (jstorrent.options.add_torrents_on_start) {
+
+        setTimeout( function() {
+            client.add_from_url( window.example_url_southpark )
+        }, 1000);
+
         //client.add_from_url( example_url )
         //client.add_from_url( example_url_2 )
         if (jstorrent.options.manual_infohash_on_start) {

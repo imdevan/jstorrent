@@ -162,7 +162,13 @@ Torrent.prototype = {
             }
             if (! foundmissing) {
                 console.log('%cTORRENT DONE?','color:#f0f')
-                debugger
+
+                // send everybody NOT_INTERESTED!
+                for (var i=0; i<this.peers.items.length; i++) {
+                    this.peers.items[i].sendMessage("NOT_INTERESTED")
+                }
+
+
             }
             // send HAVE message to all connected peers
             var payload,v
@@ -198,9 +204,10 @@ Torrent.prototype = {
         console.log('Re-check data')
     },
     on_peer_connect_timeout: function(peer) {
-        console.log('peer connect timeout...')
+        // TODO -- fix this up so it doesn't get triggered unneccesarily
+        //console.log('peer connect timeout...')
         if (!this.peers.contains(peer)) {
-            console.warn('peer wasnt in list')
+            //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
         }
@@ -215,17 +222,17 @@ Torrent.prototype = {
         this.started = false
     },
     on_peer_error: function(peer) {
-        console.log('on_peer error')
+        //console.log('on_peer error')
         if (!this.peers.contains(peer)) {
-            console.warn('peer wasnt in list')
+            //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
         }
     },
     on_peer_disconnect: function(peer) {
-        console.log('peer disconnect...')
+        //console.log('peer disconnect...')
         if (!this.peers.contains(peer)) {
-            console.warn('peer wasnt in list')
+            //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
         }

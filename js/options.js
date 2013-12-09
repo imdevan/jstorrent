@@ -24,17 +24,17 @@ var app_options = {
     },
 
     'maxconns': {
-        'default': 4,
+        'default': 1,
         'type':'int'
     },
 
     'new_torrents_auto_start': {
-        'default': false,
+        'default': true,
         'type': 'bool'
     },
 
     'max_unflushed_piece_data': {
-        'default': 16384 * 5,
+        'default': 16384 * 20,
         'type': 'int'
     }
     

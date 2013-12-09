@@ -7,6 +7,9 @@ jstorrent.protocol = {
     socketWriteBufferMax: 4096, // doesn't really belong in this file, but whatever
     maxPacketSize: 32768,
     handshakeLength: 68,
+    handshakeFlags: [0,0,0,0,0,
+                     0x10, // have to set this bit, or we wont get ut_metadata
+                     0,0],
     extensionMessages: { ut_metadata: 2,
                          ut_pex: 3},
     extensionMessageHandshakeCode: 0,

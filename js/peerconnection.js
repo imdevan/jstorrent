@@ -27,7 +27,7 @@ function PeerConnection(opts) {
                                        // request order to make
                                        // timeouts easy to process
     this.pieceChunkRequestCount = 0
-    this.pieceChunkRequestPipelineLimit = 4
+    this.pieceChunkRequestPipelineLimit = 16 // TODO - make self adjusting
 
     // inefficient that we create this for everybody in the
     // swarm... (not actual peer objects) but whatever, good enough
@@ -57,7 +57,6 @@ PeerConnection.prototype = {
         return this.peer.host + ':' + this.peer.port
     },
     on_connect_timeout: function() {
-        console.error('connect timeout!')
         this.connecting = false;
         this.connect_timeouts++;
         chrome.socket.destroy( this.sockInfo.socketId )
@@ -72,7 +71,7 @@ PeerConnection.prototype = {
         this.trigger('disconnect')
     },
     connect: function() {
-        console.log('peer connect!')
+        console.log('peer connect!', this.get_key())
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -114,7 +113,9 @@ PeerConnection.prototype = {
     },
     sendExtensionHandshake: function() {
         var data = {v: jstorrent.protocol.reportedClientName,
+                    p: 6666,
                     m: jstorrent.protocol.extensionMessages}
+        console.log('ext message data',data)
         if (this.torrent.has_infodict()) {
             data.metadata_size = this.torrent.infodict_buffer.byteLength
         }
@@ -138,7 +139,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',type)
+        console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -164,11 +165,13 @@ PeerConnection.prototype = {
             bytes.push( jstorrent.protocol.protocolName.charCodeAt(i) )
         }
         // handshake flags, null for now
-        bytes = bytes.concat( [0,0,0,0,0,0,0,0] )
+        bytes = bytes.concat( jstorrent.protocol.handshakeFlags )
         bytes = bytes.concat( this.torrent.hashbytes )
         bytes = bytes.concat( this.torrent.client.peeridbytes )
         console.assert( bytes.length == jstorrent.protocol.handshakeLength )
-        this.write( new Uint8Array( bytes ).buffer )
+        var payload = new Uint8Array( bytes ).buffer
+        console.log('Sending Handshake',['HANDSHAKE',payload])
+        this.write( payload )
     },
     write: function(data) {
         console.assert(data.byteLength > 0)
@@ -256,7 +259,7 @@ PeerConnection.prototype = {
 
                 while (this.pieceChunkRequestCount < this.pieceChunkRequestPipelineLimit) {
                     //console.log('getting chunk requests for peer')
-                    payloads = curPiece.getChunkRequestsForPeer(1, this)
+                    payloads = curPiece.getChunkRequestsForPeer(8, this)
                     if (payloads.length == 0) {
                         break
                     } else {
@@ -284,12 +287,13 @@ PeerConnection.prototype = {
     newStateThink: function() {
         //console.log('newStateThink')
         // thintk about the next thing we might want to write to the socket :-)
+        this.checkBuffer()
 
         if (this.torrent.has_infodict()) {
 
             // we have valid infodict
             if (this.handleAfterInfodict.length > 0) {
-                console.log('processing afterinfodict:',this.handleAfterInfodict)
+                //console.log('processing afterinfodict:',this.handleAfterInfodict)
                 var msg = this.handleAfterInfodict.shift()
                 //setTimeout( _.bind(function(){this.handleMessage(msg)},this), 1 )
                 this.handleMessage(msg)
@@ -305,6 +309,12 @@ PeerConnection.prototype = {
                 }
             }
         } else {
+/*
+            if (! this.amInterested) {
+                this.sendMessage("INTERESTED")
+            }
+*/
+
             if (this.peerExtensionHandshake && 
                 this.peerExtensionHandshake.m && 
                 this.peerExtensionHandshake.m.ut_metadata &&
@@ -379,11 +389,13 @@ PeerConnection.prototype = {
         if (! this.peerHandshake) {
             if (this.readBuffer.size() >= jstorrent.protocol.handshakeLength) {
                 var buf = this.readBuffer.consume(jstorrent.protocol.handshakeLength)
-                this.peerHandshake = jstorrent.protocol.parseHandshake(buf)
-                if (! this.peerHandshake) {
-                    this.close('invalid handshake')
-                }
-                this.checkBuffer()
+
+                this.handleMessage({type:'HANDSHAKE',payload:buf})
+                //this.peerHandshake = 
+                //if (! this.peerHandshake) {
+                //    this.close('invalid handshake')
+                //}
+                //this.checkBuffer()
             }
         } else {
             // have peer handshake!
@@ -406,7 +418,7 @@ PeerConnection.prototype = {
         //console.log('handling bittorrent message', new Uint8Array(buf))
         var msgsz = new DataView(buf, 0, 4).getUint32(0)
         if (msgsz == 0) {
-            data.type = 'keepalive'
+            data.type = 'KEEPALIVE'
             // keepalive message
         } else {
             data.code = new Uint8Array(buf, 4, 1)[0]
@@ -455,9 +467,17 @@ PeerConnection.prototype = {
         // peer's listening port
         this.peerPort = msg
     },
+    handle_HANDSHAKE: function(msg) {
+        var buf = msg.payload
+        this.peerHandshake = jstorrent.protocol.parseHandshake(buf)
+    },
+    handle_KEEPALIVE: function() {
+        // do nothin... 
+    },
     handle_UTORRENT_MSG: function(msg) {
         // extension message!
         var extType = new DataView(msg.payload, 5, 1).getUint8(0)
+
         if (extType == jstorrent.protocol.extensionMessageHandshakeCode) {
             // bencoded extension message handshake follows
             this.peerExtensionHandshake = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
@@ -470,8 +490,9 @@ PeerConnection.prototype = {
             var extMsgType = jstorrent.protocol.extensionMessageCodes[extType]
 
             if (extMsgType == 'ut_metadata') {
-
-                this.handle_UTORRENT_MSG_ut_metadata(msg, extMsgType)
+                this.handle_UTORRENT_MSG_ut_metadata(msg)
+            } else if (extMsgType == 'ut_pex') {
+                this.handle_UTORRENT_MSG_ut_pex(msg)
             } else {
                 debugger
             }
@@ -480,7 +501,11 @@ PeerConnection.prototype = {
         }
         
     },
-    handle_UTORRENT_MSG_ut_metadata: function(msg, extMsgType) {
+    handle_UTORRENT_MSG_ut_pex: function(msg) {
+        var data = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
+        console.log('ut_pex data', data)
+    },
+    handle_UTORRENT_MSG_ut_metadata: function(msg) {
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
         var infodictCode = extMessageBencodedData.msg_type
         var infodictMsgType = jstorrent.protocol.infodictExtensionMessageCodes[infodictCode]
@@ -539,11 +564,9 @@ PeerConnection.prototype = {
             console.error('received metadata does not have correct infohash! bad!')
             this.error('bad_metadata')
         }
-        
-
     },
     doAfterInfodict: function(msg) {
-        console.warn('Deferring message until have infodict',msg.type)
+        //console.warn('Deferring message until have infodict',msg.type)
         this.handleAfterInfodict.push( msg )
     },
     handle_HAVE_ALL: function(msg) {
@@ -570,14 +593,32 @@ PeerConnection.prototype = {
         if (! this.torrent.has_infodict()) {
             this.doAfterInfodict(msg)
         } else {
-            debugger;
+
+            var bitfield = new Uint8Array(msg.payload, 5)
+            var arr = []
+            var bit
+
+            for (var i=0; i<bitfield.length; i++) {
+                for (var j=0; j<8; j++) {
+                    bit = Math.pow(2,7-i) & bitfield[i]
+                    arr.push(bit)
+                    if (arr.length == this.torrent.numPieces) {
+                        break
+                    }
+                }
+            }
+            // it would be cool to use an actual bitmask and save
+            // some space. but that's silly :-)
+            this.peerBitfield = new Uint8Array(arr)
+            console.assert(this.peerBitfield.length == this.torrent.numPieces)
         }
     },
     handle_HAVE: function(msg) {
         if (! this.torrent.has_infodict()) {
             this.doAfterInfodict(msg)
         } else {
-            debugger;
+            var idx = new DataView(msg.payload,5,4).getUint32(0)
+            this.peerBitfield[idx] = 1
         }
     },
     unhandledMessage: function(msg) {
