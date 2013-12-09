@@ -130,13 +130,13 @@ DiskIO.prototype = {
             console.assert(entry)
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
-            console.log(job.opts.jobId,'needToPad.next',curZeroes)
+            console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
             console.assert(curZeroes > 0)
 
             var buf = new Uint8Array(curZeroes)
             entry.createWriter( function(writer) {
                 writer.onwrite = function(evt) {
-                    console.log('%cZERO PAD - diskio wrote','background:#00f;color:#fff',evt.loaded,'/',evt.total)
+                    console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
                     if (writtenSoFar == numZeroes) {
                         _this.doJobReadyToWrite(entry, job)
                     } else {
@@ -169,7 +169,6 @@ DiskIO.prototype = {
                             _this.doJobReadyToWrite(entry, job)
                         } else {
                             var numZeroes = job.opts.fileOffset - metaData.size
-
                             _this.needToPad( job, entry, numZeroes, metaData )
                         }
                     })

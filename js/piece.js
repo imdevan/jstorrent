@@ -9,7 +9,7 @@ function Piece(opts) {
     this.chunkResponsesChosen = null
     this.data = null
     this.haveData = false
-    // haveData is not the same as having written the data to disk...
+    // haveData is not the same as having written the data to disk... ?
     this.haveDataPersisted = false
     // this means we actually successfully wrote it to disk
 }
@@ -58,6 +58,7 @@ Piece.prototype = {
                             curOffset += curData.length
                         }
                         this.data = this.data.buffer
+                        this.haveData = true
                         this.torrent.persistPiece(this)
                     } else {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
@@ -68,6 +69,25 @@ Piece.prototype = {
             }
         } else {
             // request had timed out
+        }
+    },
+    notifyPiecePersisted: function() {
+        // maybe just do this for every peer instead of trying to be smart...
+
+        // do some stuff
+        this.haveDataPersisted = true
+
+        var resps, resp, peerkey, peerconn
+        for (var chunkNum in this.chunkResponses) {
+            resps = this.chunkResponses[chunkNum]
+            for (var i=0; i<resps.length; i++) {
+                resp = resps[i]
+
+                var peerconn = this.torrent.peers.get(resp.peerconn)
+                if (peerconn) {
+                    peerconn.notifyPiecePersisted(this)
+                }
+            }
         }
     },
     checkChunkResponseHash: function(preferredPeer, callback) {
@@ -118,6 +138,10 @@ Piece.prototype = {
             }
         }
         return true
+    },
+    unregisterAllRequestsForPeer: function(peerconn, requests) {
+        // called when a peer disconnects
+        debugger
     },
     registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
         peerconn.registerChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)

@@ -141,13 +141,21 @@ Torrent.prototype = {
             // create diskIO jobs for each file
             
         }
-
-        
+    },
+    getPercentComplete: function() {
+        var count = 0
+        for (var i=0; i<this.bitfield.length; i++) {
+            count += this.bitfield[i]
+        }
+        return count / this.numPieces
     },
     persistPieceResult: function(result) {
         if (result.error) {
             console.error('persist piece result',result)
         } else {
+            // clean up all registered chunk requests
+            result.piece.haveDataPersisted = false
+            result.piece.notifyPiecePersisted()
             console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
@@ -180,6 +188,7 @@ Torrent.prototype = {
                 this.peers.items[i].sendMessage("HAVE", [payload.buffer])
             }
         }
+        this.set('complete', this.getPercentComplete())
     },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
@@ -202,6 +211,7 @@ Torrent.prototype = {
     recheckData: function() {
         // checks registered or default torrent download location for
         // torrent data
+        this.set('complete',0)
         console.log('Re-check data')
     },
     on_peer_connect_timeout: function(peer) {

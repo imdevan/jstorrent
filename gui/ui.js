@@ -10,7 +10,7 @@ function UI(opts) {
             {id: "name", name: "Name", width:400},
             {id: "size", name: "Size"},
             {id: "state", name: "State"},
-            {id: "percent", name: "% Complete"},
+            {id: "complete", name: "% Complete"},
             {id: "numpeers", name: "Peers"},
             {id: "numswarm", name: "Swarm"}
         ],

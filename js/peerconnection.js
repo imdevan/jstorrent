@@ -68,6 +68,10 @@ PeerConnection.prototype = {
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null
+
+        // need to clean up registerd requests
+        this.unregisterChunkRequests()
+
         this.trigger('disconnect')
     },
     connect: function() {
@@ -197,6 +201,7 @@ PeerConnection.prototype = {
         // probably only need to worry about partial writes with really large buffers
         if(writeResult.bytesWritten != this.writing_length) {
             console.error('bytes written does not match!')
+            debugger
             chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
                 console.log('socket info -',socketStatus)
             })
@@ -212,6 +217,17 @@ PeerConnection.prototype = {
                 this.newStateThink()
             }
         }
+    },
+    notifyPiecePersisted: function(piece) {
+        delete this.pieceChunkRequests[piece.num]
+    },
+    unregisterChunkRequests: function() {
+        var piece
+        for (var pieceNum in this.pieceChunkRequests) {
+            piece = this.torrent.getPiece(pieceNum)
+            piece.unregisterAllRequestsForPeer(this, this.pieceChunkRequests[pieceNum])
+        }
+        // called when the connection is closed
     },
     registerChunkRequest: function(pieceNum, chunkNum, chunkOffset, chunkSize) {
         this.pieceChunkRequestCount++
