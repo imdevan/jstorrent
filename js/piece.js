@@ -140,8 +140,14 @@ Piece.prototype = {
         return true
     },
     unregisterAllRequestsForPeer: function(peerconn, requests) {
-        // called when a peer disconnects
+
+        // HAVE TO LOOK AT ALL CHUNK REQUESTS AND PURGE EM!
+        var reqs;
         debugger
+        for (var chunkNum in this.chunkRequests) {
+            reqs = this.chunkRequests[chunkNum]
+            
+        }
     },
     registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
         peerconn.registerChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)
@@ -171,6 +177,7 @@ Piece.prototype = {
                 chunkSize = this.size - chunkNum * chunkSize
             }
 
+            /* NEED TO MAKE THIS MAKE MORE SENSE :-( */
             if (peerconn.pieceChunkRequests[this.num] &&
                 peerconn.pieceChunkRequests[this.num][chunkNum]) {
                 // continues below, updating state
