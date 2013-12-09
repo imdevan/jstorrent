@@ -150,19 +150,28 @@ Torrent.prototype = {
             console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
-            // this.thinkNewState()
-            // all peer connections involved in this piece should be notified thinkNewState in case they were waiting on piece persisting...
+            this.bitfield[result.piece.num] = 1
 
-            var chosenChunks = result.piece.chunkResponsesChosen
-            var hostport, peerconn
-            for (var i=0; i<chosenChunks.length; i++) {
-                hostport = chosenChunks[i].peerconn
-                peerconn = this.peers.get(hostport)
-                if (peerconn) {
-                    peerconn.newStateThink()
+            var foundmissing = false
+            for (var i=this.bitfieldFirstMissing; i<this.bitfield.length; i++) {
+                if (this.bitfield[i] == 0) {
+                    this.bitfieldFirstMissing = i
+                    foundmissing = true
+                    break
                 }
             }
-
+            if (! foundmissing) {
+                console.log('%cTORRENT DONE?','color:#f0f')
+                debugger
+            }
+            // send HAVE message to all connected peers
+            var payload,v
+            for (var i=0; i<this.peers.items.length; i++) {
+                payload = new Uint8Array(4)
+                v = new DataView(payload.buffer)
+                v.setUint32(0,result.piece.num)
+                this.peers.items[i].sendMessage("HAVE", [payload.buffer])
+            }
         }
     },
     persistPiece: function(piece) {
