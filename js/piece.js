@@ -19,13 +19,19 @@ Piece.prototype = {
         return this.num
     },
     registerChunkResponseFromPeer: function(peerconn, chunkOffset, data) {
+
+        // TODO -- move this somewhere smarter...
+        this.torrent.unflushedPieceDataSize += data.byteLength
+        console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
+
+
         var chunkNum = chunkOffset / jstorrent.protocol.chunkSize
         // received a chunk response from peer
         // decrements this peer connection's request counter
 
-        console.log("Chunk response from peer!", this.num, chunkNum)
+        //console.log("Chunk response from peer!", this.num, chunkNum)
 
-        var handled = peerconn.registerChunkResponse(this.num, chunkOffset, data)
+        var handled = peerconn.registerChunkResponse(this.num, chunkNum, chunkOffset, data)
         if (handled) {
             if (! this.chunkResponses[chunkNum]) {
                 // able to store multiple copies of chunk responses,
@@ -40,49 +46,68 @@ Piece.prototype = {
             var filled = this.checkChunkResponsesFilled();
 
             if (filled) {
-                var valid = this.checkChunkResponseHash()
-                if (valid) {
-                    // perhaps also place in disk cache?
+                this.checkChunkResponseHash( null, _.bind(function(valid) {
+                    if (valid) {
+                        // perhaps also place in disk cache?
+                        this.data = new Uint8Array(this.size)
+                        var curData, curOffset=0
 
-                    this.data = new Uint8Array(this.size)
-                    var curData, curOffset=0
-
-                    for (var i=0; i<this.chunkResponsesChosen.length; i++) {
-                        curData = this.chunkResponsesChosen[i]
-                        this.data.set(curData, curOffset)
-                        curOffset += curData.length
+                        for (var i=0; i<this.chunkResponsesChosen.length; i++) {
+                            curData = this.chunkResponsesChosen[i].data
+                            this.data.set(curData, curOffset)
+                            curOffset += curData.length
+                        }
+                        this.data = this.data.buffer
+                        this.torrent.persistPiece(this)
+                    } else {
+                        console.error('either unable to hash piece due to worker error, or hash mismatch')
+                        // what to do, mark a peer as nasty, mark as suspect?
+                        debugger
                     }
-                    this.data = this.data.buffer
-                    this.torrent.persistPiece(this)
-                } else {
-                    // what to do, mark a peer as nasty, mark as suspect?
-                    debugger
-                }
+                },this))
             }
         } else {
             // request had timed out
         }
     },
-    checkChunkResponseHash: function(preferredPeer) {
+    checkChunkResponseHash: function(preferredPeer, callback) {
         // TODO - allow this to prefer assembling from a specific peer
+
+        // the actual digest happens in the thread
+
         var responses, curChoice
-        var digest = new Digest.SHA1()
+        //var digest = new Digest.SHA1()
         this.chunkResponsesChosen = []
         for (var i=0; i<this.numChunks; i++) {
             responses = this.chunkResponses[i]
-            curChoice = responses[0].data
-            digest.update(curChoice)
+            curChoice = responses[0]
+            //digest.update(curChoice.data)
             this.chunkResponsesChosen.push( curChoice )
         }
-        var responseHash = ui82str(new Uint8Array(digest.finalize()))
-        if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
-            console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
-            return true
-        } else {
-            this.chunkResponsesChosen = null
-            console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
-            return false
-        }
+
+        var worker = this.torrent.client.workerthread
+        worker.send( { chunks: this.chunkResponsesChosen,
+                       command: 'hashChunks' },
+                     _.bind(function(result) {
+                         if (result && result.hash) {
+
+                             var responseHash = ui82str(result.hash)
+                             if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
+                                 console.log('%c GOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
+                                 callback(true)
+                             } else {
+                                 this.chunkResponsesChosen = null
+                                 console.log('%c BAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
+                                 callback(false)
+                             }
+
+                         } else {
+                             console.error('error with sha1 hashing worker thread')
+                             callback(false)
+                         }
+
+                     },this));
+
     },
     checkChunkResponsesFilled: function() {
         for (var i=0; i<this.numChunks; i++) {

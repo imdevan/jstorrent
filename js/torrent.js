@@ -144,19 +144,32 @@ Torrent.prototype = {
         
     },
     persistPieceResult: function(result) {
-        debugger
-        this.unflushedPieceDataSize -= result.piece.size
+        if (result.error) {
+            console.error('persist piece result',result)
+        } else {
+            console.log('persisted piece!')
+            this.unflushedPieceDataSize -= result.piece.size
+            console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
+            // this.thinkNewState()
+            // all peer connections involved in this piece should be notified thinkNewState in case they were waiting on piece persisting...
+
+            var chosenChunks = result.piece.chunkResponsesChosen
+            var hostport, peerconn
+            for (var i=0; i<chosenChunks.length; i++) {
+                hostport = chosenChunks[i].peerconn
+                peerconn = this.peers.get(hostport)
+                if (peerconn) {
+                    peerconn.newStateThink()
+                }
+            }
+
+        }
     },
     persistPiece: function(piece) {
-        this.unflushedPieceDataSize += piece.size
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
         if (storage) {
-
             storage.diskio.writePiece(piece, _.bind(this.persistPieceResult,this))
-            return
-            
-
         } else {
             this.error('Storage missing')
         }

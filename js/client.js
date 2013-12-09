@@ -22,7 +22,7 @@ function Client(opts) {
     this.disks.fetch()
 
 
-    //this.diskio = new jstorrent.DiskIO({client:this})
+    this.workerthread = new jstorrent.WorkerThread({client:this});
 
     // able to retreive piece data from a cache
     //this.diskcache = new jstorrent.DiskCache({client:this}) // better to call it a piece cache, perhaps...

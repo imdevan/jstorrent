@@ -80,12 +80,11 @@ PeerConnection.prototype = {
     },
     oncreate: function(sockInfo) {
         this.sockInfo = sockInfo;
-        this.log('peer oncreate')
+        //this.log('peer oncreate')
         this.connect_timeout_callback = setTimeout( _.bind(this.on_connect_timeout, this), this.connect_timeout_delay )
         chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
-
         if (connectInfo < 0) {
             console.error('socket connect error:',connectInfo)
             this.error('connect_error')
@@ -95,7 +94,7 @@ PeerConnection.prototype = {
         if (! this.sockInfo) {
             console.log('onconnect, but we already timed out')
         }
-        this.log('peer onconnect',connectInfo);
+        //this.log('peer onconnect',connectInfo);
         this.set('state','connected')
         this.peer.set('connected_ever',true)
         if (this.connect_timeout_callback) {
@@ -139,7 +138,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',type)
+        //console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -214,6 +213,7 @@ PeerConnection.prototype = {
     },
     registerChunkRequest: function(pieceNum, chunkNum, chunkOffset, chunkSize) {
         this.pieceChunkRequestCount++
+        //console.log('++increment pieceChunkRequestCount', this.pieceChunkRequestCount)
         //console.log('registering chunk request',this.get_key(),pieceNum, chunkNum)
         if (! this.pieceChunkRequests[pieceNum]) {
             this.pieceChunkRequests[pieceNum] = {}
@@ -221,12 +221,12 @@ PeerConnection.prototype = {
         this.pieceChunkRequests[pieceNum][chunkNum] = [chunkOffset, chunkSize, new Date()]
         // when to timeout request?
     },
-    registerChunkResponse: function(pieceNum, offset, data) {
-        var chunkNum = offset / jstorrent.protocol.chunkSize
+    registerChunkResponse: function(pieceNum, chunkNum, offset, data) {
         if (this.pieceChunkRequests[pieceNum] &&
             this.pieceChunkRequests[pieceNum][chunkNum]) {
             // we were expecting this
             this.pieceChunkRequestCount--
+            //console.log('--decrement pieceChunkRequestCount', this.pieceChunkRequestCount)
             delete this.pieceChunkRequests[pieceNum][chunkNum]
             return true
         } else {
@@ -241,6 +241,7 @@ PeerConnection.prototype = {
         }
 
         if (this.torrent.unflushedPieceDataSize > this.torrent.client.app.options.get('max_unflushed_piece_data')) {
+            console.log('not requesting more pieces -- need disk io to write out more first')
             return
         }
 
@@ -281,6 +282,7 @@ PeerConnection.prototype = {
         this.registeredRequests[type][key] = info
     },
     newStateThink: function() {
+        //console.log('newStateThink')
         // thintk about the next thing we might want to write to the socket :-)
 
         if (this.torrent.has_infodict()) {
@@ -548,7 +550,7 @@ PeerConnection.prototype = {
         if (! this.torrent.has_infodict()) {
             this.doAfterInfodict(msg)
         } else {
-            console.log('handling HAVE_ALL')
+            //console.log('handling HAVE_ALL')
             if (! this.peerBitfield) {
                 var arr = []
                 for (var i=0; i<this.torrent.numPieces; i++) {

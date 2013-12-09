@@ -10,19 +10,30 @@ File.prototype = {
     get_key: function() {
         return this.num
     },
-    getEntry: function() {
+    getEntry: function(callback) {
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
-        filesystem.getFile( 'blah.txt', {},
-                            function(result) {
-                                console.log('success result',result)
-debugger
-                            },
-                            function(result) {
-                                console.log('error result',result)
-debugger
-                            })
-    },
+        var path = this.torrent.infodict.files[this.num].path.slice()
+
+        function recurse(e) {
+            if (path.length == 0) {
+                if (e.isFile) {
+                    callback(e)
+                } else {
+                    callback({error:'file exists'})
+                }
+            } else if (e.isDirectory) {
+                if (path.length > 1) {
+                    e.getDirectory(path.shift(), {create:true}, recurse, recurse)
+                } else {
+                    e.getFile(path.shift(), {create:true}, recurse, recurse)
+                }
+            } else {
+                callback({error:'file exists'})
+            }
+        }
+        recurse(filesystem)
+    }
 }
 for (var method in jstorrent.Item.prototype) {
     jstorrent.File.prototype[method] = jstorrent.Item.prototype[method]

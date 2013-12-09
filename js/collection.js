@@ -76,7 +76,8 @@ Collection.prototype = {
             }
         }
         delete this.keyeditems[key]
-        //this.items.splice(idx, 1)
+        this.items.splice(idx, 1) // why was this commented out?
+
         //console.log('items now',this.items)
         //console.log('keyeditems now', this.keyeditems)
         this.length--
