@@ -51,7 +51,7 @@ function UI(opts) {
         ],
         'files':[
             {id:'num'},
-            {id:'name'}
+            {id:'path'}
         ],
         'pieces':[
             {id:'num'},

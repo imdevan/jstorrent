@@ -32,7 +32,7 @@ Tracker.prototype = {
         if (state == 'error') {
             console.error('tracker',this.url,state, this.lasterror);
         } else {
-            console.log('tracker',this.url,state, this.lasterror);
+            //console.log('tracker',this.url,state, this.lasterror);
         }
         this.state = state;
     },
@@ -106,7 +106,7 @@ Tracker.prototype = {
         console.assert( respTransactionId == announceRequest.transactionId )
 
         var countPeers = (readResponse.data.byteLength - 20)/6
-        console.log('announce says leechers',leechers,'seeders',seeders,'interval',respInterval, 'peers',countPeers)
+        console.log(this.url,'leechers',leechers,'seeders',seeders,'interval',respInterval, 'peers',countPeers)
 
         for (var i=0; i<countPeers; i++) {
             var ipbytes = [v.getUint8( 20 + (i*6) ),
@@ -208,10 +208,9 @@ UDPTracker.prototype = {
                         //console.log('udp get connection response',sockReadResult, 'len',sockReadResult.data.byteLength)
 
                         if (sockReadResult.data.byteLength < 16) {
-                            console.log('tracker udp sock read bytelength',sockReadResult.data.byteLength)
+                            //console.log('tracker udp sock read bytelength',sockReadResult.data.byteLength)
                             callback( null, {error:'error udp connection response', result: sockReadResult } )
                         } else {
-
                             var resp = new DataView( sockReadResult.data );
                             var respAction = resp.getUint32(0);
                             var respTransactionId = resp.getUint32(4)

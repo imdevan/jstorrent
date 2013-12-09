@@ -149,7 +149,7 @@ Torrent.prototype = {
         } else {
             console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
-            console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
+            //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
             this.bitfield[result.piece.num] = 1
 
             var foundmissing = false

@@ -244,7 +244,7 @@ PeerConnection.prototype = {
         }
 
         if (this.torrent.unflushedPieceDataSize > this.torrent.client.app.options.get('max_unflushed_piece_data')) {
-            console.log('not requesting more pieces -- need disk io to write out more first')
+            //console.log('not requesting more pieces -- need disk io to write out more first')
             return
         }
 

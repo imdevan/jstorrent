@@ -3,7 +3,16 @@ function File(opts) {
     this.torrent = opts.torrent
     this.num = opts.num
 
-    this.set('name', this.torrent.infodict.files[this.num].path.join('/'))
+    if (this.torrent.multifile) {
+        // should we prepend torrent name?
+        var path = this.torrent.infodict.files[this.num].path;
+        this.set('path', path.join('/'))
+        this.set('name', path[path.length=1])
+    } else {
+        this.set('path', [this.torrent.infodict.name])
+        this.set('name', this.torrent.infodict.name)
+    }
+
 }
 jstorrent.File = File
 File.prototype = {
@@ -13,7 +22,7 @@ File.prototype = {
     getEntry: function(callback) {
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
-        var path = this.torrent.infodict.files[this.num].path.slice()
+        var path = this.get('path').slice()
 
         function recurse(e) {
             if (path.length == 0) {

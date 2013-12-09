@@ -21,8 +21,8 @@ Piece.prototype = {
     registerChunkResponseFromPeer: function(peerconn, chunkOffset, data) {
 
         // TODO -- move this somewhere smarter...
-        this.torrent.unflushedPieceDataSize += data.byteLength
-        console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
+        //this.torrent.unflushedPieceDataSize += data.byteLength
+        //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
 
 
         var chunkNum = chunkOffset / jstorrent.protocol.chunkSize
