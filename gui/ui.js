@@ -1,4 +1,9 @@
 function UI(opts) {
+    function fracToPercent(val) {
+        if (val === undefined) { return '' }
+        return (val * 100).toFixed(1) + '%';
+    }
+
     this.client = opts.client
 
     this.detailtable = null
@@ -7,9 +12,9 @@ function UI(opts) {
     this.coldefs = {
         'torrent': [
             {id: "name", name: "Name", width:400},
-            {id: "size", name: "Size"},
+            {id: "size", name: "Size", formatVal: byteUnits},
             {id: "state", name: "State"},
-            {id: "complete", name: "% Complete"},
+            {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
             {id: "numswarm", name: "Swarm"}
         ],
@@ -53,11 +58,13 @@ function UI(opts) {
         ],
         'files':[
             {attr:'num'},
-            {attr:'name'}
+            {attr:'name', width:400},
+            {attr:'size', formatVal:byteUnits},
+            {attr:'complete', formatVal: fracToPercent},
         ],
         'pieces':[
             {attr:'num'},
-            {attr:'size'},
+            {attr:'size', formatVal:byteUnits},
             {attr:'haveData'},
             {attr:'haveDataPersisted'},
             {attr:'numChunks'}
@@ -77,8 +84,10 @@ UI.prototype = {
     get_selected_torrents: function() {
         var rows = this.torrenttable.grid.getSelectedRows()
         var torrents = []
+        var torrent
         for (var i=0; i<rows.length; i++) {
-            torrents.push( this.client.torrents.get_at(i) )
+            torrent = this.client.torrents.get_at(rows[i])
+            torrents.push( torrent )
         }
         return torrents
     },
@@ -126,6 +135,14 @@ UI.prototype = {
                                                              domid: domid,
                                                              columns: this.coldefs[type]
                                                             });
+
+                if (this.detailtype == 'files') {
+                    if (torrent.infodict) {
+                        torrent.initializeFiles()
+                    } else {
+                        this.detailtable.grid.setData(['No metadata yet...'])
+                    }
+                }
             }
         }
     }

@@ -8,9 +8,16 @@ function File(opts) {
         var path = this.torrent.infodict.files[this.num].path;
         this.path = path
         this.name = path[path.length-1]
+
+        if (this.num == this.torrent.numFiles - 1) {
+            this.size = this.torrent.size - this.torrent.fileOffsets[this.num-1]
+        } else {
+            this.size = this.torrent.fileOffsets[this.num] - this.torrent.fileOffsets[this.num-1]
+        }
     } else {
         this.path = [this.torrent.infodict.name]
         this.name = this.torrent.infodict.name
+        this.size = this.torrent.size
     }
 
 }

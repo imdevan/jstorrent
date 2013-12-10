@@ -1,13 +1,23 @@
-function Item() {
+function Item(opts) {
     this.__name__ = arguments.callee.name
-    this._attributes = {}
+    this._attributes = (opts && opts.attributes) ||  {}
     this._collections = []
     this._event_listeners = {}
+    this._subcollections = []
+    this._persistAttributes
 }
 
 jstorrent.Item = Item
 
 Item.prototype = {
+    registerPersistAttributes: function(arr) {
+        this._persistAttributes = arr
+    },
+    registerSubcollection: function(key) {
+        // when this item gets saved, not only save its attributes,
+        // but save a special key, which points to a collection.
+        this._subcollections.push(key)
+    },
     trigger: function(k,newval,oldval) {
         //console.log('item trigger',k,newval,oldval)
         if (this._event_listeners[k]) {

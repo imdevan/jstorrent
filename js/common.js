@@ -3,9 +3,9 @@ jstorrent = window.jstorrent || {}
 
 jstorrent.options = {
     load_options_on_start: false,
-    add_torrents_on_start: true,
+    add_torrents_on_start: false,
     run_unit_tests: true,
-    disable_trackers: false,
+    disable_trackers: true,
     manual_peer_connect_on_start: {
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['184.75.214.170:15402']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
@@ -79,4 +79,25 @@ function intersect(a,b, c,d) {
     // intersects intervals [a,b], and [c,d]
     if (b < c || d < a) { return null }
     else { return [Math.max(a,c), Math.min(b,d)] }
+}
+
+(function() {
+    var units = ['B','kB','MB','GB','TB']
+    var idxmax = units.length - 1
+
+    function byteUnits(val) {
+        if (val === undefined) { return '' }
+        var idx = 0
+        while (val >= 1024 && idx < idxmax) {
+            val = val/1024
+            idx++
+        }
+        var round = (idx==0) ? 0 : 2
+        return val.toFixed(round) + ' ' + units[idx]
+    }
+    window.byteUnits = byteUnits
+})()
+            // format val in friendly bytes format
+window.onerror = function(message, url, line) {
+    console.log('window.onerror triggered',message,url,line)
 }

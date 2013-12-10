@@ -21,12 +21,12 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
 			    );
 
 
-    chrome.runtime.onMessageExternal.addListener( function(request, sender, sendResponse) {
-        console.log('onconnectexternal message', request, sender)
-        if (sender.id == jstorrent_extension_id) {
-	    console.log('receive message from partner extension')
-	}
-    });
 
 });
 
+chrome.runtime.onMessageExternal.addListener( function(request, sender, sendResponse) {
+    console.log('onconnectexternal message', request, sender)
+    if (sender.id == jstorrent_extension_id) {
+	console.log('receive message from partner extension')
+    }
+});

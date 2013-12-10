@@ -8,14 +8,20 @@ function SlickCollectionTable(opts) {
         getFormatter: function(column) {
             return function(row,cell,val,col,data) {
                 //console.log('called render on data',data, column.name)
-                if (column.id) {
-                    return data.get(column.id)
-                } else if (column.func) {
-                    return func(data,column)
-                } else if (column.attr) {
-                    return data[column.attr]
-                }
+                var val
 
+                if (column.id) {
+                    val = data.get(column.id)
+                } else if (column.func) {
+                    val =  func(data,column)
+                } else if (column.attr) {
+                    val = data[column.attr]
+                }
+                if (column.formatVal) {
+                    return column.formatVal(val)
+                } else {
+                    return val
+                }
             }
         }
     }
@@ -30,12 +36,21 @@ function SlickCollectionTable(opts) {
 
     var collectiondata = this.collection.data()
 
+    this.columnNumberByAttribute = {}
+
     for (var i=0; i<this.columns.length; i++) {
         if (! this.columns[i].name) {
             // set column title to just be the ID if no name is given
             this.columns[i].name = this.columns[i].id || this.columns[i].attr
+
         }
+        this.columnNumberByAttribute[this.columns[i].id || this.columns[i].attr] = i
     }
+
+
+
+
+
 
     grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
@@ -52,6 +67,7 @@ function SlickCollectionTable(opts) {
     },this));
 
     grid.onMouseEnter.subscribe(function (e) {
+        return // not wortking correctly in tandem with dnd
 	var hash = {};
 	var cols = grid.getColumns();
 
@@ -88,10 +104,7 @@ SlickCollectionTable.prototype = {
         //console.log('collection item change',item,attr,p1,p2,p3)
         var idx = this.collection.indexOf( item.get_key() )
         //console.log('change at row',idx)
-
-        // TODO -- make more efficient, only update specific column
-        this.grid.invalidateRow(idx)
-        this.grid.render()
+        this.grid.updateCell(idx, this.columnNumberByAttribute[attr])
     },
     on_add: function(item) {
         //console.log('collection onadd')

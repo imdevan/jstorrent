@@ -60,6 +60,7 @@ App.prototype = {
     },
     toolbar_remove: function() {
         var torrents = this.UI.get_selected_torrents()
+        this.UI.torrenttable.grid.setSelectedRows([])
         for (var i=0; i<torrents.length; i++) {
             torrents[i].remove()
         }

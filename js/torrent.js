@@ -1,5 +1,7 @@
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
+    this.registerSubcollection('trackers')
+    this.registerPersistAttributes(['bitfield'])
 
     this.client = opts.client || opts.parent;
     console.assert(this.client)
@@ -26,6 +28,8 @@ function Torrent(opts) {
     this.bitfieldFirstMissing = null // first index where a piece is missing
 
     this.settings = new jstorrent.TorrentSettings({torrent:this})
+
+    // want to persist trackers too as torrent attribute...
     this.trackers = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Tracker})
     this.swarm = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Peer})
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.PeerConnection})
@@ -79,6 +83,12 @@ function Torrent(opts) {
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    onRestore: function() {
+        // called when item is loaded on app restart
+        if (this.get('state' ) == 'started') {
+            this.start()
+        }
+    },
     getFile: function(num) {
         var file
         if (this.files.get(num)) {
@@ -196,12 +206,15 @@ Torrent.prototype = {
 
             }
             // send HAVE message to all connected peers
-            var payload,v
+            payload = new Uint8Array(4)
+            var v = new DataView(payload.buffer)
+            v.setUint32(0,result.piece.num)
+
             for (var i=0; i<this.peers.items.length; i++) {
-                payload = new Uint8Array(4)
-                v = new DataView(payload.buffer)
-                v.setUint32(0,result.piece.num)
-                this.peers.items[i].sendMessage("HAVE", [payload.buffer])
+                if (this.peers.items[i].peerHandshake) {
+                    this.peers.items[i].sendMessage("HAVE", [payload.buffer])
+                }
+
             }
         }
         this.set('complete', this.getPercentComplete())
@@ -237,6 +250,17 @@ Torrent.prototype = {
             //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
+        }
+    },
+    initializeFiles: function() {
+        var file
+        if (this.infodict) {
+            for (var i=0; i<this.numFiles; i++) {
+                if (! this.files.items[i]) {
+                    file = this.getFile(i)
+                    this.files.add(file)
+                }
+            }
         }
     },
     has_infodict: function() {
@@ -295,7 +319,9 @@ Torrent.prototype = {
         if (jstorrent.options.always_add_special_peer) {
             var host = jstorrent.options.always_add_special_peer
             var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
-            this.swarm.add(peer)
+            if (! this.swarm.contains(peer)) {
+                this.swarm.add(peer)
+            }
         }
 
         setTimeout( _.bind(function(){
@@ -323,7 +349,10 @@ Torrent.prototype = {
     },
     remove: function() {
         this.stop()
-        this.client.torrents.remove(this)
+        this.set('state','removing')
+        setTimeout( _.bind(function(){
+            this.client.torrents.remove(this)
+        },this))
     },
     frame: function() {
         if (! this.started) { return }

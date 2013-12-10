@@ -13,11 +13,11 @@ function Client(opts) {
     this.id = opts.id
 
     this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
-    this.torrents.fetch()
 
     this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
-    this.disks.fetch()
-
+    this.disks.fetch(_.bind(function() {
+        this.torrents.fetch()
+    },this))
 
     this.workerthread = new jstorrent.WorkerThread({client:this});
 

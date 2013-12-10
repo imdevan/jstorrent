@@ -47,6 +47,7 @@ Collection.prototype = {
         }
     },
     add: function(v) {
+        console.assert(! this.contains(v))
         this.setItem(v.get_key(), v)
     },
     setItem: function(k,v) {
@@ -82,9 +83,6 @@ Collection.prototype = {
         //console.log('keyeditems now', this.keyeditems)
         this.length--
         console.assert(this.length>=0)
-    },
-    delete: function(k) {
-        // TODO
         this.trigger('remove')
     },
     get: function(k) {
@@ -106,43 +104,75 @@ Collection.prototype = {
         }
     },
     save: function() {
+        var data = this.getSaveData()
+        var obj = {}
+        obj[data[0]] = data[1]
+        chrome.storage.local.set(obj)
+    },
+    getSaveData: function() {
         // save the collection so that it can be restored on next app restart
         // also save our attributes!
         var parentId = this.getParentId()
-        console.assert(parentId)
         var key = parentId + ':' + this.__name__
         var item
-        var obj = {}
+        var subKey
+        var subData
+        var storeAttrs
+
+        // this is the most fucked up looking serialization code ever. :-(
         var tostore = {attributes:this._attributes, items:{}}
         for (var i=0; i<this.items.length; i++) {
             item = this.items[i]
-            tostore.items[ item.get_key() ] = item._attributes
+            storeAttrs = _.clone(item._attributes)
+
+            if (item._persistAttributes) {
+                for (var j=0; j<item._persistAttributes.length; j++) {
+                    // persist certain special attributes
+                    pAttrKey = item._persistAttributes[j]
+                    storeAttrs[pAttrKey] = item[pAttrKey]
+                }
+            }
+
+            if (item._subcollections.length > 0) {
+                for (var j=0; j<item._subcollections.length; j++) {
+                    subKey = item._subcollections[j]
+                    subData = item[subKey].getSaveData() // recurse!
+                    storeAttrs['_' + subKey] = subData[1]
+                    // TODO
+                }
+            }
+
+            tostore.items[ item.get_key() ] = storeAttrs
         }
-        obj[key] = tostore
-        chrome.storage.local.set(obj)
+        return [key, tostore]
     },
-    fetch: function() {
+    fetch: function(callback) {
         // loads data
         var parent = this.getParent()
         var parentId = this.getParentId()
         console.assert(parentId)
         var storeKey = parentId + ':' + this.__name__
         chrome.storage.local.get(storeKey, _.bind(function(result) {
-            var item, itemAttributes
-            if (result[storeKey]) {
-                if (result[storeKey].attributes) {
-                    this._attributes = result[storeKey].attributes
-                }
-                if (result[storeKey].items) {
-                    for (var itemKey in result[storeKey].items) {
-                        itemAttributes = result[storeKey].items[itemKey]
-                        item = new this.itemClass({id: itemKey, parent: parent})
-                        console.assert(item.get_key() == itemKey)
-                        this.add(item)
+            if (! result) {
+                console.warn('could not restore collection, no data stored with key',storeKey)
+            } else {
+                var item, itemAttributes
+                if (result[storeKey]) {
+                    if (result[storeKey].attributes) {
+                        this._attributes = result[storeKey].attributes
+                    }
+                    if (result[storeKey].items) {
+                        for (var itemKey in result[storeKey].items) {
+                            itemAttributes = result[storeKey].items[itemKey]
+                            item = new this.itemClass({id: itemKey, parent: parent, attributes:itemAttributes})
+                            if (item.onRestore) { item.onRestore() }
+                            console.assert(item.get_key() == itemKey)
+                            this.add(item)
+                        }
                     }
                 }
             }
-
+            if (callback) { callback() }
         },this))
 
     },

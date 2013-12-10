@@ -50,6 +50,8 @@ function PeerConnection(opts) {
     this.reading = false
     this.readBuffer = new jstorrent.Buffer
     this.writeBuffer = new jstorrent.Buffer
+
+    this.hasclosed = false
 }
 
 jstorrent.PeerConnection = PeerConnection;
@@ -66,7 +68,12 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
+        console.assert(! this.hasclosed)
+        this.hasclosed = true
         //this.log('closing',reason)
+
+        // unfortunately the pending read/write callbacks still get
+        // triggered... make sure we look for sockInfo being gone
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null
@@ -150,7 +157,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',[type, payloads])
+        //console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -193,6 +200,10 @@ PeerConnection.prototype = {
         }
     },
     writeFromBuffer: function() {
+        if (! this.sockInfo) {
+            //console.error('cannot write from buffer, sockInfo null (somebody closed connection on us...)')
+            this.close('sockInfo missing writeFromBuffer')
+        }
         console.assert(! this.writing)
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
         //this.log('write',data.byteLength)
@@ -458,7 +469,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        console.log('handling message',data)
+        //console.log('handling message',data)
 
         this.handleMessage(data)
     },
@@ -477,6 +488,17 @@ PeerConnection.prototype = {
     handle_REQUEST: function(msg) {
         //:-) todo -- make this work better haha
         this.sendMessage("REJECT_REQUEST", msg.payload)
+    },
+    handle_SUGGEST_PIECE: function(msg) {
+        var pieceNum = new DataView(msg.payload, 5, 4).getUint32(0)
+        var bit = this.torrent.bitfield[pieceNum]
+        console.log('why are they suggesting piece?',pieceNum,'our bitmask says', bit)
+        if (bit == 1) {
+            var payload = new Uint8Array(4)
+            var v = new DataView(payload.buffer)
+            v.setUint32(0,pieceNum)
+            this.sendMessage("HAVE", [payload.buffer])
+        }
     },
     handle_PIECE: function(msg) {
         var v = new DataView(msg.payload, 5, 12)
