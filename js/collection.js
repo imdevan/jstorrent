@@ -93,13 +93,16 @@ Collection.prototype = {
     get_at: function(idx) {
         return this.items[idx]
     },
+    getParent: function() {
+        return this.client || this.opts.client || this.opts.parent
+    },
     getParentId: function() {
         if (this.client) {
             return this.client.id
         } else if (this.opts && this.opts.client) {
             return this.opts.client.id
         } else if (this.opts && this.opts.parent) {
-            return this.parent.id
+            return this.opts.parent.id
         }
     },
     save: function() {
@@ -120,6 +123,7 @@ Collection.prototype = {
     },
     fetch: function() {
         // loads data
+        var parent = this.getParent()
         var parentId = this.getParentId()
         console.assert(parentId)
         var storeKey = parentId + ':' + this.__name__
@@ -132,7 +136,7 @@ Collection.prototype = {
                 if (result[storeKey].items) {
                     for (var itemKey in result[storeKey].items) {
                         itemAttributes = result[storeKey].items[itemKey]
-                        item = new this.itemClass({id: itemKey})
+                        item = new this.itemClass({id: itemKey, parent: parent})
                         console.assert(item.get_key() == itemKey)
                         this.add(item)
                     }

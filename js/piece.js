@@ -106,6 +106,10 @@ Piece.prototype = {
         }
 
         var worker = this.torrent.client.workerthread
+        if (worker.busy) {
+            console.warn('worker busy indicates we should have more than one thread')
+            debugger
+        }
         worker.send( { chunks: this.chunkResponsesChosen,
                        command: 'hashChunks' },
                      _.bind(function(result) {
@@ -143,7 +147,7 @@ Piece.prototype = {
 
         // HAVE TO LOOK AT ALL CHUNK REQUESTS AND PURGE EM!
         var reqs;
-        debugger
+
         for (var chunkNum in this.chunkRequests) {
             reqs = this.chunkRequests[chunkNum]
             

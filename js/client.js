@@ -13,10 +13,7 @@ function Client(opts) {
     this.id = opts.id
 
     this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
-    //this.torrents.fetch()
-    // has methods for writing and reading to disk
-
-    // need a different disk io for each disk!
+    this.torrents.fetch()
 
     this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
     this.disks.fetch()
@@ -59,6 +56,7 @@ Client.prototype = {
             // we already had this torrent, maybe add the trackers to it...
         } else {
             this.torrents.add( torrent )
+            this.torrents.save()
             if (this.app.options.get('new_torrents_auto_start')) {
                 torrent.start()
             }

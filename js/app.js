@@ -92,6 +92,28 @@ App.prototype = {
     options_window_closed: function() {
         this.options_window = null
     },
+    focus_or_open_help: function() {
+        if (this.help_window) { 
+            this.help_window.focus();
+            console.log('help already open'); return;
+        }
+
+        this.help_window_opening = true
+        chrome.app.window.create( 'gui/help.html', 
+                                  { width: 520,
+                                    height: 480 },
+                                  _.bind(this.help_window_opened, this)
+                                );
+    },
+    help_window_opened: function(helpWindow) {
+        this.help_window_opening = false
+        this.help_window = helpWindow
+        helpWindow.contentWindow.mainAppWindow = window;
+        helpWindow.onClosed.addListener( _.bind(this.help_window_closed, this) )
+    },
+    help_window_closed: function() {
+        this.help_window = null
+    },
     set_default_download_location: function(entry) {
         console.log("Set default download location to",entry)
         var disk = new jstorrent.Disk({entry:entry})

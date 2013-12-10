@@ -1,7 +1,7 @@
 var gui_opts = {
-    torrentGrid_width: 750,
+    torrentGrid_width: 800,
     torrentGrid_height: 150,
-    detailGrid_width: 750,
+    detailGrid_width: 800,
     detailGrid_height: 300
 }
 
@@ -91,6 +91,10 @@ function bind_events() {
     })
     $('#button-remove').click( function(evt) {
         app.toolbar_remove()
+    })
+
+    $('#button-help').click( function(evt) {
+        app.focus_or_open_help()
     })
 
     // apparently for drop to work everywhere, you have to prevent default for enter/over/leave

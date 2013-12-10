@@ -65,10 +65,26 @@
 
 
       .hover { background: #abc;
-box-shadow: 10px 10px 5px #888888;
+/*box-shadow: 10px 10px 5px #888888;*/
  }
       .selected { border: 1px solid blue; }
       .torrentlist { background:#eff; }
+
+    .slick-header-columns {
+    font-size:0.9em;
+    }
+
+.slick-header-column.ui-state-default {
+    padding:0px;
+    padding-left:4px;
+}
+
+    .ui-widget {
+      font-size:1em
+    }
+
+.navbar { margin-bottom: 2px } /* bootstrap navbar css */
+
 </style>
 
 
@@ -81,7 +97,7 @@ box-shadow: 10px 10px 5px #888888;
 <nav class="navbar navbar-default" role="navigation">
 
   <div class="navbar-header">
-    <h4>JSTorrent</h4>
+    <h4 style="padding-left:4px; padding-top:6px">JSTorrent</h4>
   </div>
 
   <ul class="nav navbar-nav">
@@ -148,18 +164,20 @@ Disk Usage
 
   <div class="btn-group">
     <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-      Dropdown
+      More Actions
       <span class="caret"></span>
     </button>
     <ul class="dropdown-menu">
-      <li><a href="#">Dropdown link</a></li>
-      <li><a href="#">Dropdown link</a></li>
+      <li><a href="#">Re-check Files</a></li>
+      <li><a href="#">Delete Files</a></li>
+      <li><a href="#">Delete Files and Torrent</a></li>
+      <li><a href="#">Delete Everything</a></li>
     </ul>
   </div>
 
 <div class="btn-group">
 
-  <button type="button" class="btn btn-default">
+  <button id="button-help" type="button" class="btn btn-default">
     <span class="glyphicon glyphicon-book"></span>
     Help
   </button>

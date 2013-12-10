@@ -1,7 +1,8 @@
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
 
-    this.client = opts.client;
+    this.client = opts.client || opts.parent;
+    console.assert(this.client)
     this.hashhexlower = null
     this.hashbytes = null
     this.magnet_info = null
@@ -60,12 +61,18 @@ function Torrent(opts) {
 
 	this.hashhexlower = this.magnet_info.hashhexlower
 
-        this.hashbytes = []
-        for (var i=0; i<20; i++) {
-            this.hashbytes.push(
-                parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
-            )
-        }
+    } else if (opts.id) {
+        this.hashhexlower = opts.id
+    } else {
+        console.error('unsupported torrent initializer')
+        debugger
+    }
+    console.assert(this.hashhexlower)
+    this.hashbytes = []
+    for (var i=0; i<20; i++) {
+        this.hashbytes.push(
+            parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
+        )
     }
     console.log('inited torrent',this)
 }
@@ -129,7 +136,7 @@ Torrent.prototype = {
             // send new extension handshake to everybody, because now it has ut_metadata...
             this.peers.items[i].sendExtensionHandshake()
         }
-
+        this.save()
         this.recheckData()
     },
     getPieceData: function(pieceNum, offset, size, callback) {

@@ -24,7 +24,8 @@ function SlickCollectionTable(opts) {
         enableCellNavigation: true,
         enableColumnReorder: false,
         formatterFactory: makeFormatter,
-        headerRowHeight: 22
+        rowHeight: 22
+        
     };
 
     var collectiondata = this.collection.data()

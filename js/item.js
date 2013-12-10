@@ -24,6 +24,11 @@ Item.prototype = {
             }
         }
     },
+    save: function() {
+        for (var i=0; i<this._collections.length; i++) {
+            this._collections[i].save()
+        }
+    },
     on: function(event_name, callback) {
         if (! this._event_listeners[event_name]) {
             this._event_listeners[event_name] = []

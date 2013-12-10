@@ -6,6 +6,7 @@ if (self.jstorrent) {
         this.worker = new Worker('../js/workerthread.js')
         this.worker.addEventListener('message',_.bind(this.onMessage,this))
         this.worker.addEventListener('error',_.bind(this.onError,this))
+        this.busy = false
         this.callbacks = {}
         this.messageCounter = 0
     }
@@ -17,6 +18,7 @@ if (self.jstorrent) {
             debugger
         },
         onMessage: function(evt) {
+            this.busy = false
             var msg = evt.data
             var id = msg._id
             delete msg._id
@@ -25,6 +27,7 @@ if (self.jstorrent) {
             callback(msg)
         },
         send: function(msg, callback) {
+            this.busy = true
             var id = this.messageCounter++
             msg._id = id
             this.callbacks[id] = callback
