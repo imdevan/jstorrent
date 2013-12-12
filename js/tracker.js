@@ -36,37 +36,6 @@ Tracker.prototype = {
         }
         this.state = state;
     },
-    announce: function(callback) {
-        if (this.announcing) { return }
-        this.lasterror = null
-        this.announce_callback = callback
-        this.announce_timeout_callback = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
-
-	if (! this.connection) {
-            this.set_state('get_connection')
-	    this.get_connection( _.bind(function(connectionInfo, err) {
-                if (err) {
-                    this.set_error(err); return
-                }
-                this.connection = connectionInfo
-                //console.log('tracker got connection',connectionInfo.connectionId)
-
-                var announceRequest = this.get_announce_payload( connectionInfo.connectionId );
-                this.set_state('write_announce')
-                chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
-
-                    this.set_state('read_announce')
-                    // check error condition?
-                    chrome.socket.read( connectionInfo.socketId, null, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
-                }, this))
-
-
-
-	    },this) );
-	} else {
-            this.set_error('re-using tracker udp connection not yet supported')
-        }
-    },
     set_error: function(err) {
         var callback = this.announce_callback
         if (this.announce_timeout_callback) { 
@@ -84,7 +53,34 @@ Tracker.prototype = {
         this.announcing = false
         this.timeouts++
         this.set_error('timeout')
-    },
+    }
+}
+for (var method in jstorrent.Item.prototype) {
+    jstorrent.Tracker.prototype[method] = jstorrent.Item.prototype[method]
+}
+
+
+function HTTPTracker() {
+    Tracker.apply(this, arguments)
+}
+
+HTTPTracker.prototype = {
+    announce: function() {
+        // TODO -- implement!!!
+        debugger
+    }
+}
+
+jstorrent.HTTPTracker = HTTPTracker;
+for (var method in Tracker.prototype) {
+    jstorrent.HTTPTracker.prototype[method] = Tracker.prototype[method]
+}
+
+function UDPTracker() {
+    Tracker.apply(this, arguments)
+}
+
+UDPTracker.prototype = {
     on_announce_response: function(connectionInfo, announceRequest, readResponse) {
         clearTimeout( this.announce_timeout_callback )
         var callback = this.announce_callback
@@ -125,29 +121,38 @@ Tracker.prototype = {
         this.torrent.set('numswarm', this.torrent.swarm.length )
 
         if (callback) { callback(countPeers) }
-    }
-}
-for (var method in jstorrent.Item.prototype) {
-    jstorrent.Tracker.prototype[method] = jstorrent.Item.prototype[method]
-}
+    },
+    announce: function(callback) {
+        if (this.announcing) { return }
+        this.lasterror = null
+        this.announce_callback = callback
+        this.announce_timeout_callback = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
+
+	if (! this.connection) {
+            this.set_state('get_connection')
+	    this.get_connection( _.bind(function(connectionInfo, err) {
+                if (err) {
+                    this.set_error(err); return
+                }
+                this.connection = connectionInfo
+                //console.log('tracker got connection',connectionInfo.connectionId)
+
+                var announceRequest = this.get_announce_payload( connectionInfo.connectionId );
+                this.set_state('write_announce')
+                chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
+
+                    this.set_state('read_announce')
+                    // check error condition?
+                    chrome.socket.read( connectionInfo.socketId, null, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
+                }, this))
 
 
-function HTTPTracker() {
-    Tracker.apply(this, arguments)
-}
 
-jstorrent.HTTPTracker = HTTPTracker;
-for (var method in Tracker.prototype) {
-    jstorrent.HTTPTracker.prototype[method] = Tracker.prototype[method]
-}
-
-function UDPTracker() {
-    Tracker.apply(this, arguments)
-}
-
-
-
-UDPTracker.prototype = {
+	    },this) );
+	} else {
+            this.set_error('re-using tracker udp connection not yet supported')
+        }
+    },
     get_announce_payload: function(connectionId) {
         var transactionId = Math.floor(Math.random() * Math.pow(2,32))
         var payload = new Uint8Array([
@@ -228,8 +233,6 @@ UDPTracker.prototype = {
         },this));
     }
 }
-
-
 
 jstorrent.UDPTracker = UDPTracker;
 for (var method in Tracker.prototype) {
