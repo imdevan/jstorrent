@@ -75,7 +75,7 @@ Piece.prototype = {
         // maybe just do this for every peer instead of trying to be smart...
 
         // do some stuff
-        this.haveDataPersisted = true
+
 
         var resps, resp, peerkey, peerconn
         for (var chunkNum in this.chunkResponses) {

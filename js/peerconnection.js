@@ -98,6 +98,8 @@ PeerConnection.prototype = {
     },
     onconnect: function(connectInfo) {
         if (connectInfo < 0) {
+            this.peer.set('connectionResult', connectInfo)
+
             console.error('socket connect error:',connectInfo)
             this.error('connect_error')
             return
@@ -486,7 +488,9 @@ PeerConnection.prototype = {
         this.newStateThink()
     },
     handle_REQUEST: function(msg) {
-        //:-) todo -- make this work better haha
+        // TODO -- if write buffer is pretty full, don't create diskio
+        //job yet, since we want to do it more lazily, not too
+        //eagerly.  :-) todo -- make this work better haha
         this.sendMessage("REJECT_REQUEST", msg.payload)
     },
     handle_SUGGEST_PIECE: function(msg) {

@@ -1,6 +1,7 @@
 // torrent client !
 
 function Client(opts) {
+    jstorrent.Item.apply(this, arguments)
     /* 
        initializing the client does several async things
        - fetch several local storage items)
@@ -9,14 +10,19 @@ function Client(opts) {
        want a callback for when all that is done
     */
 
+    this.ready = false
     this.app = opts.app
     this.id = opts.id
 
     this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
 
     this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
+    console.log('fetching disks')
     this.disks.fetch(_.bind(function() {
-        this.torrents.fetch()
+        this.torrents.fetch(_.bind(function() {
+            this.ready = true
+            this.trigger('ready')
+        },this))
     },this))
 
     this.workerthread = new jstorrent.WorkerThread({client:this});
@@ -30,10 +36,39 @@ function Client(opts) {
             Math.floor( Math.random() * 256 )
         )
     }
-    this.interval = setInterval( _.bind(this.frame,this), 1000 )
+    //this.interval = setInterval( _.bind(this.frame,this), 1000 ) // try to only to edge triggered so that background page can go to slep
+
+    this.on('error', _.bind(this.onError, this))
+    this.on('ready', _.bind(this.onReady, this))
 }
 
 Client.prototype = {
+    onReady: function() {
+        var item
+        if (window.jstorrent_launchData) {
+            while (true) {
+                item = window.jstorrent_launchData.pop()
+                if (! item) { break }
+                if (item.type == 'registerExtensionMessageRequest') {
+                    this.addFromContextMenuExtension(item.payload)
+                } else {
+                    console.warn('unhandled jstorrent_launchData',item)
+                }
+            }
+        }
+    },
+    addFromContextMenuExtension: function(request) {
+        console.log('got request from contextmenu extension',request)
+        if (this.ready) {
+            this.add_from_url(request.url)
+        } else {
+            console.error('not ready to add torrents yet :-(')
+            debugger
+        }
+    },
+    onError: function(e) {
+        console.error('client error',e)
+    },
     stop: function() {
         clearInterval( this.interval )
     },
@@ -71,3 +106,7 @@ Client.prototype = {
 }
 
 jstorrent.Client = Client
+
+for (var method in jstorrent.Item.prototype) {
+    jstorrent.Client.prototype[method] = jstorrent.Item.prototype[method]
+}

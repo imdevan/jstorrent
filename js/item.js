@@ -10,6 +10,10 @@ function Item(opts) {
 jstorrent.Item = Item
 
 Item.prototype = {
+    getCollection: function() {
+        console.assert(this._collections.length == 1)
+        return this._collections[0]
+    },
     registerPersistAttributes: function(arr) {
         this._persistAttributes = arr
     },
@@ -21,11 +25,18 @@ Item.prototype = {
     trigger: function(k,newval,oldval) {
         //console.log('item trigger',k,newval,oldval)
         if (this._event_listeners[k]) {
-            if (k == 'change' && newval === oldval) {
-                return
-            }
-            for (var i=0; i<this._event_listeners[k].length; i++) {
-                this._event_listeners[event_type][i](this, newval, oldval)
+            if (k == 'change') {
+                if (newval === oldval) {
+
+                } else {
+                    for (var i=0; i<this._event_listeners[k].length; i++) {
+                        this._event_listeners[k][i](this, newval, oldval)
+                    }
+                }
+            } else {
+                for (var i=0; i<this._event_listeners[k].length; i++) {
+                    this._event_listeners[k][i].apply(this, arguments)
+                }
             }
         }
         if (this._collections.length > 0) {
@@ -43,7 +54,7 @@ Item.prototype = {
         if (! this._event_listeners[event_name]) {
             this._event_listeners[event_name] = []
         }
-        this.event_listeners[event_type].push(callback)        
+        this._event_listeners[event_name].push(callback)
     },
     set: function(k,v) {
         var oldval = this._attributes[k]

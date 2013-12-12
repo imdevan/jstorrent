@@ -21,7 +21,12 @@ function onadd(evt) {
 }
 
 function onappready() {
-    window.client = app.get_client()
+    chrome.storage.local.get(null, function(d){console.log('chrome.storage.local.get',d,chrome.runtime.lastError)})
+    chrome.storage.local.getBytesInUse( function(e){
+        console.log('chrome.storage.local.getBytesInUse',e,chrome.runtime.lastError)
+    })
+
+    window.client = app.client
 
     if (window.example_url_2) {
         document.getElementById("url").value = example_url_2

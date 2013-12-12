@@ -78,7 +78,7 @@ DiskIO.prototype = {
     },
     jobDone: function(job, evt) {
         job.set('state','idle')
-        console.log(job.opts.jobId,'jobDone')
+        //console.log(job.opts.jobId,'jobDone')
         this.diskActive = false
         this.remove(job)
         this.jobsLeftInGroup[job.opts.jobGroup]--
@@ -98,7 +98,7 @@ DiskIO.prototype = {
         callback({error:evt})
     },
     doJobReadyToWrite: function(entry, job) {
-        console.log(job.opts.jobId, 'doJobReadyToWrite')
+        //console.log(job.opts.jobId, 'doJobReadyToWrite')
         var _this = this
 
         entry.createWriter( function(writer) {
@@ -115,7 +115,7 @@ DiskIO.prototype = {
         })
     },
     needToPad: function(job, entry, numZeroes, metaData) {
-        console.log(job.opts.jobId,'needToPad')
+        //console.log(job.opts.jobId,'needToPad')
         // since .seek doesn't allow seeking past end of file, we pad
         // with arbitrary data (zeroes)
         var _this = this
@@ -129,13 +129,13 @@ DiskIO.prototype = {
             console.assert(entry)
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
-            console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
+            //console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
             console.assert(curZeroes > 0)
 
             var buf = new Uint8Array(curZeroes)
             entry.createWriter( function(writer) {
                 writer.onwrite = function(evt) {
-                    console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
+                    //console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
                     if (writtenSoFar == numZeroes) {
                         _this.doJobReadyToWrite(entry, job)
                     } else {
@@ -155,7 +155,7 @@ DiskIO.prototype = {
     doJob: function() {
         var _this = this
         var job = this.get_at(0)
-        console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup)
+        //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup)
         job.set('state','active')
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 
@@ -163,7 +163,7 @@ DiskIO.prototype = {
             if (entry.isFile) {
                 if (job.opts.type == 'write') {
                     entry.getMetadata( function(metaData) {
-                        console.log(job.opts.jobId, 'doJob.getMetadata')
+                        //console.log(job.opts.jobId, 'doJob.getMetadata')
                         if (job.opts.fileOffset <= metaData.size) {
                             _this.doJobReadyToWrite(entry, job)
                         } else {

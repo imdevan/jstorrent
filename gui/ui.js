@@ -19,7 +19,8 @@ function UI(opts) {
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
-            {id:"address", name: "Address"},
+            {attr:"host"},
+            {attr:"port"},
             {id:'peerClientName'},
             {id:"state", name: "State", width:150},
             {id:"percent", name: "Percent"},
@@ -30,13 +31,14 @@ function UI(opts) {
             {id:"last_message_received", name: "Last Received"}
         ],
         'swarm':[
-            {id:"address", name: "Address"},
+            {attr:"host"},
+            {attr:"port"},
             {id:"connected_ever", name: "Ever Connected"},
+            {id:'connectionResult'},
             {id:"state", name: "State"},
             {id:"percent", name: "Percent"},
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
-            {id:"last_message", name: "Last Message"},
         ],
         'trackers':[
             {id:'url'},

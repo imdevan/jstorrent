@@ -2,14 +2,16 @@ function Disk(opts) {
     jstorrent.Item.apply(this, arguments)
 
     this.diskio = new jstorrent.DiskIO({disk:this})
+    this.client = opts.client
 
     if (opts.id) {
         // being restored, need to call restoreEntry
         this.key = opts.id
+        console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
-            console.assert(entry)
+            console.error('unable to restore entry -- perhaps re-install')
             if (!entry) {
-                this.client.trigger('error','disk restore error')
+                this.getCollection().opts.client.trigger('error','disk restore error')
             } else {
                 this.entry = entry
             }

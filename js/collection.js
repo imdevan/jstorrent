@@ -107,7 +107,13 @@ Collection.prototype = {
         var data = this.getSaveData()
         var obj = {}
         obj[data[0]] = data[1]
-        chrome.storage.local.set(obj)
+        if (typeof data[i] == 'string') {
+            chrome.storage.local.set(obj)
+        } else {
+            var jsonified = JSON.stringify(obj)
+            console.assert(jsonified.length < chrome.storage.local.QUOTA_BYTES)
+            console.log('cannot save non string types', obj, 'pct of possible size', Math.floor(100 * jsonified.length / chrome.storage.local.QUOTA_BYTES))
+        }
     },
     getSaveData: function() {
         // save the collection so that it can be restored on next app restart
@@ -153,6 +159,7 @@ Collection.prototype = {
         console.assert(parentId)
         var storeKey = parentId + ':' + this.__name__
         chrome.storage.local.get(storeKey, _.bind(function(result) {
+            console.log('storage retreive',storeKey,'result',result)
             if (! result) {
                 console.warn('could not restore collection, no data stored with key',storeKey)
             } else {

@@ -86,6 +86,7 @@ function intersect(a,b, c,d) {
     var idxmax = units.length - 1
 
     function byteUnits(val) {
+        // TODO - this is dumb, dont divide, just do comparison. more efficient
         if (val === undefined) { return '' }
         var idx = 0
         while (val >= 1024 && idx < idxmax) {
@@ -97,7 +98,8 @@ function intersect(a,b, c,d) {
     }
     window.byteUnits = byteUnits
 })()
-            // format val in friendly bytes format
+
+// not working?
 window.onerror = function(message, url, line) {
     console.log('window.onerror triggered',message,url,line)
 }

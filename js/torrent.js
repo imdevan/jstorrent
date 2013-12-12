@@ -180,7 +180,6 @@ Torrent.prototype = {
             console.error('persist piece result',result)
         } else {
             // clean up all registered chunk requests
-            result.piece.haveDataPersisted = false
             result.piece.notifyPiecePersisted()
             console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
@@ -270,6 +269,7 @@ Torrent.prototype = {
         this.set('state','error')
         this.lasterror = msg
         console.error('torrent error:',msg)
+        this.client.trigger('error','disk not set')
         this.started = false
     },
     on_peer_error: function(peer) {
@@ -342,8 +342,15 @@ Torrent.prototype = {
                 }
             }
         }
+        this.newStateThink()
+    },
+    newStateThink: function() {
+        this.frame()
     },
     stop: function() {
+        for (var i=0; i<this.peers.items.length; i++) {
+            this.peers.items[i].close('torrent stopped')
+        }
         this.set('state','stopped')
         this.started = false
     },
@@ -355,6 +362,42 @@ Torrent.prototype = {
         },this))
     },
     frame: function() {
+        /* 
+
+           how does piece requesting work? good question...  each peer
+           connection calls newStateThink() whenever some state
+           changes.
+
+           the trouble is, it makes sense to store information
+           regarding requests for piece chunks on the piece
+           object. however, the piece object itself has requests to a
+           set of peer connections.
+
+           when a peer disconnects, we need to update the state for
+           each piece that has data registered for that peer..
+
+           when a piece is complete, we need to notify each peer
+           connection that we no longer need their data.
+
+           so really i should think about all the different use cases
+           that need to be satisfied and then determine where it makes
+           most sense to store the states.
+
+           hmmm.
+
+        */
+
+
+        /*
+
+          it seems there are three main cases
+
+          - peer disconnect
+          - peer chokes us (more nuanced)
+          - piece completed
+
+         */
+
         if (! this.started) { return }
         //console.log('torrent frame!')
 
@@ -370,7 +413,7 @@ Torrent.prototype = {
                 this.set('numpeers',this.peers.items.length)
                 peerconn.connect()
             }
-            peer.set('only_connect_once',true)
+            // peer.set('only_connect_once',true) // huh?
         }
     },
     should_add_peers: function() {

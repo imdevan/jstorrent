@@ -43,8 +43,13 @@ Todo
 - implement i8n
 - use chrome.identity and GCM for remote control (pushMessaging)
 - use chrome.socket.getInfo to get host info when connected by host name
-- use chrome.system.storage to detect external media, support downloading to external media?
+- use chrome.system.storage to detect external media, support downloading to external media
+- DHT
+- uPNP
 
 Ideas
 =======
 - disk cache for serving torrent data (seeding)
+- use chrome.notifications better, inc. progress events, complete notifications
+- run everything in background process, so it can run in background
+- dont use any timers, only edge triggered events

@@ -1,3 +1,7 @@
+// this file should probably be in "gui"
+
+// rather should have a better separation ...
+
 function App() {
 
     chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
@@ -6,13 +10,43 @@ function App() {
     this.options_window = null
     this.options = new jstorrent.Options({app:this});
     this.download_location = null
-    this.client = null
+    this.client = new jstorrent.Client({app:this, id:'client01'});
+    this.client.on('error', _.bind(this.onClientError, this))
+
+    this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
+    // maybe use notifications instead... ( or in addition ... )
+
+    chrome.notifications.onClicked.addListener(_.bind(this.notificationClicked, this))
+
     this.UI = null
 }
 
 jstorrent.App = App
 
 App.prototype = {
+    registerExtensionMessageRequest: function(request) {
+        // check if client is ready for this, even...
+        console.log('got request from contextmenu extension',request)
+        this.client.addFromContextMenuExtension(request)
+    },
+    notificationClicked: function(notificationId) {
+        console.log('clicked on notification with id',notificationId)
+    },
+    showPopupWindowDialog: function(message, details) {
+        var opts = {
+            type: "basic",
+            title: message,
+            message: details,
+            iconUrl: "/icon48.png"
+        }
+        chrome.notifications.create('myid', opts, function(notificationId) {
+            console.log('created notification with id',notificationId)
+        })
+    },
+    onClientError: function(evt, e) {
+        // display a popup window with the error information
+        this.showPopupWindowDialog('JSTorrent Error', e)
+    },
     set_ui: function(UI) {
         this.UI = UI
     },
@@ -131,10 +165,5 @@ App.prototype = {
             callback()
             if (jstorrent.options.load_options_on_start) { this.focus_or_open_options() }
         },this))
-    },
-    get_client: function() {
-        // the "id" is used when persisting client to chrome.storage.local
-        this.client = new jstorrent.Client({app:this, id:'client01'});
-        return this.client
     }
 }
