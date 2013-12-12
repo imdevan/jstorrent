@@ -81,6 +81,20 @@ function intersect(a,b, c,d) {
     else { return [Math.max(a,c), Math.min(b,d)] }
 }
 
+function pad(s, padwith, len) {
+    // pad the string s with padwith to length upto
+    while (true) {
+        if (s.length == len) {
+            return s
+        } else if (s.length < len) {
+            s = padwith + s
+        } else if (s.length > len) {
+            console.assert(false)
+            return
+        }
+    }
+}
+
 (function() {
     var units = ['B','kB','MB','GB','TB']
     var idxmax = units.length - 1

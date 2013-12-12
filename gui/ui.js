@@ -41,7 +41,7 @@ function UI(opts) {
             {id:"bytes_received", name: "Bytes Received"},
         ],
         'trackers':[
-            {id:'url'},
+            {attr:'url'},
             {id:'announces'},
             {id:'errors'},
             {id:'timeouts'},

@@ -15,6 +15,7 @@ function Client(opts) {
     this.id = opts.id
 
     this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
+    this.torrents.on('add', _.bind(this.onTorrentAdd, this))
 
     this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
     console.log('fetching disks')
@@ -43,6 +44,11 @@ function Client(opts) {
 }
 
 Client.prototype = {
+    onTorrentAdd: function(torrent) {
+        if (this.app.options.get('new_torrents_auto_start')) {
+            torrent.start()
+        }
+    },
     onReady: function() {
         var item
         if (window.jstorrent_launchData) {
@@ -54,7 +60,7 @@ Client.prototype = {
         }
     },
     handleLaunchData: function(launchData) {
-        var entry
+        var item
         // check if client is ready for this, even...
         console.log('handle launch data',launchData)
         if (launchData.type == 'onMessageExternal') {
@@ -63,12 +69,33 @@ Client.prototype = {
         } else if (launchData.type == 'onLaunched') {
             if (launchData.launchData.items && launchData.launchData.items.length > 0) {
                 for (var i=0; i<launchData.launchData.items.length; i++) {
-                    entry = launchData.launchData.items[i]
-                    console.log('APP HANDLE LAUNCH ENTRY',entry)
+                    item = launchData.launchData.items[i]
+                    console.log('APP HANDLE LAUNCH ENTRY',item)
+                    this.handleLaunchWithItem(item)
                 }
             }
         } else {
             debugger
+        }
+    },
+    handleLaunchWithItem: function(item) {
+        if (item.type == "application/x-bittorrent") {
+            console.log('have a bittorrent file... hrm whattodo',item.entry)
+
+            var entry = item.entry
+            
+            var torrent = new jstorrent.Torrent({client:this,
+                                                 entry:item.entry,
+                                                 callback: _.bind(function(result) {
+                                                     if (result.torrent) {
+                                                         this.torrents.add(result.torrent)
+                                                     } else {
+                                                         console.error('error initializing torrent from entry', result)
+                                                     }
+                                                 },this)
+                                                })
+            
+
         }
     },
     onError: function(e) {
@@ -97,9 +124,6 @@ Client.prototype = {
         } else {
             this.torrents.add( torrent )
             this.torrents.save()
-            if (this.app.options.get('new_torrents_auto_start')) {
-                torrent.start()
-            }
         }
     },
     frame: function() {

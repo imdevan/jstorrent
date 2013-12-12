@@ -60,29 +60,85 @@ function Torrent(opts) {
 
         if (this.magnet_info.tr) {
 	    // initialize my trackers
-	    this.initialize_trackers()
+	    this.initializeTrackers()
         }
 
 	this.hashhexlower = this.magnet_info.hashhexlower
 
     } else if (opts.id) {
         this.hashhexlower = opts.id
+    } else if (opts.entry) {
+        // initialize from filesystem entry!
+        console.assert(opts.callback)
+        this.initializeFromEntry(opts.entry, opts.callback)
     } else {
         console.error('unsupported torrent initializer')
         debugger
     }
-    console.assert(this.hashhexlower)
-    this.hashbytes = []
-    for (var i=0; i<20; i++) {
-        this.hashbytes.push(
-            parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
-        )
+
+    if (opts.entry) {
+        console.log('inited torrent without hash known yet!')
+    } else {
+        console.assert(this.hashhexlower)
+        this.hashbytes = []
+        for (var i=0; i<20; i++) {
+            this.hashbytes.push(
+                parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
+            )
+        }
+        console.log('inited torrent',this.hashhexlower)
     }
-    console.log('inited torrent',this)
+
 }
 jstorrent.Torrent = Torrent
 
 Torrent.prototype = {
+    bytesToHashhex: function(arr) {
+        console.assert(arr.length == 20)
+        var s = ''
+        for (var i=0; i<arr.length; i++) {
+            s += pad(arr[i].toString(16), '0', 2)
+        }
+        console.assert(s.length == 40)
+        return s
+    },
+    initializeFromEntry: function(entry, callback) {
+        // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
+        var _this = this
+        var reader = new FileReader;
+        reader.onload = _.bind(function(evt) {
+            console.log('read torrent data',evt)
+
+
+            function onHashResult(result) {
+                var hash = result.hash
+                if (hash) {
+                    console.log('hashed input torrent file to',hash)
+                    _this.hashbytes = hash
+                    _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
+                    callback({torrent:_this})
+                } else {
+                    callback({error:'hasher error'})
+                }
+            }
+            this.metadata = bdecode(ui82str(new Uint8Array(evt.target.result)))
+            this.infodict = this.metadata.info
+            this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
+            this.metadataPresentInitialize()
+            this.initializeTrackers()
+            var chunkData = { data: this.infodict_buffer }
+            this.client.workerthread.send( { command: 'hashChunks',
+                                             chunks: [chunkData] }, onHashResult )
+        },this)
+        reader.onerror = _.bind(function(evt) {
+            // TODO -- maybe cause a notification, with level
+            console.error('error reading handleLaunchWithItem',evt)
+            callback({error:'FileReader error'})
+        },this)
+        entry.file( function(file) {
+            reader.readAsArrayBuffer(file)
+        })
+    },
     onRestore: function() {
         // called when item is loaded on app restart
         if (this.get('state' ) == 'started') {
@@ -289,7 +345,7 @@ Torrent.prototype = {
             this.set('numpeers',this.peers.items.length)
         }
     },
-    initialize_trackers: function() {
+    initializeTrackers: function() {
 	var url, tracker
 	if (this.magnet_info && this.magnet_info.tr) {
 	    for (var i=0; i<this.magnet_info.tr.length; i++) {
@@ -302,6 +358,21 @@ Torrent.prototype = {
 		this.trackers.add( tracker )
 	    }
 	}
+
+        if (this.metadata) {
+            if (this.metadata.announce) {
+		url = this.metadata.announce
+		if (url.toLowerCase().match('^udp')) {
+                    tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
+		} else {
+                    tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+		}
+                this.trackers.add( tracker )
+            } else if (this.metadata['announce-list']) {
+                debugger
+            }
+
+        }
     },
     start: function() {
         if (! this.getStorage()) {
