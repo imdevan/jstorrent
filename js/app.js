@@ -24,10 +24,15 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
-    registerExtensionMessageRequest: function(request) {
-        // check if client is ready for this, even...
-        console.log('got request from contextmenu extension',request)
-        this.client.addFromContextMenuExtension(request)
+    registerLaunchData: function(launchData) {
+
+        if (this.client.ready) {
+            this.client.handleLaunchData(launchData)
+        } else {
+            this.client.on('ready', _.bind(function() {
+                this.client.handle.handleLaunchData(launchData)
+            },this))
+        }
     },
     notificationClicked: function(notificationId) {
         console.log('clicked on notification with id',notificationId)

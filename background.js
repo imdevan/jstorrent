@@ -7,6 +7,8 @@ function WindowManager() {
         height: 600
     }
 
+    this.creatingMainWindow = false
+    this.createMainWindowCallbacks = []
     this.mainWindow = null
 }
 
@@ -28,16 +30,34 @@ WindowManager.prototype = {
             return
         }
 
+        if (this.creatingMainWindow) {
+            // this can happen when we select multiple "torrent" files
+            // in the files app and launch with JSTorrent.
+            this.createMainWindowCallbacks.push(callback)
+            return
+        }
+
         var _this = this;
         console.log('creating main window')
+        this.creatingMainWindow = true
         chrome.app.window.create('gui/index.html',
                                  this.mainWindowOpts,
                                  function(mainWindow) {
+
                                      _this.mainWindow = mainWindow
+                                     _this.creatingMainWindow = false
+
                                      mainWindow.onClosed.addListener( function() {
                                          _this.onClosedMainWindow()
                                      })
                                      callback()
+
+                                     var cb
+                                     while (_this.createMainWindowCallbacks.length > 0) {
+                                         cb = _this.createMainWindowCallbacks.pop()
+                                         cb()
+                                     }
+
                                  }
 			        );
     },
@@ -49,51 +69,50 @@ WindowManager.prototype = {
 
 var windowManager = new WindowManager
 
-
-
-
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
+    console.log('onLaunched with launchdata',launchData)
+    var info = {type:'onLaunched',
+                launchData: launchData}
+    onAppLaunchMessage(info)
+});
 
-    if (launchData && launchData.items && launchData.items[0].entry) {
-        var entry = launchData.items[0];
-        if (entry.isFile) {
-	    console.log('app was launched with file entry',entry)
-	}
+function onAppLaunchMessage(launchData) {
+    // launchData, request, sender, sendRepsonse
+
+    function onMainWindow(mainWindow) {
+        mainWindow.contentWindow.app.registerLaunchData(launchData)
+    }
+    function onMainWindowSpecial(mainWindow) {
+        // the app object has not been initialized
+        if (! mainWindow.contentWindow.jstorrent_launchData) {
+            mainWindow.contentWindow.jstorrent_launchData = []
+        }
+        mainWindow.contentWindow.jstorrent_launchData.push( launchData )
     }
 
-    windowManager.createMainWindow( function() {
-        
+    windowManager.getMainWindow( function(mainWindow) {
+        // if window already existed...
+        mainWindow.focus()
+
+        if (mainWindow.contentWindow.app) {
+            onMainWindow(mainWindow)
+        } else {
+            onMainWindowSpecial(mainWindow)
+        }
     })
-});
+
+
+}
+
 
 chrome.runtime.onMessageExternal.addListener( function(request, sender, sendResponse) {
     if (sender.id == jstorrent_extension_id) {
         var link = request.url
         var page = request.pageUrl
-
-        function onMainWindow(mainWindow) {
-            mainWindow.contentWindow.app.registerExtensionMessageRequest(request)
-        }
-        function onMainWindowSpecial(mainWindow) {
-            // the app object has not been initialized
-            if (! mainWindow.contentWindow.jstorrent_launchData) {
-                mainWindow.contentWindow.jstorrent_launchData = []
-            }
-            mainWindow.contentWindow.jstorrent_launchData.push( { type: 'registerExtensionMessageRequest',
-                                                                  payload: request } )
-        }
-
-        if (windowManager.mainWindow) {
-            windowManager.mainWindow.focus()
-            onMainWindow(windowManager.mainWindow)
-        } else {
-            windowManager.getMainWindow( function(mainWindow) {
-                if (mainWindow.contentWindow.app) {
-                    onMainWindow(mainWindow)
-                } else {
-                    onMainWindowSpecial(mainWindow)
-                }
-            })
-        }
+        var info = {type:'onMessageExternal',
+                    request: request,
+                    sender: sender,
+                    sendResponse: sendResponse}
+        onAppLaunchMessage(info)
     }
 });

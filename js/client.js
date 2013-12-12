@@ -49,20 +49,25 @@ Client.prototype = {
             while (true) {
                 item = window.jstorrent_launchData.pop()
                 if (! item) { break }
-                if (item.type == 'registerExtensionMessageRequest') {
-                    this.addFromContextMenuExtension(item.payload)
-                } else {
-                    console.warn('unhandled jstorrent_launchData',item)
-                }
+                this.handleLaunchData(item)
             }
         }
     },
-    addFromContextMenuExtension: function(request) {
-        console.log('got request from contextmenu extension',request)
-        if (this.ready) {
+    handleLaunchData: function(launchData) {
+        var entry
+        // check if client is ready for this, even...
+        console.log('handle launch data',launchData)
+        if (launchData.type == 'onMessageExternal') {
+            var request = launchData.request
             this.add_from_url(request.url)
+        } else if (launchData.type == 'onLaunched') {
+            if (launchData.launchData.items && launchData.launchData.items.length > 0) {
+                for (var i=0; i<launchData.launchData.items.length; i++) {
+                    entry = launchData.launchData.items[i]
+                    console.log('APP HANDLE LAUNCH ENTRY',entry)
+                }
+            }
         } else {
-            console.error('not ready to add torrents yet :-(')
             debugger
         }
     },
