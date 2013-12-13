@@ -16,6 +16,7 @@ function UI(opts) {
             {id: "state", name: "State"},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
+            {id: "added"},
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[

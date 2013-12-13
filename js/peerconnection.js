@@ -68,7 +68,17 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
-        console.assert(! this.hasclosed)
+        if (this.hasclosed) {
+            // this can happen when we stop the torrent while we are
+            // reading from the socket and we get the onRead event
+            // nothing to worry about too much... though it would be
+            // nice to get a better handle on all the possible cases
+            // of stopping/closing etc while read events are pending.
+
+            //console.assert(! this.hasclosed)
+            return
+        }
+        
         this.hasclosed = true
         //this.log('closing',reason)
 

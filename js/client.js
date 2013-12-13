@@ -85,8 +85,10 @@ Client.prototype = {
 
             var entry = item.entry
             
-            var torrent = new jstorrent.Torrent({client:this,
-                                                 entry:item.entry,
+            var torrent = new jstorrent.Torrent({entry:item.entry,
+                                                 itemClass:jstorrent.Torrent,
+                                                 parent:this.torrents,
+                                                 attributes: {added: new Date()},
                                                  callback: _.bind(function(result) {
                                                      if (result.torrent) {
                                                          this.torrents.add(result.torrent)
@@ -115,7 +117,10 @@ Client.prototype = {
         console.log('client add by url',url)
 
         // valid url?
-        var torrent = new jstorrent.Torrent({url:url, client:this})
+        var torrent = new jstorrent.Torrent({url:url,
+                                             itemClass: jstorrent.Torrent,
+                                             attributes:{added:new Date()},
+                                             parent:this.torrents})
 
         if (torrent.invalid) {
             app.notify('torrent url invalid');

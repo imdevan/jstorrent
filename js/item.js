@@ -1,7 +1,18 @@
 function Item(opts) {
     this.__name__ = arguments.callee.name
     this.parent = opts.parent
+    this.itemClass = opts.itemClass
+    this._opts = opts
     this._attributes = (opts && opts.attributes) ||  {}
+    if (opts.initializedBy == 'collection.fetch') {
+        if (opts.itemClass.attributeSerializers) {
+            for (var key in this._attributes) {
+                if (opts.itemClass.attributeSerializers[key]) {
+                    this._attributes[key] = opts.itemClass.attributeSerializers[key].deserialize(this._attributes[key])
+                }
+            }
+        }
+    }
     this._collections = []
     this._event_listeners = {}
     this._subcollections = []
@@ -13,8 +24,9 @@ jstorrent.Item = Item
 Item.prototype = {
     getParentIdList: function() {
         var myKey = [this.id || (this.opts && this.opts.id) || this.get_key()]
-        if (this.opts && this.opts.parent) {
-            return this.opts.parent.getParentIdList().concat(myKey)
+        var parent = (this.opts && this.opts.parent) || this.parent
+        if (parent) {
+            return parent.getParentIdList().concat(myKey)
         } else {
             return myKey
         }
@@ -58,11 +70,25 @@ Item.prototype = {
         }
     },
     getSaveData: function() {
-        return this._attributes
+        // if we have item attribute serializers, use those
+        var attrs
+
+        if (this.itemClass.attributeSerializers) {
+            attrs = _.clone(this._attributes)
+            for (var key in this._attributes) {
+                if (this.itemClass.attributeSerializers[key]) {
+                    attrs[key] = this.itemClass.attributeSerializers[key].serialize( attrs[key] )
+                }
+            }
+        } else {
+            attrs = this._attributes
+        }
+        return attrs
     },
     save: function(callback) {
         var obj = {}
-        obj[this.getStoreKey()] = this.getSaveData()
+        var key = this.getStoreKey()
+        obj[key] = this.getSaveData()
         console.log('saving item',obj)
         chrome.storage.local.set(obj, callback)
     },

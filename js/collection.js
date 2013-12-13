@@ -130,8 +130,9 @@ Collection.prototype = {
     },
     getParentIdList: function() {
         var myKey = [this.id || (this.opts && this.opts.id) || this.__name__]
-        if (this.opts && this.opts.parent) {
-            return this.opts.parent.getParentIdList().concat(myKey)
+        var parent = (this.opts && this.opts.parent) || this.parent
+        if (parent) {
+            return parent.getParentIdList().concat(myKey)
         } else {
             return myKey
         }
@@ -173,7 +174,11 @@ Collection.prototype = {
                         if (! itemData) {
                             console.log('fetch itemData for key',fullItemKeys[i],'was empty. did you .save() it?')
                         }
-                        item = new this.itemClass({id: itemKeys[i], parent: this, attributes:itemData})
+                        item = new this.itemClass({id: itemKeys[i],
+                                                   parent: this,
+                                                   itemClass: this.itemClass,
+                                                   initializedBy: 'collection.fetch',
+                                                   attributes:itemData})
                         if (item.onRestore) { item.onRestore() }
                         console.assert(item.get_key() == itemKeys[i])
                         this.add(item)

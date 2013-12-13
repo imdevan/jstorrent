@@ -1,8 +1,8 @@
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
+    this.__name__ == arguments.callee.name
     this.registerSubcollection('trackers')
     this.registerPersistAttributes(['bitfield'])
-
     this.client = opts.client || opts.parent.parent
     console.assert(this.client)
     this.hashhexlower = null
@@ -88,9 +88,19 @@ function Torrent(opts) {
         }
         console.log('inited torrent',this.hashhexlower)
     }
-
 }
 jstorrent.Torrent = Torrent
+
+Torrent.attributeSerializers = {
+    added: {
+        serialize: function(v) {
+            return v.getTime()
+        },
+        deserialize: function(v) {
+            return new Date(v)
+        }
+    }
+}
 
 Torrent.prototype = {
     bytesToHashhex: function(arr) {
