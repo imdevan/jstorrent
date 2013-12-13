@@ -169,7 +169,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',[type, payloads])
+        console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -481,7 +481,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        //console.log('handling message',data)
+        console.log('Received message',data)
 
         this.handleMessage(data)
     },
@@ -611,20 +611,24 @@ PeerConnection.prototype = {
             }
         } else if (infodictMsgType == 'REQUEST') {
             var code = this.peerExtensionHandshake.m.ut_metadata
+
             var pieceRequested = extMessageBencodedData.piece
 
             var d = { msg_type: jstorrent.protocol.infodictExtensionMessageNames.DATA,
                       total_size: this.torrent.infodict_buffer.byteLength, // do we need to send this?
                       piece: pieceRequested }
 
-            var slice = new Uint8Array(this.torrent.infodict_buffer, 
-                                       jstorrent.protocol.chunkSize * pieceRequested,
-                                       jstorrent.protocol.chunkSize * (pieceRequested + 1))
-            console.log('sending metadata payload')
+            var slicea = jstorrent.protocol.chunkSize * pieceRequested
+            var slicelen = Math.min( d.total_size - slicea,
+                                     jstorrent.protocol.chunkSize )
+            var slicebuf = new Uint8Array(this.torrent.infodict_buffer, slicea, slicelen)
+            var newbuf = new Uint8Array(slicelen)
+            newbuf.set( slicebuf )
+            console.log('sending metadata payload', code, d)
             this.sendMessage("UTORRENT_MSG",
                              [new Uint8Array([code]).buffer,
                               new Uint8Array(bencode(d)).buffer,
-                              slice.buffer])
+                              newbuf.buffer])
         } else {
             debugger
         }

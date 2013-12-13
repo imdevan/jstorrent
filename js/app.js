@@ -34,7 +34,7 @@ App.prototype = {
             this.client.handleLaunchData(launchData)
         } else {
             this.client.on('ready', _.bind(function() {
-                this.client.handle.handleLaunchData(launchData)
+                this.client.handleLaunchData(launchData)
             },this))
         }
     },
@@ -79,6 +79,10 @@ App.prototype = {
                 if (item.kind == 'file') {
                     var entry = item.webkitGetAsEntry()
                     console.log('was able to extract entry.',entry)
+
+                    this.client.handleLaunchWithItem({entry:entry,
+                                                      type:item.type})
+
                     // cool, now I can call chrome.fileSystem.retainEntry ...
                 } else {
                     //console.log('extracted entry as...',item.webkitGetAsEntry()) // returns null

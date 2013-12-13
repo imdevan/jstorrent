@@ -30,6 +30,15 @@ function ui82str(arr, startOffset) {
     }
     return str
 }
+function ui82arr(arr, startOffset) {
+    if (! startOffset) { startOffset = 0 }
+    var length = arr.length - startOffset
+    var outarr = []
+    for (var i=0; i<length; i++) {
+        outarr.push(arr[i + startOffset])
+    }
+    return outarr
+}
 
 function parse_magnet(url) {
     var uri = url.slice(url.indexOf(':')+2)

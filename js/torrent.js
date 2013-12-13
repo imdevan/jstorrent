@@ -119,13 +119,13 @@ Torrent.prototype = {
         reader.onload = _.bind(function(evt) {
             console.log('read torrent data',evt)
 
-
             function onHashResult(result) {
                 var hash = result.hash
                 if (hash) {
                     console.log('hashed input torrent file to',hash)
-                    _this.hashbytes = hash
+                    _this.hashbytes = ui82arr(hash)
                     _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
+                    console.assert(_this.hashhexlower.length == 40)
                     callback({torrent:_this})
                 } else {
                     callback({error:'hasher error'})

@@ -75,6 +75,8 @@ Client.prototype = {
                     this.handleLaunchWithItem(item)
                 }
             }
+        } else if (launchData.type == 'drop') {
+            this.handleLaunchWithItem(item)
         } else {
             debugger
         }

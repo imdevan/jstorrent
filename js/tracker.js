@@ -67,7 +67,7 @@ function HTTPTracker() {
 HTTPTracker.prototype = {
     announce: function() {
         // TODO -- implement!!!
-        debugger
+        console.log("HTTP TRACKER ANNOUNCE (unimplemented!)")
     }
 }
 
