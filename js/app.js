@@ -114,10 +114,13 @@ App.prototype = {
                 if (item.kind == 'file') {
                     var entry = item.webkitGetAsEntry()
                     console.log('was able to extract entry.',entry)
+                    if (item.type == 'application/x-bittorrent') {
+                        this.client.handleLaunchWithItem({entry:entry,
+                                                          type:item.type})
 
-                    this.client.handleLaunchWithItem({entry:entry,
-                                                      type:item.type})
-
+                    } else {
+                        this.createNotification({details:"Sorry. Creating torrents is not yet supported."})
+                    }
                     // cool, now I can call chrome.fileSystem.retainEntry ...
                 } else {
                     //console.log('extracted entry as...',item.webkitGetAsEntry()) // returns null
