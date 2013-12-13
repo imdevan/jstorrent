@@ -160,7 +160,6 @@ App.prototype = {
         this.client.disks.add(disk)
         this.client.disks.setAttribute('default',disk.get_key())
         this.client.disks.save()
-        //this.download_location = entry
     },
     notify: function(msg) {
         console.warn('notification:',msg);

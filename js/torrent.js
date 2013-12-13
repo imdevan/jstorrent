@@ -3,7 +3,7 @@ function Torrent(opts) {
     this.registerSubcollection('trackers')
     this.registerPersistAttributes(['bitfield'])
 
-    this.client = opts.client || opts.parent;
+    this.client = opts.client || opts.parent.parent
     console.assert(this.client)
     this.hashhexlower = null
     this.hashbytes = null
@@ -141,6 +141,13 @@ Torrent.prototype = {
     },
     onRestore: function() {
         // called when item is loaded on app restart
+
+/* done in initializer now
+        if (this.parent) {
+            this.client = this.parent.parent
+        }
+*/
+
         if (this.get('state' ) == 'started') {
             this.start()
         }
@@ -173,7 +180,7 @@ Torrent.prototype = {
         }
         return piece
     },
-    metadataPresentInitialize: function() {
+    metadataPresentInitialize: function() { // i.e. postMetadataReceived
         // call this when infodict is newly available
 
         this.numPieces = this.infodict.pieces.length/20
@@ -380,6 +387,7 @@ Torrent.prototype = {
             return
         }
         this.set('state','started')
+        this.save()
         this.started = true
 	console.log('torrent start')
 
@@ -423,14 +431,19 @@ Torrent.prototype = {
             this.peers.items[i].close('torrent stopped')
         }
         this.set('state','stopped')
+        this.save()
         this.started = false
     },
     remove: function() {
         this.stop()
         this.set('state','removing')
+
+        // maybe do some other async stuff? clean socket shutdown? what?
         setTimeout( _.bind(function(){
+            this.set('state','stopped')
+            this.save() // TODO -- clear the entry from storage? nah, just put it in a trash bin
             this.client.torrents.remove(this)
-        },this))
+        },this), 1000)
     },
     frame: function() {
         /* 

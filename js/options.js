@@ -42,6 +42,7 @@ var app_options = {
 
 
 function Options(opts) {
+    // TODO -- refactor this to be a collection and each option an item...
     this.data = null
     this.app = opts && opts.app
 }

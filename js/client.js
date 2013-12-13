@@ -14,10 +14,10 @@ function Client(opts) {
     this.app = opts.app
     this.id = opts.id
 
-    this.torrents = new jstorrent.Collection({__name__: 'Torrents', client:this, itemClass: jstorrent.Torrent})
+    this.torrents = new jstorrent.Collection({__name__: 'Torrents', parent:this, client:this, itemClass: jstorrent.Torrent})
     this.torrents.on('add', _.bind(this.onTorrentAdd, this))
 
-    this.disks = new jstorrent.Collection({__name__: 'Disks', client:this, itemClass: jstorrent.Disk})
+    this.disks = new jstorrent.Collection({__name__: 'Disks', parent:this, client:this, itemClass: jstorrent.Disk})
     console.log('fetching disks')
     this.disks.fetch(_.bind(function() {
         this.torrents.fetch(_.bind(function() {
@@ -48,6 +48,7 @@ Client.prototype = {
         if (this.app.options.get('new_torrents_auto_start')) {
             torrent.start()
         }
+        torrent.save()
     },
     onReady: function() {
         var item

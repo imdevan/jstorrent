@@ -1,5 +1,6 @@
 function Item(opts) {
     this.__name__ = arguments.callee.name
+    this.parent = opts.parent
     this._attributes = (opts && opts.attributes) ||  {}
     this._collections = []
     this._event_listeners = {}
@@ -10,6 +11,17 @@ function Item(opts) {
 jstorrent.Item = Item
 
 Item.prototype = {
+    getParentIdList: function() {
+        var myKey = [this.id || (this.opts && this.opts.id) || this.get_key()]
+        if (this.opts && this.opts.parent) {
+            return this.opts.parent.getParentIdList().concat(myKey)
+        } else {
+            return myKey
+        }
+    },
+    getStoreKey: function() {
+        return this.getParentIdList().join('/')
+    },
     getCollection: function() {
         console.assert(this._collections.length == 1)
         return this._collections[0]
@@ -45,7 +57,18 @@ Item.prototype = {
             }
         }
     },
-    save: function() {
+    getSaveData: function() {
+        return this._attributes
+    },
+    save: function(callback) {
+        var obj = {}
+        obj[this.getStoreKey()] = this.getSaveData()
+        console.log('saving item',obj)
+        chrome.storage.local.set(obj, callback)
+    },
+    saveOld: function() {
+        // TODO -- now we save item in their own namespace
+        console.assert(this._collections.length > 0)
         for (var i=0; i<this._collections.length; i++) {
             this._collections[i].save()
         }

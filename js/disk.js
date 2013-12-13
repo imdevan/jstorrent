@@ -9,10 +9,12 @@ function Disk(opts) {
         this.key = opts.id
         console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
-            console.error('unable to restore entry -- perhaps re-install')
+            // remove this.
             if (!entry) {
+                console.error('unable to restore entry -- perhaps re-install')
                 this.getCollection().opts.client.trigger('error','disk restore error')
             } else {
+                console.log('successfully restored entry')
                 this.entry = entry
             }
         },this))

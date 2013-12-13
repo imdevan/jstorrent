@@ -4,6 +4,7 @@ function Collection(opts) {
     this.__name__ = opts.__name__ || arguments.callee.name
 
     this.opts = opts
+    this.parent = opts.parent
 
     this.itemClass = opts.itemClass
     this.items = []
@@ -83,6 +84,7 @@ Collection.prototype = {
         //console.log('keyeditems now', this.keyeditems)
         this.length--
         console.assert(this.length>=0)
+        this.save()
         this.trigger('remove')
     },
     get: function(k) {
@@ -104,9 +106,14 @@ Collection.prototype = {
         }
     },
     save: function() {
+        // save lets you put in objects and it JSON stringifys them
+        // for you, but this is dangerous, because if it turns out to
+        // have a uint8array in it, then it corrupts your storage.
         var data = this.getSaveData()
         var obj = {}
         obj[data[0]] = data[1]
+        chrome.storage.local.set(obj)
+/*
         if (typeof data[i] == 'string') {
             chrome.storage.local.set(obj)
         } else {
@@ -114,74 +121,67 @@ Collection.prototype = {
             console.assert(jsonified.length < chrome.storage.local.QUOTA_BYTES)
             console.log('cannot save non string types', obj, 'pct of possible size', Math.floor(100 * jsonified.length / chrome.storage.local.QUOTA_BYTES))
         }
+*/
+    },
+    getStoreKey: function() {
+        var parentList = this.getParentIdList()
+        var key = parentList.join('/')
+        return key
+    },
+    getParentIdList: function() {
+        var myKey = [this.id || (this.opts && this.opts.id) || this.__name__]
+        if (this.opts && this.opts.parent) {
+            return this.opts.parent.getParentIdList().concat(myKey)
+        } else {
+            return myKey
+        }
     },
     getSaveData: function() {
-        // save the collection so that it can be restored on next app restart
-        // also save our attributes!
-        var parentId = this.getParentId()
-        var key = parentId + ':' + this.__name__
-        var item
-        var subKey
-        var subData
-        var storeAttrs
-
-        // this is the most fucked up looking serialization code ever. :-(
-        var tostore = {attributes:this._attributes, items:{}}
+        // recursively get parent collections or parent items
+        var key = this.getStoreKey()
+        var items = []
         for (var i=0; i<this.items.length; i++) {
-            item = this.items[i]
-            storeAttrs = _.clone(item._attributes)
-
-            if (item._persistAttributes) {
-                for (var j=0; j<item._persistAttributes.length; j++) {
-                    // persist certain special attributes
-                    pAttrKey = item._persistAttributes[j]
-                    storeAttrs[pAttrKey] = item[pAttrKey]
-                }
-            }
-
-            if (item._subcollections.length > 0) {
-                for (var j=0; j<item._subcollections.length; j++) {
-                    subKey = item._subcollections[j]
-                    subData = item[subKey].getSaveData() // recurse!
-                    storeAttrs['_' + subKey] = subData[1]
-                    // TODO
-                }
-            }
-
-            tostore.items[ item.get_key() ] = storeAttrs
+            items.push(this.items[i].get_key())
         }
-        return [key, tostore]
+        var toStore = {attributes:this._attributes, items:items}
+        return [key, toStore]
     },
     fetch: function(callback) {
-        // loads data
-        var parent = this.getParent()
-        var parentId = this.getParentId()
-        console.assert(parentId)
-        var storeKey = parentId + ':' + this.__name__
-        chrome.storage.local.get(storeKey, _.bind(function(result) {
-            console.log('storage retreive',storeKey,'result',result)
-            if (! result) {
-                console.warn('could not restore collection, no data stored with key',storeKey)
+        var collectionKey = this.getStoreKey()
+        chrome.storage.local.get( collectionKey, _.bind(function(result) {
+            if (! result || ! result[collectionKey] || ! result[collectionKey].items) {
+                console.warn('could not restore collection, no data stored with key',collectionKey)
             } else {
-                var item, itemAttributes
-                if (result[storeKey]) {
-                    if (result[storeKey].attributes) {
-                        this._attributes = result[storeKey].attributes
-                    }
-                    if (result[storeKey].items) {
-                        for (var itemKey in result[storeKey].items) {
-                            itemAttributes = result[storeKey].items[itemKey]
-                            item = new this.itemClass({id: itemKey, parent: parent, attributes:itemAttributes})
-                            if (item.onRestore) { item.onRestore() }
-                            console.assert(item.get_key() == itemKey)
-                            this.add(item)
-                        }
-                    }
-                }
-            }
-            if (callback) { callback() }
-        },this))
 
+                var fullItemKeys = []
+                var itemKeys = []
+
+                for (var i=0; i<result[collectionKey].items.length; i++) {
+                    var itemKey = result[collectionKey].items[i]
+                    itemKeys.push(itemKey)
+                    fullItemKeys.push(collectionKey + '/' + itemKey)
+                }
+
+                // have a list of all the items we need to now fetch from storage
+                var item, itemData
+
+                this._attributes = result[collectionKey].attributes
+
+                chrome.storage.local.get(fullItemKeys, _.bind(function(itemsResult) {
+                    for (var i=0; i<itemKeys.length; i++) {
+                        itemData = itemsResult[ fullItemKeys[i] ]
+                        if (! itemData) {
+                            console.log('fetch itemData for key',fullItemKeys[i],'was empty. did you .save() it?')
+                        }
+                        item = new this.itemClass({id: itemKeys[i], parent: this, attributes:itemData})
+                        if (item.onRestore) { item.onRestore() }
+                        console.assert(item.get_key() == itemKeys[i])
+                        this.add(item)
+                    }
+                    if (callback) { callback() }
+                },this))
+            }
+        },this))
     },
     each: function(iterfunc) {
 
