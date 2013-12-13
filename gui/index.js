@@ -29,7 +29,7 @@ function onappready() {
     window.client = app.client
 
     if (window.example_url_2) {
-        document.getElementById("url").value = example_url_2
+        document.getElementById("url").value = example_url_3
     }
 
     document.getElementById("torrentGrid").style.width = gui_opts.torrentGrid_width;

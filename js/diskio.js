@@ -104,7 +104,7 @@ DiskIO.prototype = {
         entry.createWriter( function(writer) {
             //console.log('createdWriter')
             writer.onwrite = function(evt) {
-                console.log(job.opts.jobId, 'diskio wrote',evt.loaded,'/',evt.total)
+                //console.log(job.opts.jobId, 'diskio wrote',evt.loaded,'/',evt.total)
                 _this.jobDone(job, evt)
             }
             writer.onerror = function(evt) {

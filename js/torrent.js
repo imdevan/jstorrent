@@ -282,7 +282,7 @@ Torrent.prototype = {
         } else {
             // clean up all registered chunk requests
             result.piece.notifyPiecePersisted()
-            console.log('persisted piece!')
+            //console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
             this.bitfield[result.piece.num] = 1
@@ -336,8 +336,10 @@ Torrent.prototype = {
 
         var storage = this.client.disks.get(disk)
         if (storage) { 
-            this.set('disk',storage.get_key())
-            this.save()
+            if (! this.get('disk')) {
+                this.set('disk',storage.get_key())
+                this.save()
+            }
             return storage
         }
     },
@@ -362,7 +364,6 @@ Torrent.prototype = {
             for (var i=0; i<this.numFiles; i++) {
                 if (! this.files.items[i]) {
                     file = this.getFile(i)
-                    this.files.add(file)
                 }
             }
         }
