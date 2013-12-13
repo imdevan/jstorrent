@@ -10,6 +10,8 @@ function App() {
     this.options_window = null
     this.options = new jstorrent.Options({app:this});
     this.client = new jstorrent.Client({app:this, id:'client01'});
+    this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
+    this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
     this.client.on('error', _.bind(this.onClientError, this))
 
     // need to store a bunch of notifications keyed by either torrents or other things...
@@ -77,13 +79,32 @@ App.prototype = {
     },
     createNotification: function(opts) {
         console.log('createNotification',opts)
-        opts.id = this.notificationCounter++
+        opts.id = opts.id || ('notification' + this.notificationCounter++)
         opts.parent = this
         var notification = new jstorrent.Notification(opts)
         this.notifications.add(notification)
     },
     showPopupWindowDialog: function(details) {
         this.createNotification({details:details})
+    },
+    onTorrentProgress: function(torrent) {
+        var id = torrent.hashhexlower
+        if (this.notifications.get(id)) {
+            chrome.notifications.update(id,
+                                        {progress: Math.floor(100 * torrent.get('complete'))},
+                                        function(){})
+        }
+    },
+    onTorrentStart: function(torrent) {
+        var id = torrent.hashhexlower
+        if (this.notifications.get(id)) {
+            // already had this notification... hrmmm
+        } else {
+            this.createNotification({type: 'progress',
+                                     progress: 3,
+                                     details: 'Downloading ' + torrent.get('name'),
+                                     id: id})
+        }
     },
     onClientError: function(evt, e) {
         // display a popup window with the error information

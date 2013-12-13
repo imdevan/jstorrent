@@ -1,6 +1,6 @@
 function Notification(opts) {
     jstorrent.Item.apply(this, arguments)
-    this.id = 'notification' + opts.id
+    this.id = opts.id
     this.onClick = opts.onClick || this.defaultOnClick
     this.data = opts.data
     this.closeOnClick = true
@@ -12,13 +12,15 @@ function Notification(opts) {
         opts.details = JSON.stringify(opts.details)
     }
 
+    this.type = opts.type || 'basic'
     this.notificationOpts = {
-        type: "basic",
+        type: this.type,
         title: message,
         priority: opts.priority || 0,
         message: opts.details,
         iconUrl: "/icon48.png"
     }
+
     this.show()
 }
 jstorrent.Notification = Notification

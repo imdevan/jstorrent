@@ -319,6 +319,7 @@ Torrent.prototype = {
             }
         }
         this.set('complete', this.getPercentComplete())
+        this.trigger('progress')
         this.save()
     },
     persistPiece: function(piece) {
@@ -450,6 +451,7 @@ Torrent.prototype = {
         this.set('state','started')
         this.save()
         this.started = true
+        this.trigger('start')
         console.log('torrent start')
 
         // todo // check if should re-announce, etc etc
