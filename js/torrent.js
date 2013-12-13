@@ -307,7 +307,11 @@ Torrent.prototype = {
         }
 
         var storage = this.client.disks.get(disk)
-        if (storage) { return storage }
+        if (storage) { 
+            this.set('disk',storage.get_key())
+            this.save()
+            return storage
+        }
     },
     recheckData: function() {
         // checks registered or default torrent download location for

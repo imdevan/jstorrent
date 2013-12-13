@@ -9,7 +9,6 @@ function App() {
 
     this.options_window = null
     this.options = new jstorrent.Options({app:this});
-    this.download_location = null
     this.client = new jstorrent.Client({app:this, id:'client01'});
     this.client.on('error', _.bind(this.onClientError, this))
 
@@ -24,6 +23,11 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    reinstall: function() {
+        chrome.storage.local.clear(function() {
+            reload()
+        })
+    },
     registerLaunchData: function(launchData) {
 
         if (this.client.ready) {

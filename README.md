@@ -46,6 +46,7 @@ Todo
 - use chrome.system.storage to detect external media, support downloading to external media
 - DHT
 - uPNP
+- bind/listen TCP
 
 Ideas
 =======

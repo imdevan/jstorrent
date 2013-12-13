@@ -72,7 +72,6 @@ Item.prototype = {
     getSaveData: function() {
         // if we have item attribute serializers, use those
         var attrs
-
         if (this.itemClass.attributeSerializers) {
             attrs = _.clone(this._attributes)
             for (var key in this._attributes) {
