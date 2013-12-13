@@ -12,7 +12,7 @@ function Torrent(opts) {
     this.invalid = false;
     this.started = false;
 
-    this.metadata = null
+    this.metadata = {}
     this.infodict = null
     this.infodict_buffer = null
 
@@ -44,11 +44,11 @@ function Torrent(opts) {
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
 
     if (opts.url) {
-	// initialize torrent from a URL...
+        // initialize torrent from a URL...
 
-	// parse trackers
+        // parse trackers
 
-	this.magnet_info = parse_magnet(opts.url);
+        this.magnet_info = parse_magnet(opts.url);
         if (! this.magnet_info) {
             this.invalid = true;
             return
@@ -59,11 +59,11 @@ function Torrent(opts) {
         }
 
         if (this.magnet_info.tr) {
-	    // initialize my trackers
-	    this.initializeTrackers()
+            // initialize my trackers
+            this.initializeTrackers()
         }
 
-	this.hashhexlower = this.magnet_info.hashhexlower
+        this.hashhexlower = this.magnet_info.hashhexlower
 
     } else if (opts.id) {
         this.hashhexlower = opts.id
@@ -220,7 +220,35 @@ Torrent.prototype = {
             this.peers.items[i].sendExtensionHandshake()
         }
         this.save()
+        this.saveMetadata()
         this.recheckData()
+    },
+    getMetadataFilename: function() {
+        return this.get('name') + '.torrent'
+    },
+    saveMetadata: function(callback) {
+        var filename = this.getMetadataFilename()
+        // save metadata (i.e. .torrent file) to disk
+        var storage = this.getStorage()
+        var _this = this
+        if (! storage) {
+            this.error('disk missing')
+        } else {
+            storage.entry.getFile( filename, {create:true}, function(entry) {
+                entry.createWriter(function(writer) {
+                    writer.onwrite = function(evt) {
+                        console.log('wrote torrent metadata')
+                        if (callback){ callback({wrote:true}) }
+                    }
+                    writer.onerror = function(evt) {
+                        console.error('error writing torrent metadata')
+                        if (callback){ callback({error:true}) }
+                    }
+                    var data = new Uint8Array(bencode(_this.metadata))
+                    writer.write(new Blob([data]))
+                })
+            })
+        }
     },
     getPieceData: function(pieceNum, offset, size, callback) {
         // used for serving PIECE requests
@@ -367,32 +395,47 @@ Torrent.prototype = {
         }
     },
     initializeTrackers: function() {
-	var url, tracker
-	if (this.magnet_info && this.magnet_info.tr) {
-	    for (var i=0; i<this.magnet_info.tr.length; i++) {
-		url = this.magnet_info.tr[i];
-		if (url.toLowerCase().match('^udp')) {
+        var url, tracker
+        var announce_list = []
+        if (this.magnet_info && this.magnet_info.tr) {
+            for (var i=0; i<this.magnet_info.tr.length; i++) {
+                url = this.magnet_info.tr[i];
+                if (url.toLowerCase().match('^udp')) {
                     tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
-		} else {
+                } else {
                     tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
-		}
-		this.trackers.add( tracker )
-	    }
-	}
+                }
+                announce_list.push( url )
+                this.trackers.add( tracker )
+            }
+            // trackers are stored in "tiers", whatever. magnet links
+            // dont support that. put all in first tier.
+            this.metadata['announce-list'] = [announce_list]
+        }
 
+        var urls = []
+        var url
         if (this.metadata) {
             if (this.metadata.announce) {
-		url = this.metadata.announce
-		if (url.toLowerCase().match('^udp')) {
-                    tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
-		} else {
-                    tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
-		}
+                url = this.metadata.announce
+                urls.push(url)
                 this.trackers.add( tracker )
             } else if (this.metadata['announce-list']) {
-                debugger
+                for (var tier in this.metadata['announce-list']) {
+                    for (var i=0; i<this.metadata['announce-list'][tier].length; i++) {
+                        urls.push( this.metadata['announce-list'][tier][i] )
+                    }
+                }
             }
 
+            for (var i=0; i<urls.length; i++) {
+                url = urls[i]
+                if (url.toLowerCase().match('^udp')) {
+                    tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
+                } else {
+                    tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+                }
+            }
         }
     },
     start: function() {
@@ -403,11 +446,11 @@ Torrent.prototype = {
         this.set('state','started')
         this.save()
         this.started = true
-	console.log('torrent start')
+        console.log('torrent start')
 
         // todo // check if should re-announce, etc etc
-	//this.trackers.get_at(4).announce(); 
-	//return;
+        //this.trackers.get_at(4).announce(); 
+        //return;
 
         if (jstorrent.options.always_add_special_peer) {
             var host = jstorrent.options.always_add_special_peer
@@ -420,9 +463,9 @@ Torrent.prototype = {
         setTimeout( _.bind(function(){
             // HACK delay this a little so manual peers kick in first, before frame
             if (! jstorrent.options.disable_trackers) {
-	        for (var i=0; i<this.trackers.length; i++) {
-	            this.trackers.get_at(i).announce()
-	        }
+                for (var i=0; i<this.trackers.length; i++) {
+                    this.trackers.get_at(i).announce()
+                }
             }
         },this), 1000)
         if (jstorrent.options.manual_peer_connect_on_start) {

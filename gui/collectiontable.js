@@ -98,7 +98,6 @@ SlickCollectionTable.prototype = {
         // destroy
         this.grid.destroy()
         $("#"+this.domid).empty()
-        
     },
     on_change: function(item, attr, p1,p2,p3) {
         //console.log('collection item change',item,attr,p1,p2,p3)
@@ -113,21 +112,15 @@ SlickCollectionTable.prototype = {
         this.grid.render()
     },
     on_remove: function(item) {
-
-        // TODO -- fix the infamous "unable to select the first column" bug
-        
-        // only happens when existing row gets replaced with new item
-        // need to perhaps clear selection
-
-
-
         if (this.collection.items.length > 0) {
+            // Fixes the infamous "unable to select the first column" bug
+            // only happens when existing row gets replaced with new item
+            // need to perhaps clear selection
             this.grid.setActiveCell(0,0)
             this.grid.setActiveCell(0,1)
             this.grid.setSelectedRows([]) // this alone didn't work, but with the previous two lines does :-) yay!
         }
 
-        //console.log('collection onremove')
         this.grid.updateRowCount()
         this.grid.invalidateAllRows()
         this.grid.render()

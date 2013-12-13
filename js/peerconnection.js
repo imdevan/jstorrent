@@ -169,7 +169,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',[type, payloads])
+        //console.log('Sending Message',[type, payloads])
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -481,7 +481,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        console.log('Received message',data)
+        //console.log('Received message',data)
 
         this.handleMessage(data)
     },
@@ -643,7 +643,6 @@ PeerConnection.prototype = {
         console.assert(idx == this.peerExtensionHandshake.metadata_size)
 
         var infodict = bdecode(ui82str(b))
-        var metadata = {info:infodict} // should perhaps add in the trackers and shit
         var digest = new Digest.SHA1()
         digest.update(b)
         var receivedInfodictHash = new Uint8Array(digest.finalize())
@@ -652,7 +651,7 @@ PeerConnection.prototype = {
             console.log("%c Received valid infodict!", 'background:#3f3; color:#fff')
             this.torrent.infodict_buffer = b
             this.torrent.infodict = infodict
-            this.torrent.metadata = metadata
+            this.torrent.metadata.info = infodict
             this.torrent.metadataPresentInitialize()
         } else {
             console.error('received metadata does not have correct infohash! bad!')
