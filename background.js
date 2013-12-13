@@ -116,5 +116,6 @@ chrome.runtime.onMessageExternal.addListener( function(request, sender, sendResp
                     sender: sender,
                     sendResponse: sendResponse}
         onAppLaunchMessage(info)
+        sendResponse({handled: true, id: chrome.runtime.id})
     }
 });

@@ -13,6 +13,19 @@ function bind_events() {
         evt.preventDefault()
         evt.stopPropagation()
     })
+
+    $('#request-identity').click( function(evt) {
+        console.log(chrome.runtime.lastError)
+        chrome.permissions.request({permissions:['identity']},
+                                   function(result){console.log('grant result',result)
+                                                    console.log(chrome.runtime.lastError)
+                                                    chrome.identity.getAuthToken({interactive:true}, function(idresult) {
+                                                        console.log('id result',idresult)
+                                                    })
+                                                   })
+        console.log(chrome.runtime.lastError)
+        
+    })
 }
 
 function onready() {
