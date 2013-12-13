@@ -5,6 +5,11 @@ function Collection(opts) {
 
     this.opts = opts
     this.parent = opts.parent
+    if (opts.shouldPersist === undefined) {
+        this.shouldPersist = true
+    } else {
+        this.shouldPersist = opts.shouldPersist
+    }
 
     this.itemClass = opts.itemClass
     this.items = []
@@ -84,7 +89,9 @@ Collection.prototype = {
         //console.log('keyeditems now', this.keyeditems)
         this.length--
         console.assert(this.length>=0)
-        this.save()
+        if (this.shouldPersist) {
+            this.save()
+        }
         this.trigger('remove')
     },
     get: function(k) {
@@ -152,6 +159,7 @@ Collection.prototype = {
         chrome.storage.local.get( collectionKey, _.bind(function(result) {
             if (! result || ! result[collectionKey] || ! result[collectionKey].items) {
                 console.warn('could not restore collection, no data stored with key',collectionKey)
+                if (callback){callback()}
             } else {
 
                 var fullItemKeys = []

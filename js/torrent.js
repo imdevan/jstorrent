@@ -1,8 +1,6 @@
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
     this.__name__ == arguments.callee.name
-    this.registerSubcollection('trackers')
-    this.registerPersistAttributes(['bitfield'])
     this.client = opts.client || opts.parent.parent
     console.assert(this.client)
     this.hashhexlower = null
@@ -91,6 +89,7 @@ function Torrent(opts) {
 }
 jstorrent.Torrent = Torrent
 
+Torrent.persistAttributes = ['bitfield']
 Torrent.attributeSerializers = {
     added: {
         serialize: function(v) {
@@ -162,12 +161,18 @@ Torrent.prototype = {
             this.start()
         }
     },
+    getPiece: function(num) {
+        var piece = this.pieces.get(num)
+        if (! piece) {
+            piece = new jstorrent.Piece({torrent:this, shouldPersist:false, num:num})
+            this.pieces.add(piece)
+        }
+        return piece
+    },
     getFile: function(num) {
-        var file
-        if (this.files.get(num)) {
-            file = this.files.get(num)
-        } else {
-            file = new jstorrent.File({torrent:this, num:num})
+        var file = this.files.get(num)
+        if (! file) {
+            file = new jstorrent.File({torrent:this, shouldPersist:false, num:num})
             this.files.add(file)
         }
         return file
@@ -180,21 +185,11 @@ Torrent.prototype = {
             //return this.infodict['piece length']
         }
     },
-    getPiece: function(num) {
-        var piece
-        if (this.pieces.get(num)) {
-            piece = this.pieces.get(num)
-        } else {
-            piece = new jstorrent.Piece({torrent:this, num:num})
-            this.pieces.add(piece)
-        }
-        return piece
-    },
     metadataPresentInitialize: function() { // i.e. postMetadataReceived
         // call this when infodict is newly available
 
         this.numPieces = this.infodict.pieces.length/20
-        this.bitfield = new Uint8Array(this.numPieces)
+        this.bitfield = ui82arr(new Uint8Array(this.numPieces))
         this.bitfieldFirstMissing = 0
         this.pieceLength = this.infodict['piece length']
 
@@ -298,12 +293,13 @@ Torrent.prototype = {
             if (! foundmissing) {
                 console.log('%cTORRENT DONE?','color:#f0f')
 
+                // TODO -- turn this into progress notification type
+                this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
+
                 // send everybody NOT_INTERESTED!
                 for (var i=0; i<this.peers.items.length; i++) {
                     this.peers.items[i].sendMessage("NOT_INTERESTED")
                 }
-
-
             }
             // send HAVE message to all connected peers
             payload = new Uint8Array(4)
@@ -318,6 +314,7 @@ Torrent.prototype = {
             }
         }
         this.set('complete', this.getPercentComplete())
+        this.save()
     },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
@@ -375,8 +372,9 @@ Torrent.prototype = {
         this.set('state','error')
         this.lasterror = msg
         console.error('torrent error:',msg)
-        this.client.trigger('error','disk not set')
+        this.client.app.notifyNeedDownloadDirectory()
         this.started = false
+        this.save()
     },
     on_peer_error: function(peer) {
         //console.log('on_peer error')

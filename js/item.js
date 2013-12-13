@@ -16,7 +16,7 @@ function Item(opts) {
     this._collections = []
     this._event_listeners = {}
     this._subcollections = []
-    this._persistAttributes
+    this._persistAttributes = null // child class overrides this... HMMM
 }
 
 jstorrent.Item = Item
@@ -37,14 +37,6 @@ Item.prototype = {
     getCollection: function() {
         console.assert(this._collections.length == 1)
         return this._collections[0]
-    },
-    registerPersistAttributes: function(arr) {
-        this._persistAttributes = arr
-    },
-    registerSubcollection: function(key) {
-        // when this item gets saved, not only save its attributes,
-        // but save a special key, which points to a collection.
-        this._subcollections.push(key)
     },
     trigger: function(k,newval,oldval) {
         //console.log('item trigger',k,newval,oldval)
@@ -71,7 +63,17 @@ Item.prototype = {
     },
     getSaveData: function() {
         // if we have item attribute serializers, use those
-        var attrs
+        var attrs, key
+
+        if (this.itemClass.persistAttributes) {
+            attrs = _.clone(this._attributes)
+            for (var i=0; i<this.itemClass.persistAttributes.length; i++) {
+                key = this.itemClass.persistAttributes[i]
+                // TODO work in tandem with serializer...
+                attrs[key] = this[key]
+            }
+        }
+
         if (this.itemClass.attributeSerializers) {
             attrs = _.clone(this._attributes)
             for (var key in this._attributes) {
@@ -79,9 +81,12 @@ Item.prototype = {
                     attrs[key] = this.itemClass.attributeSerializers[key].serialize( attrs[key] )
                 }
             }
-        } else {
+        }
+
+        if (! attrs) {
             attrs = this._attributes
         }
+
         return attrs
     },
     save: function(callback) {
@@ -90,13 +95,6 @@ Item.prototype = {
         obj[key] = this.getSaveData()
         console.log('saving item',obj)
         chrome.storage.local.set(obj, callback)
-    },
-    saveOld: function() {
-        // TODO -- now we save item in their own namespace
-        console.assert(this._collections.length > 0)
-        for (var i=0; i<this._collections.length; i++) {
-            this._collections[i].save()
-        }
     },
     on: function(event_name, callback) {
         if (! this._event_listeners[event_name]) {

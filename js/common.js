@@ -1,6 +1,23 @@
 // common stuff
 jstorrent = window.jstorrent || {}
-
+jstorrent.constants = {
+    keyPresentInPreRewrite: 'blah',
+    manifest: chrome.runtime.getManifest()
+}
+jstorrent.strings = {
+    NOTIFY_NO_DOWNLOAD_FOLDER: "No Download Folder selected. Click to select your Download Directory.",
+    NOTIFY_HOW_TO_CHANGE_DOWNLOAD_DIR: "You can change the download directory in the Options page",
+    NOTIFY_SET_DOWNLOAD_DIR: "Set default download location to "
+}
+jstorrent.getLocaleString = function(s) {
+    if (arguments.length > 1) {
+        // TODO %s handling etc
+        for (var i=1; i<arguments.length; i++) {
+            s += arguments[i]
+        }
+    }
+    return s
+}
 jstorrent.options = {
     load_options_on_start: false,
     add_torrents_on_start: false,

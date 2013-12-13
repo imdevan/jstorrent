@@ -12,10 +12,16 @@ function App() {
     this.client = new jstorrent.Client({app:this, id:'client01'});
     this.client.on('error', _.bind(this.onClientError, this))
 
+    // need to store a bunch of notifications keyed by either torrents or other things...
+    this.notificationCounter = 0
+    this.notifications = new jstorrent.Collection({parent:this, shouldPersist: false})
+    chrome.notifications.onClicked.addListener(_.bind(this.notificationClicked, this))
+    chrome.notifications.onClosed.addListener(_.bind(this.notificationClosed, this))
+
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
     // maybe use notifications instead... ( or in addition ... )
 
-    chrome.notifications.onClicked.addListener(_.bind(this.notificationClicked, this))
+
 
     this.UI = null
 }
@@ -28,8 +34,27 @@ App.prototype = {
             reload()
         })
     },
+    upgrade: function() {
+        // used to test "upgrade" from previous jstorrent (pre-rewrite) version.
+        chrome.storage.local.clear(function() {
+            var obj = {}
+            obj[jstorrent.constants.keyPresentInPreRewrite] = true
+            chrome.storage.local.set(obj, function(){
+                reload()
+            })
+        })
+    },
+    notifyNeedDownloadDirectory: function() {
+        this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
+                                 priority:2,
+                                 onClick: _.bind(function() {
+                                     chrome.fileSystem.chooseEntry({type:'openDirectory'},
+                                                                   _.bind(this.set_default_download_location,this)
+                                                                  )
+                                     
+                                 },this)})
+    },
     registerLaunchData: function(launchData) {
-
         if (this.client.ready) {
             this.client.handleLaunchData(launchData)
         } else {
@@ -38,23 +63,33 @@ App.prototype = {
             },this))
         }
     },
-    notificationClicked: function(notificationId) {
-        console.log('clicked on notification with id',notificationId)
-    },
-    showPopupWindowDialog: function(message, details) {
-        var opts = {
-            type: "basic",
-            title: message,
-            message: details,
-            iconUrl: "/icon48.png"
+    notificationClosed: function(id, byUser) {
+        console.log('closed notification with id',id)
+        var notification = this.notifications.get(id)
+        if (notification) {
+            this.notifications.remove(notification)
         }
-        chrome.notifications.create('myid', opts, function(notificationId) {
-            console.log('created notification with id',notificationId)
-        })
+    },
+    notificationClicked: function(id) {
+        console.log('clicked on notification with id',id)
+        var notification = this.notifications.get(id)
+        notification.handleClick()
+    },
+    createNotification: function(opts) {
+        console.log('createNotification',opts)
+        opts.id = this.notificationCounter++
+        opts.parent = this
+        var notification = new jstorrent.Notification(opts)
+        this.notifications.add(notification)
+    },
+    showPopupWindowDialog: function(details) {
+        this.createNotification({details:details})
     },
     onClientError: function(evt, e) {
         // display a popup window with the error information
-        this.showPopupWindowDialog('JSTorrent Error', e)
+        this.createNotification({details:e, onClick: function() {
+            console.log('onClientError notification onClick')
+        }})
     },
     set_ui: function(UI) {
         this.UI = UI
@@ -163,13 +198,20 @@ App.prototype = {
         this.help_window = null
     },
     set_default_download_location: function(entry) {
-        console.log("Set default download location to",entry)
+        if (! entry) {
+            this.createNotification({details:jstorrent.strings.NOTIFY_HOW_TO_CHANGE_DOWNLOAD_DIR})
+            return
+        }
+        //console.log("Set default download location to",entry)
+        var s = jstorrent.getLocaleString(jstorrent.strings.NOTIFY_SET_DOWNLOAD_DIR, entry.name)
+        this.createNotification({details:s, priority:0})
         var disk = new jstorrent.Disk({entry:entry})
         this.client.disks.add(disk)
         this.client.disks.setAttribute('default',disk.get_key())
         this.client.disks.save()
     },
     notify: function(msg) {
+        this.createNotification({details:message, priority:0})
         console.warn('notification:',msg);
     },
     initialize: function(callback) {

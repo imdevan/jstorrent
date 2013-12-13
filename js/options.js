@@ -67,20 +67,22 @@ Options.prototype = {
         chrome.storage.local.get('options', _.bind(this.options_loaded, this, callback))
     },
     options_loaded: function(callback, data) {
-        console.log('options loaded',data);
+        //console.log('options loaded',data);
         this.data = data
         callback()
     },
     on_choose_download_directory: function(entry) {
         var retain_string = chrome.fileSystem.retainEntry(entry);
         console.log('user choose download directory',entry, 'retain string:',retain_string)
+/*
         this.set('default_download_location',
                         {retainEntryId: retain_string,
                          name: entry.name,
                          fullPath: entry.fullPath}
                        )
+*/
         if (this.app) {
-            this.app.download_location = entry
+
         } else {
             //mainAppWindow.app.download_location = entry
             mainAppWindow.app.set_default_download_location(entry);

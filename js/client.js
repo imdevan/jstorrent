@@ -20,6 +20,9 @@ function Client(opts) {
     this.disks = new jstorrent.Collection({__name__: 'Disks', parent:this, client:this, itemClass: jstorrent.Disk})
     console.log('fetching disks')
     this.disks.fetch(_.bind(function() {
+        if (this.disks.items.length == 0) {
+            this.app.notifyNeedDownloadDirectory()
+        }
         this.torrents.fetch(_.bind(function() {
             this.ready = true
             this.trigger('ready')

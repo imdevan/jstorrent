@@ -21,10 +21,12 @@ function onadd(evt) {
 }
 
 function onappready() {
+/*
     chrome.storage.local.get(null, function(d){console.log('chrome.storage.local.get',d,chrome.runtime.lastError)})
     chrome.storage.local.getBytesInUse( function(e){
         console.log('chrome.storage.local.getBytesInUse',e,chrome.runtime.lastError)
     })
+*/
 
     window.client = app.client
 
@@ -83,7 +85,7 @@ function click_detail(tab, evt) {
 function bind_events() {
     var tabs = ['info','files','peers','swarm','trackers','pieces','warning', 'diskio']
     tabs.forEach(function(tab) {
-	document.getElementById('detail-' + tab).addEventListener('click', click_detail.bind(this, tab));
+	$('#detail-' + tab).click( click_detail.bind(this, tab) )
     });
     $('#button-options').click( function(evt) {
         app.focus_or_open_options();

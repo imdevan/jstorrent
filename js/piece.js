@@ -4,17 +4,20 @@ function Piece(opts) {
     this.num = opts.num
     this.size = this.torrent.getPieceSize(this.num)
     this.numChunks = Math.ceil(this.size / jstorrent.protocol.chunkSize)
-    this.chunkRequests = {} // keep track of chunk requests
-    this.chunkResponses = {}
-    this.chunkResponsesChosen = null
-    this.data = null
-    this.haveData = false
-    // haveData is not the same as having written the data to disk... ?
-    this.haveDataPersisted = false
-    // this means we actually successfully wrote it to disk
+    this.resetData()
 }
 jstorrent.Piece = Piece
 Piece.prototype = {
+    resetData: function() {
+        this.chunkRequests = {} // keep track of chunk requests
+        this.chunkResponses = {}
+        this.chunkResponsesChosen = null
+        this.data = null
+        this.haveData = false
+        // haveData is not the same as having written the data to disk... ?
+        this.haveDataPersisted = false
+        // this means we actually successfully wrote it to disk
+    },
     get_key: function() {
         return this.num
     },
@@ -89,6 +92,10 @@ Piece.prototype = {
                 }
             }
         }
+
+        // now destroy my data
+        this.resetData()
+        this.torrent.pieces.remove(this)
     },
     checkChunkResponseHash: function(preferredPeer, callback) {
         // TODO - allow this to prefer assembling from a specific peer
