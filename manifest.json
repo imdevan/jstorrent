@@ -36,6 +36,9 @@
         "https://*/",
         "https://www.googleapis.com/"
     ],
+    "optional_permissions": [
+        "identity"
+    ],
     "oauth2": {
         "client_id": "432934632994-7if8sp8g5mc0gojarmeq8aaet04494hj.apps.googleusercontent.com",
         "scopes": ["https://www.googleapis.com/auth/drive.file"]
