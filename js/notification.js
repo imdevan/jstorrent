@@ -5,6 +5,12 @@ function Notification(opts) {
     this.data = opts.data
     this.closeOnClick = true
     var message = opts.message || jstorrent.constants.manifest.name
+    if (typeof message != 'string') {
+        message = JSON.stringify(message)
+    }
+    if (typeof opts.details != 'string') {
+        opts.details = JSON.stringify(opts.details)
+    }
 
     this.notificationOpts = {
         type: "basic",

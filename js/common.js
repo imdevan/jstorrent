@@ -141,5 +141,16 @@ function pad(s, padwith, len) {
 
 // not working?
 window.onerror = function(message, url, line) {
+    // TODO -- report this to google analytics or something
+    if (window.app) {
+        if (url.toLowerCase().match('^chrome-extension://')) {
+            var parts = url.split('/')
+            parts.shift(); parts.shift(); parts.shift()
+            url = parts.join('/')
+        }
+        window.app.createNotification({message:"Unexpected Error!",
+                                       priority: 2,
+                                       details: 'ver ' + jstorrent.constants.manifest.version+". In file " + url + " at line " + line + ', ' + message})
+    }
     console.log('window.onerror triggered',message,url,line)
 }

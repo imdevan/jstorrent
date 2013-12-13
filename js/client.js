@@ -99,6 +99,7 @@ Client.prototype = {
                                                          this.torrents.add(result.torrent)
                                                      } else {
                                                          console.error('error initializing torrent from entry', result)
+                                                         this.trigger('error',result)
                                                      }
                                                  },this)
                                                 })
@@ -108,6 +109,7 @@ Client.prototype = {
     },
     onError: function(e) {
         console.error('client error',e)
+        // app binds to our error and shows notification
     },
     stop: function() {
         clearInterval( this.interval )

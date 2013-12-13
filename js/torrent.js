@@ -130,7 +130,12 @@ Torrent.prototype = {
                     callback({error:'hasher error'})
                 }
             }
-            this.metadata = bdecode(ui82str(new Uint8Array(evt.target.result)))
+            try {
+                this.metadata = bdecode(ui82str(new Uint8Array(evt.target.result)))
+            } catch(e) {
+                callback({error:"Invalid torrent file"})
+                return
+            }
             this.infodict = this.metadata.info
             this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
             this.metadataPresentInitialize()
