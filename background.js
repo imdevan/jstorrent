@@ -1,7 +1,4 @@
 console.log('background page loaded')
-var JSTorrentHelperExtensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
-// this is a browser extension that adds a right click context menu so that JSTorrent can handle magnet links
-// https://chrome.google.com/webstore/detail/jstorrent-contextmenu-ext/bnceafpojmnimbnhamaeedgomdcgnbjk?hl=en
 
 function WindowManager() {
     this.mainWindowOpts = {
@@ -107,15 +104,13 @@ function onAppLaunchMessage(launchData) {
 }
 
 
-chrome.runtime.onMessageExternal.addListener( function(request, sender, sendResponse) {
-    if (sender.id == JSTorrentHelperExtensionId) {
-        var link = request.url
-        var page = request.pageUrl
-        var info = {type:'onMessageExternal',
-                    request: request,
-                    sender: sender,
-                    sendResponse: sendResponse}
-        onAppLaunchMessage(info)
-        sendResponse({handled: true, id: chrome.runtime.id})
-    }
+chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
+    // External messages come from a browser Extension that adds a right click
+    // context menu so that this App can handle magnet links.
+    var info = {type:'onMessageExternal',
+                request: request,
+                sender: sender,
+                sendResponse: sendResponse}
+    onAppLaunchMessage(info)
+    sendResponse({handled: true, id: chrome.runtime.id})
 });
