@@ -50,7 +50,11 @@
         }
     },
     "externally_connectable": {
-      "ids": [ "bnceafpojmnimbnhamaeedgomdcgnbjk" ]
+      "ids": [ "bnceafpojmnimbnhamaeedgomdcgnbjk" ],
+      "matches": [
+          "*://*.jstorrent.com/*",
+          "*://jstorrent.com/*"
+      ]
     },
     "icons": { 
         "16": "icon16.png", 

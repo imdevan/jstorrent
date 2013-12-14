@@ -106,8 +106,12 @@ function onAppLaunchMessage(launchData) {
 
 }
 
+chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall?version=' + 
+                               encodeURIComponent(chrome.runtime.getManifest()).version
+                              )
 
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
+    console.log('onMessageExternal',request,sender)
     // External messages come from a browser Extension that adds a right click
     // context menu so that this App can handle magnet links.
     var info = {type:'onMessageExternal',
