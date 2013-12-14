@@ -30,8 +30,8 @@ function PeerConnection(opts) {
     this.pieceChunkRequestsLinear = [] // perhaps store them in linear
                                        // request order to make
                                        // timeouts easy to process
-    this.pieceChunkRequestCount = 0
-    this.pieceChunkRequestPipelineLimit = 16 // TODO - make self adjusting
+    this.outstandingPieceChunkRequestCount = 0
+    this.pieceChunkRequestPipelineLimit = 3 // TODO - make self adjusting
 
     // inefficient that we create this for everybody in the
     // swarm... (not actual peer objects) but whatever, good enough
@@ -94,7 +94,7 @@ PeerConnection.prototype = {
         this.trigger('disconnect')
     },
     connect: function() {
-        console.log('try connect!', this.get_key())
+        //console.log('try connect!', this.get_key())
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -169,7 +169,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',[type, payloads])
+        console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -256,12 +256,12 @@ PeerConnection.prototype = {
     },
     couldRequestPieces: function() {
         //console.log('couldRequestPieces')
-        if (this.pieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
+        if (this.outstandingPieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
             return
         }
 
         if (this.torrent.unflushedPieceDataSize > this.torrent.client.app.options.get('max_unflushed_piece_data')) {
-            //console.log('not requesting more pieces -- need disk io to write out more first')
+            console.log('not requesting more pieces -- need disk io to write out more first')
             return
         }
 
@@ -271,10 +271,11 @@ PeerConnection.prototype = {
         var allPayloads = []
 
         for (var pieceNum=this.torrent.bitfieldFirstMissing; pieceNum<this.torrent.numPieces; pieceNum++) {
-            if (this.peerBitfield[pieceNum]) {
+            if (this.peerBitfield[pieceNum] && ! this.torrent.bitfield[pieceNum]) {
                 curPiece = this.torrent.getPiece(pieceNum)
+                if (curPiece.haveData) { continue } // we have the data for this piece, we just havent hashed and persisted it yet
 
-                while (this.pieceChunkRequestCount < this.pieceChunkRequestPipelineLimit) {
+                while (this.outstandingPieceChunkRequestCount < this.pieceChunkRequestPipelineLimit) {
                     //console.log('getting chunk requests for peer')
 
                     // what's ideal batch number?
@@ -282,12 +283,13 @@ PeerConnection.prototype = {
                     if (payloads.length == 0) {
                         break
                     } else {
+                        this.outstandingPieceChunkRequestCount += payloads.length
                         allPayloads = allPayloads.concat(payloads)
                     }
                 }
             }
 
-            if (this.pieceChunkRequestCount >= this.pieceChunkRequestPipelineLimit) {
+            if (this.outstandingPieceChunkRequestCount >= this.pieceChunkRequestPipelineLimit) {
                 break
             }
         }
@@ -303,6 +305,9 @@ PeerConnection.prototype = {
             this.registeredRequests[type] = {}
         }
         this.registeredRequests[type][key] = info
+    },
+    cancelAnyRequestsForPiece: function(piece) {
+        
     },
     newStateThink: function() {
         // thintk about the next thing we might want to write to the socket :-)
@@ -448,7 +453,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        //console.log('Received message',data)
+        console.log('Received message',data.type)
 
         this.handleMessage(data)
     },
@@ -489,9 +494,10 @@ PeerConnection.prototype = {
         // does not send size, inherent in message. could be smaller than chunk size though!
         var data = new Uint8Array(msg.payload, 5+8)
         console.assert(data.length <= jstorrent.protocol.chunkSize)
-        this.unflushedPieceDataSize += data.byteLength
-        //console.log('++increment unflushedPieceDataSize', this.unflushedPieceDataSize)
+        this.torrent.unflushedPieceDataSize += data.byteLength
+        //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
         this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
+
     },
     handle_UNCHOKE: function() {
         this.set('amChoked',false)

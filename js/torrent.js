@@ -41,29 +41,6 @@ function Torrent(opts) {
     this.peers.on('error', _.bind(this.on_peer_error,this))
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
 
-
-    this.chunkRequestsFlat = {} // store all chunk requests in a flat hash table
-    // key looks like {piecenum}/{chunknum}
-    // value looks like array( [peerconn, timestamp, piecenum, chunknum] )
-
-    // how to timeout? special object on client...
-    // this.batchedTimeouts = new BatchedTimeoutManager
-    // this.batchedTimeouts.callbackFunc = _.bind(this,onCheckTimeoutKeys)
-    // 
-    // this.batchedTimeouts.push( torrenthash + '/' + key )
-    // batchedTimeouts calls function(list_of_keys_to_check) in an interval approx
-
-    // ALTERNATIVE - maybe just call a timeout on a piece at the time
-    // the requests on that piece were created. since there the
-    // requests are made in chunks, that seems like a simple tradeoff
-    // in terms of simplicity and efficiency
-
-    this.peerChunkRequests = {} // store all chunk requests per each peer connection
-    // why store on torrent instead of on each peer? well, we might lose track of the peer? hmmm... good question
-    // on peer disconnect, have them unregister everything from chunkRequestsFlat
-
-    // how to do timeouts?
-
     if (opts.url) {
         // initialize torrent from a URL...
 
@@ -107,7 +84,7 @@ function Torrent(opts) {
                 parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
             )
         }
-        console.log('inited torrent',this.hashhexlower)
+        //console.log('inited torrent',this.hashhexlower)
     }
 }
 jstorrent.Torrent = Torrent
@@ -215,6 +192,7 @@ Torrent.prototype = {
     },
     metadataPresentInitialize: function() { // i.e. postMetadataReceived
         // call this when infodict is newly available
+        this.connectionsServingInfodict = []
 
         this.numPieces = this.infodict.pieces.length/20
         this.bitfield = ui82arr(new Uint8Array(this.numPieces))
@@ -346,6 +324,15 @@ Torrent.prototype = {
         this.trigger('progress')
         this.save()
     },
+    checkPieceChunkTimeouts: function(pieceNum, chunkNums) {
+        // XXX this timeout will get called even if this torrent was removed and its data .reset()'d
+
+        //console.log('checkPieceChunkTimeouts',pieceNum,chunkNums)
+        if (this.bitfield[pieceNum]) { return }
+        if (this.pieces.keyeditems[pieceNum]) {
+            this.getPiece(pieceNum).checkChunkTimeouts(chunkNums)
+        }
+    },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
@@ -476,8 +463,6 @@ Torrent.prototype = {
         this.save()
         this.started = true
         this.trigger('start')
-        console.log('torrent start')
-
         // todo // check if should re-announce, etc etc
         //this.trackers.get_at(4).announce(); 
         //return;
@@ -530,7 +515,7 @@ Torrent.prototype = {
             this.set('state','stopped')
             this.save() // TODO -- clear the entry from storage? nah, just put it in a trash bin
             this.client.torrents.remove(this)
-        },this), 1000)
+        },this), 200)
     },
     frame: function() {
         /* 

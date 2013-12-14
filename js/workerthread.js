@@ -45,7 +45,7 @@ if (self.jstorrent) {
         if (msg.command == 'hashChunks') {
             var digest = new Digest.SHA1()
             for (var i=0; i<msg.chunks.length; i++) {
-                digest.update( msg.chunks[i].data )
+                digest.update( msg.chunks[i] )
             }
             var responseHash = new Uint8Array(digest.finalize())
             self.postMessage({hash:responseHash, _id:id})

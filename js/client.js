@@ -18,7 +18,7 @@ function Client(opts) {
     this.torrents.on('add', _.bind(this.onTorrentAdd, this))
 
     this.disks = new jstorrent.Collection({__name__: 'Disks', parent:this, client:this, itemClass: jstorrent.Disk})
-    console.log('fetching disks')
+    //console.log('fetching disks')
     this.disks.fetch(_.bind(function() {
         if (this.disks.items.length == 0) {
             this.app.notifyNeedDownloadDirectory()
@@ -35,23 +35,6 @@ function Client(opts) {
     // more paralellizable (though it is causing lots of ArrayBuffer
     // copies... hmm). Perhaps do some performance tests on this.
     this.workerthread = new jstorrent.WorkerThread({client:this});
-
-    // batchTimeout: used for timing out piece requests
-
-    // about "timeoutIn": maybe we could tune this to adjust according
-    // to overall connection latency. i.e. tethered to mobile phone
-    // would have significantly higher latency? But at least we agree
-    // it can be global, i.e. apply for all peers. Because it
-    // shouldn't matter that much -- saturating bandwidth is more
-    // about the request pipeline, not so much the latency.
-    this.batchTimeout = new jstorrent.BatchTimeout({client:this, 
-                                                    timeoutFunction: _.bind(this.onBatchTimeout, this),
-                                                    timeoutIn: 12000
-                                                   })
-
-
-    // able to retreive piece data from a cache
-    //this.diskcache = new jstorrent.DiskCache({client:this}) // better to call it a piece cache, perhaps...
 
     this.peeridbytes = []
     for (var i=0; i<20; i++) {
@@ -89,7 +72,7 @@ Client.prototype = {
     handleLaunchData: function(launchData) {
         var item
         // check if client is ready for this, even...
-        console.log('handle launch data',launchData)
+        //console.log('handle launch data',launchData)
         if (launchData.type == 'onMessageExternal') {
             var request = launchData.request
             this.add_from_url(request.url)

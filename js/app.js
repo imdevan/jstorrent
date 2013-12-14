@@ -3,16 +3,14 @@
 // rather should have a better separation ...
 
 function App() {
-
+    console.log('creating app')
     chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
     chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
 
     this.options_window = null
-    this.options = new jstorrent.Options({app:this});
-    this.client = new jstorrent.Client({app:this, id:'client01'});
-    this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
-    this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
-    this.client.on('error', _.bind(this.onClientError, this))
+    this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
+
+
 
     // need to store a bunch of notifications keyed by either torrents or other things...
     this.notificationCounter = 0
@@ -22,15 +20,18 @@ function App() {
 
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
     // maybe use notifications instead... ( or in addition ... )
-
-
-
     this.UI = null
 }
 
 jstorrent.App = App
 
 App.prototype = {
+    initialize_client: function() {
+        this.client = new jstorrent.Client({app:this, id:'client01'});
+        this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
+        this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
+        this.client.on('error', _.bind(this.onClientError, this))
+    },
     reinstall: function() {
         chrome.storage.local.clear(function() {
             reload()
@@ -240,7 +241,10 @@ App.prototype = {
     },
     initialize: function(callback) {
         this.options.load( _.bind(function() {
-            callback()
+            this.initialize_client()
+            this.client.on('ready', function() {
+                callback()
+            })
             if (jstorrent.options.load_options_on_start) { this.focus_or_open_options() }
         },this))
     }

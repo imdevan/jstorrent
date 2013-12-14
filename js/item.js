@@ -93,7 +93,7 @@ Item.prototype = {
         var obj = {}
         var key = this.getStoreKey()
         obj[key] = this.getSaveData()
-        console.log('saving item',obj)
+        //console.log('saving item',obj)
         chrome.storage.local.set(obj, callback)
     },
     on: function(event_name, callback) {

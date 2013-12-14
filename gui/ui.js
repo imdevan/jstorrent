@@ -71,6 +71,9 @@ function UI(opts) {
             {attr:'num'},
             {attr:'size', formatVal:byteUnits},
             {attr:'haveData'},
+            {id:'requests'},
+            {id:'responses'},
+            {id:'timeouts'},
             {attr:'haveDataPersisted'},
             {attr:'numChunks'}
         ]
