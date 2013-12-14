@@ -49,6 +49,9 @@
             "scripts": ["background.js"]
         }
     },
+    "externally_connectable": {
+      "ids": [ "bnceafpojmnimbnhamaeedgomdcgnbjk" ]
+    },
     "icons": { 
         "16": "icon16.png", 
         "48": "icon48.png", 
