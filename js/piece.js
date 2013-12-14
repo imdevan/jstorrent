@@ -7,6 +7,7 @@ function Piece(opts) {
     this.set('requests', 0)
     this.set('responses', 0)
     this.set('timeouts', 0)
+    this.timeoutIds = []
     this.resetData()
     this.wasReset = false
 }
@@ -19,6 +20,12 @@ Piece.prototype = {
         // homogenous in a single peer, but rather contains
         // data from multiple peers.
         this.wasReset = true
+        if (this.timeoutIds.length > 0) {
+            for (var i=0; i<this.timeoutIds.length; i++) {
+                clearTimeout(this.timeoutIds[i])
+            }
+        }
+        this.timeoutIds = []
         this.chunkRequests = {} // keep track of chunk requests
         this.chunkResponses = {}
         this.chunkResponsesChosen = null
@@ -72,6 +79,8 @@ Piece.prototype = {
             if (filled) {
                 this.checkChunkResponseHash( null, _.bind(function(valid) {
                     if (valid) {
+                        if (this.torrent.get('state') != 'started') { return }
+
                         console.log('hashchecked valid piece',this.num)
                         // perhaps also place in disk cache?
                         this.data = new Uint8Array(this.size)
@@ -105,7 +114,10 @@ Piece.prototype = {
         // now destroy my data
         this.resetData()
         this.haveDataPersisted = true
-        this.torrent.pieces.remove(this)
+        if (this.torrent.pieces.contains(this)) {
+            // might not contain it if we stopped the torrent and the data still was persisted
+            this.torrent.pieces.remove(this)
+        }
     },
     checkChunkResponseHash: function(preferredPeer, callback) {
         // TODO - allow this to prefer assembling from a specific peer
@@ -225,6 +237,9 @@ debugger
         this.chunkRequests[chunkNum].push( {time: new Date(), peerconn:peerconn} )
     },
     getChunkRequestsForPeer: function(howmany, peerconn) {
+        // BUG when torrent stopped?
+
+
         // returns up to howmany chunk requests
         // need special handling for very last piece of a torrent
         //console.log('getChunkRequestsForPeer')
@@ -265,7 +280,11 @@ debugger
             chunkNum++
             chunkOffset += jstorrent.protocol.chunkSize
         }
-        setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,this.torrent,this.num,chunkNums), jstorrent.constants.chunkRequestTimeoutInterval )
+        if (payloads.length > 0) {
+            // some kind of subtle bugs here with torrent start/stop. but let's just clear out everything on torrent stop.
+            var id = setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,this.torrent,this.num,chunkNums), jstorrent.constants.chunkRequestTimeoutInterval )
+            this.timeoutIds.push(id)
+        }
         return payloads
     },
     getSpanningFilesInfo: function(offset, size) {

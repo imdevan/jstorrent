@@ -8,7 +8,7 @@ function Torrent(opts) {
     this.magnet_info = null
 
     this.invalid = false;
-    this.started = false;
+    this.started = false; // get('state') ? 
 
     this.metadata = {}
     this.infodict = null
@@ -399,9 +399,12 @@ Torrent.prototype = {
             //console.warn('peer wasnt in list')
         } else {
             this.peers.remove(peer)
+            this.set('numpeers',this.peers.items.length)
         }
     },
     on_peer_disconnect: function(peer) {
+        // called by .close()
+        // later onWrites may call on_peer_error, also
         //console.log('peer disconnect...')
         if (!this.peers.contains(peer)) {
             //console.warn('peer wasnt in list')
@@ -502,6 +505,13 @@ Torrent.prototype = {
         for (var i=0; i<this.peers.items.length; i++) {
             this.peers.items[i].close('torrent stopped')
         }
+        for (var i=0; i<this.pieces.items.length; i++) {
+            this.pieces.items[i].resetData()
+        }
+        this.pieces.clear()
+
+        
+
         this.set('state','stopped')
         this.save()
         this.started = false

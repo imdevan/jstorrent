@@ -52,6 +52,13 @@ Collection.prototype = {
             }
         }
     },
+    clear: function() {
+        var items = _.clone(this.items)
+        
+        for (var i=0;i<items.length;i++) {
+            this.remove(items[i])
+        }
+    },
     add: function(v) {
         console.assert(! this.contains(v))
         this.setItem(v.get_key(), v)
