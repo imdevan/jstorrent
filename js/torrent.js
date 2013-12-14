@@ -41,6 +41,29 @@ function Torrent(opts) {
     this.peers.on('error', _.bind(this.on_peer_error,this))
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
 
+
+    this.chunkRequestsFlat = {} // store all chunk requests in a flat hash table
+    // key looks like {piecenum}/{chunknum}
+    // value looks like array( [peerconn, timestamp, piecenum, chunknum] )
+
+    // how to timeout? special object on client...
+    // this.batchedTimeouts = new BatchedTimeoutManager
+    // this.batchedTimeouts.callbackFunc = _.bind(this,onCheckTimeoutKeys)
+    // 
+    // this.batchedTimeouts.push( torrenthash + '/' + key )
+    // batchedTimeouts calls function(list_of_keys_to_check) in an interval approx
+
+    // ALTERNATIVE - maybe just call a timeout on a piece at the time
+    // the requests on that piece were created. since there the
+    // requests are made in chunks, that seems like a simple tradeoff
+    // in terms of simplicity and efficiency
+
+    this.peerChunkRequests = {} // store all chunk requests per each peer connection
+    // why store on torrent instead of on each peer? well, we might lose track of the peer? hmmm... good question
+    // on peer disconnect, have them unregister everything from chunkRequestsFlat
+
+    // how to do timeouts?
+
     if (opts.url) {
         // initialize torrent from a URL...
 
@@ -279,6 +302,7 @@ Torrent.prototype = {
     persistPieceResult: function(result) {
         if (result.error) {
             console.error('persist piece result',result)
+            this.error('error persisting piece: ' + result.error)
         } else {
             // clean up all registered chunk requests
             result.piece.notifyPiecePersisted()

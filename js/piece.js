@@ -22,20 +22,24 @@ Piece.prototype = {
         return this.num
     },
     registerChunkResponseFromPeer: function(peerconn, chunkOffset, data) {
-
-        // TODO -- move this somewhere smarter...
-        //this.torrent.unflushedPieceDataSize += data.byteLength
-        //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
-
-
         var chunkNum = chunkOffset / jstorrent.protocol.chunkSize
         // received a chunk response from peer
         // decrements this peer connection's request counter
 
         //console.log("Chunk response from peer!", this.num, chunkNum)
+        var handled = false
 
-        var handled = peerconn.registerChunkResponse(this.num, chunkNum, chunkOffset, data)
+        if (this.chunkRequests[chunkNum]) {
+            for (var i=0; i<this.chunkRequests[chunkNum].length; i++) {
+                if (this.chunkRequests[chunkNum][i].peerconn == peerconn) {
+                    handled = true
+                    break
+                }
+            }
+        }
+debugger
         if (handled) {
+            this.chunkRequests[chunkNum].splice(i,1)
             if (! this.chunkResponses[chunkNum]) {
                 // able to store multiple copies of chunk responses,
                 // per each peer this serves endgame mode. we can
@@ -45,7 +49,7 @@ Piece.prototype = {
                 this.chunkResponses[chunkNum] = []
             }
             this.chunkResponses[chunkNum].push( {data:data,
-                                                 peerconn:peerconn.get_key()} )
+                                                 peerconn:peerconn} )
             var filled = this.checkChunkResponsesFilled();
 
             if (filled) {
@@ -65,6 +69,9 @@ Piece.prototype = {
                         this.torrent.persistPiece(this)
                     } else {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
+
+                        // first of all, throw away this piece's data entirely...
+
                         // what to do, mark a peer as nasty, mark as suspect?
                         debugger
                     }
@@ -85,10 +92,10 @@ Piece.prototype = {
             resps = this.chunkResponses[chunkNum]
             for (var i=0; i<resps.length; i++) {
                 resp = resps[i]
-
-                var peerconn = this.torrent.peers.get(resp.peerconn)
-                if (peerconn) {
-                    peerconn.notifyPiecePersisted(this)
+                debugger
+                if (resp.peerconn != this) {
+                    // they dont need to know this.
+                    // resp.peerconn.notifyPiecePersisted(this)
                 }
             }
         }
@@ -152,22 +159,40 @@ Piece.prototype = {
         }
         return true
     },
-    unregisterAllRequestsForPeer: function(peerconn, requests) {
-
-        // HAVE TO LOOK AT ALL CHUNK REQUESTS AND PURGE EM!
-        var reqs;
+    unregisterAllRequestsForPeer: function(peerconn) {
 
         for (var chunkNum in this.chunkRequests) {
-            reqs = this.chunkRequests[chunkNum]
+            //requests = this.chunkRequests[chunkNum]
+            this.chunkRequests[chunkNum] = _.filter(this.chunkRequests[chunkNum], function(v) { return v.peerconn != peerconn })
+            for (var i=0; i<requests.length; i++) {
+debugger
+            }
             
         }
     },
-    registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
-        peerconn.registerChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)
-        if (this.chunkRequests[chunkNum] === undefined) {
-            this.chunkRequests[chunkNum] = 0
+    checkChunkTimeouts: function(chunkNums) {
+        var chunkNum, requests, requestData
+        var curTime = new Date()
+        for (var i=0; i<chunkNums.length; i++) {
+            chunkNum = chunkNums[i]
+            if (this.chunkRequests[chunkNum]) {
+                // time it out!
+                requests = this.chunkRequests[chunkNum]
+                for (var j=0; j<requests.length; j++) {
+                    requestData = requests[j]
+                    if (curTime - requestData.time >= jstorrent.constants.chunkRequestTimeoutInterval) {
+                        debugger // piece timed out
+                    }
+                }
+            }
         }
-        this.chunkRequests[chunkNum]++
+    },
+    registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
+        //peerconn.registerChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)
+        if (this.chunkRequests[chunkNum] === undefined) {
+            this.chunkRequests[chunkNum] = []
+        }
+        this.chunkRequests[chunkNum].push( {time: new Date(), peerconn:peerconn} )
     },
     getChunkRequestsForPeer: function(howmany, peerconn) {
         // returns up to howmany chunk requests
@@ -177,28 +202,29 @@ Piece.prototype = {
         var chunkNum = 0
         var chunkOffset = 0
         var chunkSize = jstorrent.protocol.chunkSize
-        var registered = 0
+        var obtained = 0
         var payload, v
         var payloads = []
+        var chunkNums = []
 
-        while (chunkOffset < this.size && registered < howmany) {
+        while (chunkOffset < this.size && obtained < howmany) {
             // TODO -- make this loop more efficient
-            //console.log('inwhile',this.num,chunkNum,chunkOffset,registered,payloads)
+            //console.log('inwhile',this.num,chunkNum,chunkOffset,obtained,payloads)
             if (chunkNum == this.numChunks - 1 &&
                 this.num == this.torrent.numPieces - 1) {
-                // this is the very last chunk of them all!
+                // very last chunk of torrent has special size
                 chunkSize = this.size - chunkNum * chunkSize
             }
 
-            /* NEED TO MAKE THIS MAKE MORE SENSE :-( */
-            if (peerconn.pieceChunkRequests[this.num] &&
-                peerconn.pieceChunkRequests[this.num][chunkNum]) {
-                // continues below, updating state
-            } else if (this.chunkRequests[chunkNum]) {
-                // hmm, why do we have these two cases... confusing!
+            if (this.chunkRequests[chunkNum]) {
+                // if ENDGAME, analyze further.
+                if (this.torrent.isEndGame) {
+                    debugger
+                }
             } else {
-                registered++
+                obtained++
                 this.registerChunkRequestForPeer(peerconn, chunkNum, chunkOffset, chunkSize)
+                chunkNums.push(chunkNum)
                 payload = new Uint8Array(12)
                 v = new DataView(payload.buffer)
                 v.setUint32(0, this.num)
@@ -206,10 +232,10 @@ Piece.prototype = {
                 v.setUint32(8, chunkSize)
                 payloads.push( payload.buffer )
             }
-
             chunkNum++
             chunkOffset += jstorrent.protocol.chunkSize
         }
+        setTimeout( _.bind(this.checkChunkTimeouts,this,chunkNums), jstorrent.constants.chunkRequestTimeoutInterval )
         return payloads
     },
     getSpanningFilesInfo: function(offset, size) {

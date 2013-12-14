@@ -2,7 +2,8 @@
 jstorrent = window.jstorrent || {}
 jstorrent.constants = {
     keyPresentInPreRewrite: 'blah',
-    manifest: chrome.runtime.getManifest()
+    manifest: chrome.runtime.getManifest(),
+    chunkRequestTimeoutInterval: 12000
 }
 jstorrent.strings = {
     NOTIFY_NO_DOWNLOAD_FOLDER: "No Download Folder selected. Click to select your Download Directory.",

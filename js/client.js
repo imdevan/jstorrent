@@ -29,7 +29,26 @@ function Client(opts) {
         },this))
     },this))
 
+    // workerthread is used for SHA1 hashing data chunks so that it
+    // doesn't cause the UI to be laggy. If UI is already in its own
+    // thread, we probably still want to do this anyway, because it is
+    // more paralellizable (though it is causing lots of ArrayBuffer
+    // copies... hmm). Perhaps do some performance tests on this.
     this.workerthread = new jstorrent.WorkerThread({client:this});
+
+    // batchTimeout: used for timing out piece requests
+
+    // about "timeoutIn": maybe we could tune this to adjust according
+    // to overall connection latency. i.e. tethered to mobile phone
+    // would have significantly higher latency? But at least we agree
+    // it can be global, i.e. apply for all peers. Because it
+    // shouldn't matter that much -- saturating bandwidth is more
+    // about the request pipeline, not so much the latency.
+    this.batchTimeout = new jstorrent.BatchTimeout({client:this, 
+                                                    timeoutFunction: _.bind(this.onBatchTimeout, this),
+                                                    timeoutIn: 12000
+                                                   })
+
 
     // able to retreive piece data from a cache
     //this.diskcache = new jstorrent.DiskCache({client:this}) // better to call it a piece cache, perhaps...
@@ -47,6 +66,10 @@ function Client(opts) {
 }
 
 Client.prototype = {
+    onBatchTimeout: function(keys) {
+        // TODO -- implement
+        console.log('onBatchTimeout',keys)
+    },
     onTorrentAdd: function(torrent) {
         if (this.app.options.get('new_torrents_auto_start')) {
             torrent.start()

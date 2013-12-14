@@ -1,6 +1,9 @@
 console.log('background page loaded')
 
 function WindowManager() {
+    // TODO -- if we add "id" to this, then chrome.app.window.create
+    // won't create it twice.  plus, then its size and positioning
+    // will be remembered. so put it in.
     this.mainWindowOpts = {
         width: 800,
         height: 600

@@ -22,6 +22,8 @@ function PeerConnection(opts) {
     this.set('address', this.peer.get_key())
     this.set('bytes_sent', 0)
     this.set('bytes_received', 0)
+    this.set('requests',0)
+    this.set('responses',0)
 
     // piece/chunk requests
     this.pieceChunkRequests = {}
@@ -89,8 +91,6 @@ PeerConnection.prototype = {
         this.sockInfo = null
 
         // need to clean up registerd requests
-        this.unregisterChunkRequests()
-
         this.trigger('disconnect')
     },
     connect: function() {
@@ -254,40 +254,6 @@ PeerConnection.prototype = {
             }
         }
     },
-    notifyPiecePersisted: function(piece) {
-        delete this.pieceChunkRequests[piece.num]
-    },
-    unregisterChunkRequests: function() {
-        var piece
-        for (var pieceNum in this.pieceChunkRequests) {
-            piece = this.torrent.getPiece(pieceNum)
-            piece.unregisterAllRequestsForPeer(this, this.pieceChunkRequests[pieceNum])
-        }
-        // called when the connection is closed
-    },
-    registerChunkRequest: function(pieceNum, chunkNum, chunkOffset, chunkSize) {
-        this.pieceChunkRequestCount++
-        //console.log('++increment pieceChunkRequestCount', this.pieceChunkRequestCount)
-        //console.log('registering chunk request',this.get_key(),pieceNum, chunkNum)
-        if (! this.pieceChunkRequests[pieceNum]) {
-            this.pieceChunkRequests[pieceNum] = {}
-        }
-        this.pieceChunkRequests[pieceNum][chunkNum] = [chunkOffset, chunkSize, new Date()]
-        // when to timeout request?
-    },
-    registerChunkResponse: function(pieceNum, chunkNum, offset, data) {
-        if (this.pieceChunkRequests[pieceNum] &&
-            this.pieceChunkRequests[pieceNum][chunkNum]) {
-            // we were expecting this
-            this.pieceChunkRequestCount--
-            //console.log('--decrement pieceChunkRequestCount', this.pieceChunkRequestCount)
-            delete this.pieceChunkRequests[pieceNum][chunkNum]
-            return true
-        } else {
-            console.warn('was not expecting this piece',pieceNum,offset)
-            return false
-        }
-    },
     couldRequestPieces: function() {
         //console.log('couldRequestPieces')
         if (this.pieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
@@ -327,6 +293,7 @@ PeerConnection.prototype = {
         }
 
         for (var i=0; i<allPayloads.length; i++) {
+            this.set('requests',this.get('requests')+1)
             this.sendMessage("REQUEST", [allPayloads[i]])
         }
     },
@@ -515,12 +482,15 @@ PeerConnection.prototype = {
         }
     },
     handle_PIECE: function(msg) {
+        this.set('responses',this.get('responses')+1)
         var v = new DataView(msg.payload, 5, 12)
         var pieceNum = v.getUint32(0)
         var chunkOffset = v.getUint32(4)
         // does not send size, inherent in message. could be smaller than chunk size though!
         var data = new Uint8Array(msg.payload, 5+8)
         console.assert(data.length <= jstorrent.protocol.chunkSize)
+        this.unflushedPieceDataSize += data.byteLength
+        //console.log('++increment unflushedPieceDataSize', this.unflushedPieceDataSize)
         this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
     },
     handle_UNCHOKE: function() {
