@@ -77,6 +77,34 @@ function PeerConnection(opts) {
 jstorrent.PeerConnection = PeerConnection;
 
 PeerConnection.prototype = {
+    registerPieceChunkRequest: function(pieceNum, chunkNum) {
+        this.pieceChunkRequests[pieceNum + '/' + chunkNum] = true
+    },
+    cleanupRequests: function() {
+        var parts, pieceNum, chunkNum, piece, chunkRequests, chunkRequest
+        for (var key in this.pieceChunkRequests) {
+            parts = key.split('/')
+            pieceNum = parts[0]
+            chunkNum = parts[1]
+            if (this.torrent.pieces.containsKey(pieceNum)) {
+                piece = this.torrent.pieces.get(pieceNum)
+                chunkRequests = piece.chunkRequests[chunkNum]
+                if (chunkRequests && chunkRequests.length > 0) {
+
+                    for (var i=0; i<chunkRequests.length; i++) {
+                        chunkRequest = chunkRequests[i]
+                        if (chunkRequest.peerconn == this) {
+                            // DELETE this fucker!
+                            console.log('peer disconnected that had outstanding chunk request and we deleted it. yay')
+                            delete chunkRequests[i]
+                            break
+                        }
+                    }
+
+                }
+            }
+        }
+    },
     updatePercentComplete: function() {
         var count = 0
         for (var i=0; i<this.torrent.numPieces; i++) {
@@ -96,6 +124,7 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
+        // XXX TODO -- does this always get called when the socket closes/peer disconnects/they leave peer list?
         if (this.connect_timeout_callback) { clearTimeout(this.connect_timeout_callback) }
         if (this.hasclosed) {
             // this can happen when we stop the torrent while we are
@@ -117,6 +146,7 @@ PeerConnection.prototype = {
 
         // unfortunately the pending read/write callbacks still get
         // triggered... make sure we look for sockInfo being gone
+        this.cleanupRequests()
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null

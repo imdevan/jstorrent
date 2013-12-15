@@ -252,7 +252,7 @@ debugger
     },
     registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
         this.set('requests', this.get('requests')+1)
-        //peerconn.registerChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)
+        peerconn.registerPieceChunkRequest(this.num, chunkNum, chunkOffset, chunkSize)
         if (this.chunkRequests[chunkNum] === undefined) {
             this.chunkRequests[chunkNum] = []
         }

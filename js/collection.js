@@ -71,6 +71,10 @@ Collection.prototype = {
         this.length++
         this.trigger('add',v)
     },
+    containsKey: function(k) {
+        // xXX - we had a typo "key" here instead of k but didnt get referenceerror. check why window.key is set to "ut_pex"
+        return this.keyeditems[k] !== undefined
+    },
     contains: function(v) {
         var key = v.get_key()
         var idx = this.keyeditems[key]

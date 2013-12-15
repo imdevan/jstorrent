@@ -78,7 +78,6 @@ Item.prototype = {
         if (this.itemClass.persistAttributes) {
             attrs = _.clone(this._attributes)
             for (var i=0; i<this.itemClass.persistAttributes.length; i++) {
-debugger
                 key = this.itemClass.persistAttributes[i]
                 // TODO work in tandem with serializer...
                 attrs[key] = this[key]

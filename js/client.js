@@ -101,7 +101,11 @@ Client.prototype = {
                                                  attributes: {added: new Date()},
                                                  callback: _.bind(function(result) {
                                                      if (result.torrent) {
-                                                         this.torrents.add(result.torrent)
+                                                         if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
+                                                             this.torrents.add(result.torrent)
+                                                         } else {
+                                                             this.trigger('error','already had this torrent')
+                                                         }
                                                      } else {
                                                          console.error('error initializing torrent from entry', result)
                                                          this.trigger('error',result)
