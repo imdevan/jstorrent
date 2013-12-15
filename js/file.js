@@ -2,8 +2,6 @@ function File(opts) {
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.num = opts.num
-    this.set('downloaded',0) // not zero! need to get our spanning pieces and add up the components...
-    this.set('complete',0)
 
     if (this.torrent.multifile) {
         // should we prepend torrent name? Yes.
@@ -22,11 +20,51 @@ function File(opts) {
         this.size = this.torrent.size
     }
 
+
+    this.startByte = this.torrent.fileOffsets[this.num]
+    if (this.num == this.torrent.numFiles - 1) {
+        this.endByte = this.torrent.size - 1
+    } else {
+        this.endByte = this.torrent.fileOffsets[this.num + 1] - 1
+    }
+
+    this.set('downloaded',this.getDownloaded()) // not zero! need to get our spanning pieces and add up the components...
+    this.set('complete',this.get('downloaded')/this.size)
+
 }
 jstorrent.File = File
 File.prototype = {
-    updatePercentComplete: function() {
-        
+    getSpanningPiecesInfo: function() { // similar to piece.getSpanningFilesInfo
+        var leftPiece = Math.floor(this.startByte / this.torrent.pieceLength)
+        var rightPiece = Math.ceil(this.endByte / this.torrent.pieceLength)
+
+        var allInfos = []
+        var curInfos
+
+        var curPiece
+        for (var i=leftPiece; i<rightPiece; i++) {
+            curPiece = this.torrent.getPiece(i)
+            curInfos = curPiece.getSpanningFilesInfo()
+            for (var j=0; j<curInfos.length; j++) {
+                if (curInfos[j].fileNum == this.num) {
+                    curInfos[j].pieceNum = i
+                    allInfos.push(curInfos[j])
+                }
+            }
+        }
+        return allInfos
+    },
+    getDownloaded: function() {
+        var pieceSpans = this.getSpanningPiecesInfo()
+        var pieceSpan
+        var downloaded = 0
+        for (var i=0; i<pieceSpans.length; i++) {
+            pieceSpan = pieceSpans[i]
+            if (this.torrent._attributes.bitfield[pieceSpan.pieceNum]) {
+                downloaded += pieceSpan.size
+            }
+        }
+        return downloaded
     },
     get_key: function() {
         return this.num

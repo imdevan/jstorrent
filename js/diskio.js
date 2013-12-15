@@ -187,7 +187,7 @@ DiskIO.prototype = {
             if (entry.isFile) {
                 if (job.opts.type == 'write') {
                     entry.getMetadata( function(metaData) {
-                        if (job.opts.size == 4096) { debugger }
+                        //if (job.opts.size == 4096) { debugger }
                         //console.log(job.opts.jobId, 'doJob.getMetadata')
                         if (job.opts.fileOffset <= metaData.size) {
                             _this.doJobReadyToWrite(entry, job)
@@ -217,14 +217,16 @@ DiskIO.prototype = {
         
         for (var i=0; i<filesSpanInfo.length; i++) {
             fileSpanInfo = filesSpanInfo[i]
-            console.log('writepiecefilespan',fileSpanInfo)
+            //console.log('writepiecefilespan',fileSpanInfo)
 
-            // need to slice off the data from the piece here...
+            var bufslice = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size)
 
-            // XXX - this is broken until we actually slice it. you fucking retard.
-            var buf = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size).buffer
+            // TODO -- can make more efficient if piece fully contained in this file (dont have to do this copy)
+            var buftowrite = new Uint8Array(fileSpanInfo.size)
+            buftowrite.set(bufslice, 0)
+
             job = new jstorrent.DiskIOJob( {type: 'write',
-                                            data: buf,
+                                            data: buftowrite.buffer,
                                             piece: piece,
                                             jobId: this.jobIdCounter++,
                                             torrent: piece.torrent.hashhexlower,
