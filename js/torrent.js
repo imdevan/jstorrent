@@ -9,6 +9,7 @@ function Torrent(opts) {
 
     this.invalid = false;
     this.started = false; // get('state') ? 
+    this.starting = false
 
     this.metadata = {}
     this.infodict = null
@@ -22,7 +23,7 @@ function Torrent(opts) {
     this.size = null
     this.numPieces = null
     this.numFiles = null
-    this.bitfield = null
+    // this._attributes.bitfield = null // use _attributes.bitfield for convenience for now...
     this.bitfieldFirstMissing = null // first index where a piece is missing
 
     this.settings = new jstorrent.TorrentSettings({torrent:this})
@@ -40,6 +41,8 @@ function Torrent(opts) {
     this.peers.on('connect_timeout', _.bind(this.on_peer_connect_timeout,this))
     this.peers.on('error', _.bind(this.on_peer_error,this))
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
+
+    this.think_interval = null
 
     if (opts.url) {
         // initialize torrent from a URL...
@@ -89,8 +92,20 @@ function Torrent(opts) {
 }
 jstorrent.Torrent = Torrent
 
-Torrent.persistAttributes = ['bitfield']
+//Torrent.persistAttributes = ['bitfield']
 Torrent.attributeSerializers = {
+    bitfield: {
+        serialize: function(v) {
+            return v.join('')
+        },
+        deserialize: function(v) {
+            var arr = [], len = v.length
+            for (var i=0; i<len; i++) {
+                arr.push(parseInt(v[i]))
+            }
+            return arr
+        }
+    },
     added: {
         serialize: function(v) {
             return v.getTime()
@@ -116,12 +131,12 @@ Torrent.prototype = {
         var _this = this
         var reader = new FileReader;
         reader.onload = _.bind(function(evt) {
-            console.log('read torrent data',evt)
+            //console.log('read torrent data',evt)
 
             function onHashResult(result) {
                 var hash = result.hash
                 if (hash) {
-                    console.log('hashed input torrent file to',hash)
+                    //console.log('hashed input torrent file to',hash)
                     _this.hashbytes = ui82arr(hash)
                     _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
                     console.assert(_this.hashhexlower.length == 40)
@@ -138,8 +153,8 @@ Torrent.prototype = {
             }
             this.infodict = this.metadata.info
             this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
-            this.metadataPresentInitialize()
             this.initializeTrackers()
+            this.metadataPresentInitialize()
             var chunkData = this.infodict_buffer
             this.client.workerthread.send( { command: 'hashChunks',
                                              chunks: [chunkData] }, onHashResult )
@@ -195,8 +210,12 @@ Torrent.prototype = {
         this.connectionsServingInfodict = []
 
         this.numPieces = this.infodict.pieces.length/20
-        this.bitfield = ui82arr(new Uint8Array(this.numPieces))
-        this.bitfieldFirstMissing = 0
+        if (! this._attributes.bitfield) {
+            this._attributes.bitfield = ui82arr(new Uint8Array(this.numPieces))
+        } else {
+            console.assert( this._attributes.bitfield.length == this.numPieces )
+        }
+        this.bitfieldFirstMissing = 0 // should fix this/set this correctly, but itll fix itself
         this.pieceLength = this.infodict['piece length']
 
         if (this.infodict.files) {
@@ -219,13 +238,29 @@ Torrent.prototype = {
         for (var i=0; i<this.peers.items.length; i++) {
             // send new extension handshake to everybody, because now it has ut_metadata...
             this.peers.items[i].sendExtensionHandshake()
+            this.peers.items[i].newStateThink() // in case we dont send them extension handshake because they dont advertise the bit
         }
+        this.set('metadata',true)
         this.save()
-        this.saveMetadata()
+        this.saveMetadata() // trackers maybe not initialized so they arent being saved...
         this.recheckData()
     },
     getMetadataFilename: function() {
         return this.get('name') + '.torrent'
+    },
+    loadMetadataEntry: function(callback) {
+        var storage = this.getStorage()
+        if (! storage) {
+            callback({error:'disk missing'})
+        } else {
+            storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
+                if (entry) {
+                    callback({success:true, entry:entry})
+                } else {
+                    callback({error:'file missing'})
+                }
+            })
+        }
     },
     saveMetadata: function(callback) {
         var filename = this.getMetadataFilename()
@@ -234,11 +269,14 @@ Torrent.prototype = {
         var _this = this
         if (! storage) {
             this.error('disk missing')
+            if (callback) {
+                callback({error:'disk missing'})
+            }
         } else {
             storage.entry.getFile( filename, {create:true}, function(entry) {
                 entry.createWriter(function(writer) {
                     writer.onwrite = function(evt) {
-                        console.log('wrote torrent metadata')
+                        //console.log('wrote torrent metadata')
                         if (callback){ callback({wrote:true}) }
                     }
                     writer.onerror = function(evt) {
@@ -272,10 +310,11 @@ Torrent.prototype = {
     },
     getPercentComplete: function() {
         var count = 0
-        for (var i=0; i<this.bitfield.length; i++) {
-            count += this.bitfield[i]
+        for (var i=0; i<this._attributes.bitfield.length; i++) {
+            count += this._attributes.bitfield[i]
         }
-        return count / this.numPieces
+        var val = count / this.numPieces
+        return val
     },
     persistPieceResult: function(result) {
         if (result.error) {
@@ -287,11 +326,11 @@ Torrent.prototype = {
             //console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
-            this.bitfield[result.piece.num] = 1
+            this._attributes.bitfield[result.piece.num] = 1
 
             var foundmissing = false
-            for (var i=this.bitfieldFirstMissing; i<this.bitfield.length; i++) {
-                if (this.bitfield[i] == 0) {
+            for (var i=this.bitfieldFirstMissing; i<this._attributes.bitfield.length; i++) {
+                if (this._attributes.bitfield[i] == 0) {
                     this.bitfieldFirstMissing = i
                     foundmissing = true
                     break
@@ -328,7 +367,7 @@ Torrent.prototype = {
         // XXX this timeout will get called even if this torrent was removed and its data .reset()'d
 
         //console.log('checkPieceChunkTimeouts',pieceNum,chunkNums)
-        if (this.bitfield[pieceNum]) { return }
+        if (this._attributes.bitfield[pieceNum]) { return }
         if (this.pieces.keyeditems[pieceNum]) {
             this.getPiece(pieceNum).checkChunkTimeouts(chunkNums)
         }
@@ -360,7 +399,7 @@ Torrent.prototype = {
     recheckData: function() {
         // checks registered or default torrent download location for
         // torrent data
-        this.set('complete',0)
+        // this.set('complete',0)
         console.log('Re-check data')
     },
     on_peer_connect_timeout: function(peer) {
@@ -391,6 +430,7 @@ Torrent.prototype = {
         console.error('torrent error:',msg)
         this.client.app.notifyNeedDownloadDirectory()
         this.started = false
+        this.starting = false
         this.save()
     },
     on_peer_error: function(peer) {
@@ -406,6 +446,9 @@ Torrent.prototype = {
         // called by .close()
         // later onWrites may call on_peer_error, also
         //console.log('peer disconnect...')
+
+        // XXX - for some reason .close() on the peer is not triggering this?
+
         if (!this.peers.contains(peer)) {
             //console.warn('peer wasnt in list')
         } else {
@@ -453,24 +496,44 @@ Torrent.prototype = {
                 } else {
                     tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
                 }
+                this.trackers.add( tracker )
             }
         }
     },
     start: function() {
+        if (this.started || this.starting) { return }
+        this.starting = true
+        this.think_interval = setInterval( _.bind(this.newStateThink, this), 1000 )
         if (! this.getStorage()) {
             this.error('Disk Missing')
             return
         }
 
-        if (! this.infodict) {
-            // do we have it stored?
-debugger
+        if (this.get('metadata') && ! this.infodict) {
+            this.loadMetadataEntry( _.bind(function(result) {
+                //console.log('metadataentry',result)
+                if (result && result.entry) {
+                    this.initializeFromEntry(result.entry, _.bind(function(initResult) {
+                        if (initResult.error) {
+                            this.error(initResult.error)
+                        } else {
+                            this.readyToStart()
+                        }
+                    },this))
+                } else {
+                    this.error('unable to load metadata')
+                }
+            },this))
+        } else {
+            this.readyToStart()
         }
-
+    },
+    readyToStart: function() {
         this.set('state','started')
-        this.save()
         this.started = true
-        this.trigger('start')
+        this.starting = false
+        this.save()
+
         // todo // check if should re-announce, etc etc
         //this.trackers.get_at(4).announce(); 
         //return;
@@ -501,18 +564,24 @@ debugger
                 }
             }
         }
+        this.trigger('start')
         this.newStateThink()
     },
-    newStateThink: function() {
-        this.frame()
-    },
     stop: function() {
+        this.starting = false
+        if (this.think_interval) { 
+            clearInterval(this.think_interval)
+            this.think_interval = null
+        }
+        // prevent newStateThink from reconnecting us
+        _.defer( _.bind(function() {
         for (var i=0; i<this.peers.items.length; i++) {
             this.peers.items[i].close('torrent stopped')
         }
         for (var i=0; i<this.pieces.items.length; i++) {
             this.pieces.items[i].resetData()
         }
+        },this))
         // TODO -- move these into some kind of resetState function?
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
@@ -532,7 +601,7 @@ debugger
             this.client.torrents.remove(this)
         },this), 200)
     },
-    frame: function() {
+    newStateThink: function() {
         /* 
 
            how does piece requesting work? good question...  each peer
@@ -572,11 +641,11 @@ debugger
         if (! this.started) { return }
         //console.log('torrent frame!')
 
+        var idx, peer, peerconn
         if (this.should_add_peers() && this.swarm.length > 0) {
-            var idx = Math.floor( Math.random() * this.swarm.length )
-            var peer = this.swarm.get_at(idx)
-
-            var peerconn = new jstorrent.PeerConnection({peer:peer})
+            idx = Math.floor( Math.random() * this.swarm.length )
+            peer = this.swarm.get_at(idx)
+            peerconn = new jstorrent.PeerConnection({peer:peer})
             //console.log('should add peer!', idx, peer)
             if (! this.peers.contains(peerconn)) {
                 if (peer.get('only_connect_once')) { return }
@@ -589,6 +658,7 @@ debugger
     },
     should_add_peers: function() {
         if (this.started) {
+
             var maxconns = this.get('maxconns') || this.client.app.options.get('maxconns')
             if (this.peers.length < maxconns) {
                 return true

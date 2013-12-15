@@ -24,6 +24,7 @@ function PeerConnection(opts) {
     this.set('bytes_received', 0)
     this.set('requests',0)
     this.set('responses',0)
+    this.set('timeouts',0)
 
     // piece/chunk requests
     this.pieceChunkRequests = {}
@@ -70,6 +71,7 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
+        if (this.connect_timeout_callback) { clearTimeout(this.connect_timeout_callback) }
         if (this.hasclosed) {
             // this can happen when we stop the torrent while we are
             // reading from the socket and we get the onRead event
@@ -97,7 +99,7 @@ PeerConnection.prototype = {
         this.trigger('disconnect')
     },
     connect: function() {
-        //console.log('try connect!', this.get_key())
+        console.log(this.get_key(),'connecting...')
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -121,6 +123,7 @@ PeerConnection.prototype = {
         if (! this.sockInfo) {
             console.log('onconnect, but we already timed out')
         }
+        console.log(this.get_key(),'connected!')
         //this.log('peer onconnect',connectInfo);
         this.set('state','connected')
         this.peer.set('connected_ever',true)
@@ -172,7 +175,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',type)
+        //console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -276,7 +279,7 @@ PeerConnection.prototype = {
         var allPayloads = []
 
         for (var pieceNum=this.torrent.bitfieldFirstMissing; pieceNum<this.torrent.numPieces; pieceNum++) {
-            if (this.peerBitfield[pieceNum] && ! this.torrent.bitfield[pieceNum]) {
+            if (this.peerBitfield[pieceNum] && ! this.torrent._attributes.bitfield[pieceNum]) {
                 curPiece = this.torrent.getPiece(pieceNum)
                 if (curPiece.haveData) { continue } // we have the data for this piece, we just havent hashed and persisted it yet
 
@@ -457,7 +460,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        console.log('Received message',data.type)
+        //console.log('Received message',data.type)
 
         this.handleMessage(data)
     },
@@ -481,7 +484,7 @@ PeerConnection.prototype = {
     },
     handle_SUGGEST_PIECE: function(msg) {
         var pieceNum = new DataView(msg.payload, 5, 4).getUint32(0)
-        var bit = this.torrent.bitfield[pieceNum]
+        var bit = this.torrent._attributes.bitfield[pieceNum]
         console.log('why are they suggesting piece?',pieceNum,'our bitmask says', bit)
         if (bit == 1) {
             var payload = new Uint8Array(4)

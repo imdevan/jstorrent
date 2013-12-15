@@ -20,14 +20,14 @@ function UI(opts) {
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
-            {attr:"host"},
-            {attr:"port"},
+            {ad:"address"},
             {id:'peerClientName'},
-            {id:"state", name: "State", width:150},
-            {id:"percent", name: "Percent"},
+            {id:"state", name: "State", width:100},
+//            {id:"percent", name: "Percent"},
             {id:"amChoked"},
             {id:'requests'},
             {id:'responses'},
+            {id:'timeouts'},
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
             {id:"last_message_sent", name: "Last Sent"},

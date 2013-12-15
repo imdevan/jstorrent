@@ -81,7 +81,7 @@ Piece.prototype = {
                     if (valid) {
                         if (this.torrent.get('state') != 'started') { return }
 
-                        console.log('hashchecked valid piece',this.num)
+                        //console.log('hashchecked valid piece',this.num)
                         // perhaps also place in disk cache?
                         this.data = new Uint8Array(this.size)
                         var curData, curOffset=0
@@ -218,6 +218,7 @@ debugger
                     //if (curTime - requestData.time >= jstorrent.constants.chunkRequestTimeoutInterval) {
                     if (! foundResponse) {
                         this.set('timeouts',this.get('timeouts')+1)
+                        requestData.peerconn.set('timeouts', requestData.peerconn.get('timeouts')+1)
                         delete this.chunkRequests[chunkNum] // XXX this is too greedy. it removes a request to another peer too.
                         // this code doesn't actually handle requests to multiple peers for the same piece... it just pretends to :-(
                     }

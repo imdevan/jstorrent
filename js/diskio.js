@@ -1,3 +1,8 @@
+// XXX -- its possible for a job to be in "active" state and never
+// time out... need to set a timeout for each job, because I may make
+// some kind of error, or possibly some bug with chrome implementation
+
+
 function DiskIOJob(opts) {
     this.client = opts.client
     this.jobId = opts.jobId
@@ -93,6 +98,7 @@ DiskIO.prototype = {
     jobError: function(job, evt) {
         job.set('state','error')
         this.diskActive = false
+        this.disk.client.error('fatal disk job error')
         var callback = this.jobGroupCallbacks[job.opts.jobGroup]
         delete this.jobGroupCallbacks[job.opts.jobGroup]
         callback({error:evt})
@@ -172,6 +178,8 @@ DiskIO.prototype = {
                         }
                     })
                 } else {
+                    // not yet supporting disk i/o read jobs
+                    debugger
                     // just assume the file actually is the right size etc
                     entry.createReader( function(reader) {
                         var jobData = job.opts // 
@@ -179,6 +187,7 @@ DiskIO.prototype = {
                     })
                 }
             } else {
+                this.disk.client.error('fatal disk i/o error')
                 console.error('fatal diskio processing job')
             }
         })

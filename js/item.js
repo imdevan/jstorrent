@@ -12,6 +12,17 @@ function Item(opts) {
                 }
             }
         }
+        var key
+        if (opts.itemClass.persistAttributes) {
+            for (var i=0; i<opts.itemClass.persistAttributes.length; i++) {
+                key = opts.itemClass.persistAttributes[i]
+                if (this._attributes[key]) {
+                    // TODO -- combine with attribute serializer
+                    this[key] = this._attributes[key]
+                    delete this._attributes[key]
+                }
+            }
+        }
     }
     this._collections = []
     this._event_listeners = {}
@@ -67,6 +78,7 @@ Item.prototype = {
         if (this.itemClass.persistAttributes) {
             attrs = _.clone(this._attributes)
             for (var i=0; i<this.itemClass.persistAttributes.length; i++) {
+debugger
                 key = this.itemClass.persistAttributes[i]
                 // TODO work in tandem with serializer...
                 attrs[key] = this[key]
@@ -78,8 +90,10 @@ Item.prototype = {
                 attrs = _.clone(this._attributes)
             }
             for (var key in this._attributes) {
-                if (this.itemClass.attributeSerializers[key]) {
-                    attrs[key] = this.itemClass.attributeSerializers[key].serialize( attrs[key] )
+                if (this._attributes[key]) { // don't save null entries of attributes, i guess...
+                    if (this.itemClass.attributeSerializers[key]) {
+                        attrs[key] = this.itemClass.attributeSerializers[key].serialize( attrs[key] )
+                    }
                 }
             }
         }
