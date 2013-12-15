@@ -198,6 +198,8 @@ debugger
         }
     },
     checkChunkTimeouts: function(chunkNums) {
+        // XXX BUG here when request was made to a peer that's no longer in our peer list... ?
+
         if (this.haveData || this.haveDataPersisted) { return }
         //console.log('piece',this.num,'checkChunkTimeouts',chunkNums)
         var chunksWithoutResponses = []
@@ -211,6 +213,15 @@ debugger
 
                 for (var j=0; j<requests.length; j++) {
                     requestData = requests[j]
+
+                    // TODO - if there is only ONE request, and it is
+                    // to a peer that is disconnected, then time it
+                    // out...  if (requestData.peerconn.hasClosed) ...
+                    // however, this should be done when peer
+                    // disconnects, so don't put special logic here,
+                    // instead make sure to keep
+                    // peerconn.pieceChunkRequests updated and use it
+                    // when disconnecting from that peer
 
                     if (! responses) {
                         foundResponse = false
@@ -292,9 +303,9 @@ debugger
             chunkOffset += jstorrent.protocol.chunkSize
         }
         if (payloads.length > 0) {
-            // some kind of subtle bugs here with torrent start/stop. but let's just clear out everything on torrent stop.
+            // some kind of subtle bugs here with torrent start/stop. but let's just clear out everything on torrent stop.? no?
             var id = setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,this.torrent,this.num,chunkNums), jstorrent.constants.chunkRequestTimeoutInterval )
-            this.timeoutIds.push(id)
+            //this.timeoutIds.push(id) // why are we putting these in a list?
         }
         return payloads
     },

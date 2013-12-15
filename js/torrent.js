@@ -319,6 +319,16 @@ Torrent.prototype = {
         var val = count / this.numPieces
         return val
     },
+    pieceDoneUpdateFileComplete: function(piece) {
+        // a piece is finished, so recalculate "complete" on any files
+        // affected by this.
+
+        var filesSpan = piece.getSpanningFilesInfo()
+
+        for (var i=0; i<filesSpan.length; i++) {
+            
+        }
+    },
     persistPieceResult: function(result) {
         if (result.error) {
             console.error('persist piece result',result)
@@ -326,11 +336,13 @@ Torrent.prototype = {
         } else {
             // clean up all registered chunk requests
             result.piece.notifyPiecePersisted()
+            this.pieceDoneUpdateFileComplete(result.piece)
             //console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
             this._attributes.bitfield[result.piece.num] = 1
 
+            // TODO -- move below into checkDone() method
             var foundmissing = false
             for (var i=this.bitfieldFirstMissing; i<this._attributes.bitfield.length; i++) {
                 if (this._attributes.bitfield[i] == 0) {

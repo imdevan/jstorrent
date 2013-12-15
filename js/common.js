@@ -140,7 +140,7 @@ function pad(s, padwith, len) {
     window.byteUnits = byteUnits
 })()
 
-window._onerror = function(message, url, line) {
+window.onerror = function(message, url, line) {
     // TODO -- report this to google analytics or something
     if (window.app) {
         if (url.toLowerCase().match('^chrome-extension://')) {

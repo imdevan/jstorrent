@@ -5,9 +5,19 @@ function PeerConnection(opts) {
     this.peer = opts.peer
     this.torrent = opts.peer.torrent
 
+    this.isEndgame = false
+    // the idea behind endgame is that when we are very near to
+    // torrent completion, requests made to slow peers prevent us from
+    // making the same requests to peers who would actually complete
+    // the requests. so in endgame mode, ignore the fact that there
+    // are outstanding requests to chunks to other peers. make up to
+    // (say, 3) requests to each chunk, as long as we aren't the one
+    // who made the request.
+
     // initial bittorrent state settings
     this.amInterested = false
     this.amChoked = true
+
     this.peerInterested = false
     this.peerChoked = true
     this.set('peerChoked',true)
@@ -28,11 +38,16 @@ function PeerConnection(opts) {
 
     this.set('complete',0)
 
+    // TODO -- if we have a peer that we keep sending "HAVE" messages
+    // to and even those tiny messages don't get flushed out of the
+    // buffer, then that peer SUCKS and we should disconnect (if there
+    // are potentially healthier peers in the swarm.
+
+    // this may also be the cause of the dreaded 99.9%, we have a peer that we sent chunk requests to, and for some reason we haven't timed them out correctly... ?
+
     // piece/chunk requests
-    this.pieceChunkRequests = {}
-    this.pieceChunkRequestsLinear = [] // perhaps store them in linear
-                                       // request order to make
-                                       // timeouts easy to process
+    this.pieceChunkRequests = {} // XXX not being stored here? wtf. we need that data!!!
+
     this.outstandingPieceChunkRequestCount = 0
     this.pieceChunkRequestPipelineLimit = 3 // TODO - make self adjusting
 
