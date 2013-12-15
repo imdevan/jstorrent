@@ -7,6 +7,9 @@ function Torrent(opts) {
     this.hashbytes = null
     this.magnet_info = null
 
+    this.set('bytes_sent', 0)
+    this.set('bytes_received', 0)
+
     this.invalid = false;
     this.started = false; // get('state') ? 
     this.starting = false
@@ -310,7 +313,7 @@ Torrent.prototype = {
     },
     getPercentComplete: function() {
         var count = 0
-        for (var i=0; i<this._attributes.bitfield.length; i++) {
+        for (var i=0; i<this.numPieces; i++) {
             count += this._attributes.bitfield[i]
         }
         var val = count / this.numPieces

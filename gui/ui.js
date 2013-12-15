@@ -16,15 +16,18 @@ function UI(opts) {
             {id: "state", name: "State"},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
+            {id: "bytes_sent", name: "Bytes Sent"},
+            {id: "bytes_received", name: "Bytes Received"},
             {id: "added"},
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
-            {ad:"address"},
+            {id:"address", width:110},
             {id:'peerClientName'},
             {id:"state", name: "State", width:100},
-//            {id:"percent", name: "Percent"},
+            {id:"complete", name: "% Complete", formatVal: fracToPercent},
             {id:"amChoked"},
+            {id:"peerChoked"},
             {id:'requests'},
             {id:'responses'},
             {id:'timeouts'},
@@ -34,7 +37,7 @@ function UI(opts) {
             {id:"last_message_received", name: "Last Received"}
         ],
         'swarm':[
-            {attr:"host"},
+            {attr:"host", width:110},
             {attr:"port"},
             {id:"connected_ever", name: "Ever Connected"},
             {id:'connectionResult'},

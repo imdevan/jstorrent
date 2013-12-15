@@ -10,7 +10,7 @@ function PeerConnection(opts) {
     this.amChoked = true
     this.peerInterested = false
     this.peerChoked = true
-
+    this.set('peerChoked',true)
     this.set('amChoked',true)
 
     this.peerHandshake = null
@@ -25,6 +25,8 @@ function PeerConnection(opts) {
     this.set('requests',0)
     this.set('responses',0)
     this.set('timeouts',0)
+
+    this.set('complete',0)
 
     // piece/chunk requests
     this.pieceChunkRequests = {}
@@ -60,6 +62,14 @@ function PeerConnection(opts) {
 jstorrent.PeerConnection = PeerConnection;
 
 PeerConnection.prototype = {
+    updatePercentComplete: function() {
+        var count = 0
+        for (var i=0; i<this.torrent.numPieces; i++) {
+            count += this.peerBitfield[i]
+        }
+        var val = count / this.torrent.numPieces
+        this.set('complete',val)
+    },
     get_key: function() {
         return this.peer.host + ':' + this.peer.port
     },
@@ -168,9 +178,11 @@ PeerConnection.prototype = {
             break
         case "CHOKE":
             this.peerChoked = true
+            this.set('peerChoked',true)
             break
         case "UNCHOKE":
             this.peerChoked = false
+            this.set('peerChoked',false)
             break
         }
         
@@ -252,6 +264,7 @@ PeerConnection.prototype = {
             this.error('did not write everything')
         } else {
             this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
+            this.torrent.set('bytes_sent', this.torrent.get('bytes_sent') + this.writing_length)
             this.writing = false
             this.writing_length = 0
             // continue writing out write buffer
@@ -410,6 +423,7 @@ PeerConnection.prototype = {
             return
         } else {
             this.set('bytes_received', this.get('bytes_received') + readResult.data.byteLength)
+            this.torrent.set('bytes_received', this.torrent.get('bytes_received') + readResult.data.byteLength)
             //this.log('onRead',readResult.data.byteLength)
             this.readBuffer.add( readResult.data )
             this.checkBuffer()
@@ -466,7 +480,7 @@ PeerConnection.prototype = {
     },
     handleMessage: function(msgData) {
         var method = this['handle_' + msgData.type]
-        this.set('last_message_received',msgData.type)
+        this.set('last_message_received',msgData.type) // TODO - get a more specific message for piece number
         if (! method) {
             this.unhandledMessage(msgData)
         } else {
@@ -511,6 +525,7 @@ PeerConnection.prototype = {
         this.amChoked = false
     },
     handle_CHOKE: function() {
+        this.set('amChoked',true)
         this.amChoked = true
     },
     handle_INTERESTED: function() {
@@ -664,6 +679,7 @@ PeerConnection.prototype = {
                 }
             }
         }
+        this.updatePercentComplete()
     },
     handle_BITFIELD: function(msg) {
         if (! this.torrent.has_infodict()) {
@@ -677,7 +693,7 @@ PeerConnection.prototype = {
             for (var i=0; i<bitfield.length; i++) {
                 for (var j=0; j<8; j++) {
                     bit = Math.pow(2,7-i) & bitfield[i]
-                    arr.push(bit)
+                    arr.push(bit ? 1 : 0) // lol, we were pushing the whole bit
                     if (arr.length == this.torrent.numPieces) {
                         break
                     }
@@ -688,6 +704,7 @@ PeerConnection.prototype = {
             this.peerBitfield = new Uint8Array(arr)
             console.assert(this.peerBitfield.length == this.torrent.numPieces)
         }
+        this.updatePercentComplete()
     },
     handle_HAVE: function(msg) {
         if (! this.torrent.has_infodict()) {
@@ -696,6 +713,7 @@ PeerConnection.prototype = {
             var idx = new DataView(msg.payload,5,4).getUint32(0)
             this.peerBitfield[idx] = 1
         }
+        this.updatePercentComplete()
     },
     unhandledMessage: function(msg) {
         console.error('unhandled message',msg.type)

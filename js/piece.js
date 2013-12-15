@@ -96,11 +96,13 @@ Piece.prototype = {
                         this.torrent.persistPiece(this)
                     } else {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
+                        console.warn('resetting piece data, not punishing peers...')
+                        this.resetData()
 
                         // first of all, throw away this piece's data entirely...
 
                         // what to do, mark a peer as nasty, mark as suspect?
-                        debugger
+
                     }
                 },this))
             }
