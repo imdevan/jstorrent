@@ -116,6 +116,8 @@ SlickCollectionTable.prototype = {
             // Fixes the infamous "unable to select the first column" bug
             // only happens when existing row gets replaced with new item
             // need to perhaps clear selection
+
+            // XXX - THIS BREAKS KEEPING ITEM SELECTED THOUGH! SO RESTORE SELECTION after we do this...
             this.grid.setActiveCell(0,0)
             this.grid.setActiveCell(0,1)
             this.grid.setSelectedRows([]) // this alone didn't work, but with the previous two lines does :-) yay!

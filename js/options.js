@@ -34,7 +34,8 @@ var app_options = {
     },
 
     'max_unflushed_piece_data': {
-        'default': 16384 * 20,
+//        'default': 16384 * 20, // needs to be much larger, or else we will get "stuck" a lot...
+        'default': 16384 * 20 * 10, // needs to be much larger, or else we will get "stuck" a lot...
         'type': 'int'
     }
     
