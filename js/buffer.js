@@ -11,6 +11,10 @@ function Buffer() {
 }
 jstorrent.Buffer = Buffer
 Buffer.prototype = {
+    clear: function() {
+        this.deque = []
+        this._size = 0
+    },
     add: function(data) {
         console.assert(data instanceof ArrayBuffer)
         this._size = this._size + data.byteLength

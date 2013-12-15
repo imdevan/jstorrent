@@ -84,6 +84,10 @@ PeerConnection.prototype = {
     registerPieceChunkRequest: function(pieceNum, chunkNum) {
         this.pieceChunkRequests[pieceNum + '/' + chunkNum] = true
     },
+    cleanup: function() {
+        this.readBuffer.clear()
+        this.writeBuffer.clear()
+    },
     cleanupRequests: function() {
         var parts, pieceNum, chunkNum, piece, chunkRequests, chunkRequest
         for (var key in this.pieceChunkRequests) {
@@ -152,6 +156,7 @@ PeerConnection.prototype = {
         // unfortunately the pending read/write callbacks still get
         // triggered... make sure we look for sockInfo being gone
         this.cleanupRequests()
+        this.cleanup()
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null
@@ -222,6 +227,10 @@ PeerConnection.prototype = {
         this.sendMessage('UTORRENT_MSG', [new Uint8Array([0]).buffer, arr])
     },
     sendMessage: function(type, payloads) {
+        if (this.hasclosed) {
+            // connection was closed, yo
+            return
+        }
         this.set('last_message_sent',type)
         switch (type) {
         case "INTERESTED":
@@ -386,16 +395,12 @@ PeerConnection.prototype = {
         
     },
     newStateThink: function() {
+        while (this.checkBuffer()) {}
+
         if (this.torrent.isComplete()) { 
-
-
-
-
             return 
         }
         // thintk about the next thing we might want to write to the socket :-)
-        this.checkBuffer()
-
         if (this.torrent.has_infodict()) {
 
             // we have valid infodict
@@ -517,6 +522,7 @@ PeerConnection.prototype = {
                     if (curbufsz >= msgsize + 4) {
                         var msgbuf = this.readBuffer.consume(msgsize + 4)
                         this.parseMessage(msgbuf)
+                        return true
                     }
                 }
             }
