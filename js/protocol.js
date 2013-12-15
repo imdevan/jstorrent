@@ -89,7 +89,7 @@ jstorrent.protocol.parseBitfield = function(bitfield, numTorrentPieces) {
     console.log('parsing bitfield', ui82str(bitfield))
     for (var i=0; i<bitfield.length; i++) {
         for (var j=0; j<8; j++) {
-            bit = Math.pow(2,7-i) & bitfield[i] // this math must be wrong...
+            bit = Math.pow(2,7-j) & bitfield[i] // this math must be wrong...
             if (bit == 0) { debugger } 
             arr.push(bit ? 1 : 0) // lol, we were pushing the whole bit
             if (arr.length == numTorrentPieces) {
