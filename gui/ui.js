@@ -12,8 +12,9 @@ function UI(opts) {
     this.coldefs = {
         'torrent': [
             {id: "name", name: "Name", width:400},
-            {id: "size", name: "Size", formatVal: byteUnits},
             {id: "state", name: "State"},
+            {id: 'downloaded', formatVal:byteUnits},
+            {id: "size", name: "Size", formatVal: byteUnits},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
             {id: "bytes_sent", name: "Bytes Sent"},

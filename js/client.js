@@ -103,6 +103,8 @@ Client.prototype = {
                                                      if (result.torrent) {
                                                          if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
                                                              this.torrents.add(result.torrent)
+                                                             result.torrent.save()
+                                                             this.torrents.save()
                                                          } else {
                                                              this.trigger('error','already had this torrent')
                                                          }

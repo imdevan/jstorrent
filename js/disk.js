@@ -11,8 +11,25 @@ function Disk(opts) {
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
             // remove this.
             if (!entry) {
-                console.error('unable to restore entry -- perhaps re-install')
-                this.getCollection().opts.client.trigger('error','disk restore error')
+                console.error('unable to restore entry - (was the folder removed?)', opts.id)
+                var parts = opts.id.split(':')
+                parts.shift()
+                var folderName = parts.join(':')
+                var collection = this.getCollection()
+                collection.opts.client.trigger('error','Unable to load Download Directory: '+ folderName)
+                // now loop over torrents using this download directory and set their error state
+                var torrents = collection.opts.client.torrents
+                for (var i=0; i<torrents.items.length; i++) {
+                    if (torrents.items[i].get('disk') == opts.id) {
+                        torrents.items[i].stop()
+                        torrents.items[i].invalidDisk = true
+                        torrents.items[i].set('state','error')
+                        
+                    }
+                }
+                
+                collection.remove(this)
+                collection.save()
             } else {
                 //console.log('successfully restored entry')
                 this.entry = entry

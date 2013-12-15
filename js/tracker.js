@@ -67,7 +67,35 @@ function HTTPTracker() {
 HTTPTracker.prototype = {
     announce: function() {
         // TODO -- implement!!!
-        console.log("HTTP TRACKER ANNOUNCE (unimplemented!)")
+
+        var data = {
+            event: 'started',
+            downloaded: this.torrent.get('downloaded'),
+            uploaded: this.torrent.get('uploaded'),
+            compact: 1,
+//            info_hash: this.torrent.hashhexlower,
+            peer_id: ui82str(this.torrent.client.peeridbytes),
+            port: 0,
+            left: this.torrent.get('size') - this.torrent.get('downloaded')
+        }
+        console.log('http tracker announce data',data)
+        var xhr = new XMLHttpRequest;
+
+        var url = this.url + '?info_hash=' + this.torrent.hashhexlower
+        for (var key in data) {
+            url = url + '&' + key + '=' + encodeURIComponent(data[key]) // is this the right format?
+        }
+
+
+        xhr.responseType = 'arraybuffer'
+        xhr.onload = _.bind(function(evt) {
+            debugger
+        },this)
+        xhr.onerror = _.bind(function(evt) {
+            this.set_error('xhr error', evt)
+        },this)
+        xhr.open("GET", url, true)
+        xhr.send()
     }
 }
 

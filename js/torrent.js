@@ -9,7 +9,13 @@ function Torrent(opts) {
 
     this.set('bytes_sent', 0)
     this.set('bytes_received', 0)
-
+    if (! this.get('downloaded')) {
+        this.set('downloaded', 0)
+    }
+    if (! this.get('uploaded')) {
+        this.set('uploaded', 0)
+    }
+    this.invalidDisk = false
     this.invalid = false;
     this.started = false; // get('state') ? 
     this.starting = false
@@ -292,13 +298,15 @@ Torrent.prototype = {
             })
         }
     },
-    getPercentComplete: function() {
+    getDownloaded: function() {
         var count = 0
         for (var i=0; i<this.numPieces; i++) {
-            count += this._attributes.bitfield[i]
+            count += this._attributes.bitfield[i] * this.getPieceSize(i)
         }
-        var val = count / this.numPieces
-        return val
+        return count
+    },
+    getPercentComplete: function() {
+        return this.getDownloaded() / this.size
     },
     pieceDoneUpdateFileComplete: function(piece) {
         // a piece is finished, so recalculate "complete" on any files
@@ -362,7 +370,8 @@ Torrent.prototype = {
 
             }
         }
-        this.set('complete', this.getPercentComplete())
+        this.set('downloaded', this.getDownloaded())
+        this.set('complete', this.get('downloaded') / this.size)
         this.trigger('progress')
         this.save()
     },
@@ -415,13 +424,16 @@ Torrent.prototype = {
         }
     },
     initializeFiles: function() {
-        var file
+        // TODO -- this blocks the UI cuz it requires so much
+        // computation. split it into several computation steps...
         if (this.infodict) {
+
             for (var i=0; i<this.numFiles; i++) {
-                if (! this.files.items[i]) {
+                if (! this.files.containsKey(i)) {
                     file = this.getFile(i)
                 }
             }
+
         }
     },
     registerPieceRequested: function(peerconn, pieceNum, offset, size) {
