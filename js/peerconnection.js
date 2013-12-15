@@ -80,6 +80,10 @@ PeerConnection.prototype = {
             //console.assert(! this.hasclosed)
             return
         }
+
+        if (this.writing || this.reading) {
+            console.warn('called close on socket that had pending read/write callbacks')
+        }
         
         this.hasclosed = true
         //this.log('closing',reason)
@@ -89,7 +93,6 @@ PeerConnection.prototype = {
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.sockInfo = null
-
         // need to clean up registerd requests
         this.trigger('disconnect')
     },
@@ -204,6 +207,7 @@ PeerConnection.prototype = {
         this.write( payload )
     },
     write: function(data) {
+        console.assert(! this.hasclosed)
         console.assert(data.byteLength > 0)
         console.assert(data instanceof ArrayBuffer)
         this.writeBuffer.add(data)
@@ -212,6 +216,7 @@ PeerConnection.prototype = {
         }
     },
     writeFromBuffer: function() {
+        console.assert(! this.hasclosed)
         if (! this.sockInfo) {
             //console.error('cannot write from buffer, sockInfo null (somebody closed connection on us...)')
             this.close('sockInfo missing writeFromBuffer')
@@ -387,7 +392,6 @@ PeerConnection.prototype = {
         this.trigger('error')
     },
     onRead: function(readResult) {
-
         if (! this.torrent.started) {
             console.error('onRead, but torrent stopped')
             this.close('torrent stopped')
@@ -395,7 +399,7 @@ PeerConnection.prototype = {
 
         this.reading = false
         if (! this.sockInfo) {
-            console.error('onwrite for socket forcibly or otherwise closed')
+            console.error('onRead for socket forcibly or otherwise closed')
             return
         }
         if (readResult.data.byteLength == 0) {

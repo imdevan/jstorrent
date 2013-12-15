@@ -6,7 +6,8 @@ function WindowManager() {
     // will be remembered. so put it in.
     this.mainWindowOpts = {
         width: 800,
-        height: 600
+        height: 600,
+        id: 'mainWindow'
     }
 
     this.creatingMainWindow = false
@@ -106,9 +107,12 @@ function onAppLaunchMessage(launchData) {
 
 }
 
-chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall?version=' + 
-                               encodeURIComponent(chrome.runtime.getManifest()).version
-                              )
+if (chrome.runtime.setUninstallUrl) {
+// doesn't seem to exist ! Maybe only for extensions
+    chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall?version=' + 
+                                   encodeURIComponent(chrome.runtime.getManifest()).version
+                                  )
+}
 
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
     console.log('onMessageExternal',request,sender)

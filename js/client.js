@@ -57,7 +57,6 @@ Client.prototype = {
         if (this.app.options.get('new_torrents_auto_start')) {
             torrent.start()
         }
-        torrent.save()
     },
     onReady: function() {
         var item

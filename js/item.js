@@ -16,7 +16,6 @@ function Item(opts) {
     this._collections = []
     this._event_listeners = {}
     this._subcollections = []
-    this._persistAttributes = null // child class overrides this... HMMM
 }
 
 jstorrent.Item = Item
@@ -75,7 +74,9 @@ Item.prototype = {
         }
 
         if (this.itemClass.attributeSerializers) {
-            attrs = _.clone(this._attributes)
+            if (! attrs) {
+                attrs = _.clone(this._attributes)
+            }
             for (var key in this._attributes) {
                 if (this.itemClass.attributeSerializers[key]) {
                     attrs[key] = this.itemClass.attributeSerializers[key].serialize( attrs[key] )

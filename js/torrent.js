@@ -140,7 +140,7 @@ Torrent.prototype = {
             this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
             this.metadataPresentInitialize()
             this.initializeTrackers()
-            var chunkData = { data: this.infodict_buffer }
+            var chunkData = this.infodict_buffer
             this.client.workerthread.send( { command: 'hashChunks',
                                              chunks: [chunkData] }, onHashResult )
         },this)
@@ -438,7 +438,6 @@ Torrent.prototype = {
             if (this.metadata.announce) {
                 url = this.metadata.announce
                 urls.push(url)
-                this.trackers.add( tracker )
             } else if (this.metadata['announce-list']) {
                 for (var tier in this.metadata['announce-list']) {
                     for (var i=0; i<this.metadata['announce-list'][tier].length; i++) {
@@ -462,6 +461,12 @@ Torrent.prototype = {
             this.error('Disk Missing')
             return
         }
+
+        if (! this.infodict) {
+            // do we have it stored?
+debugger
+        }
+
         this.set('state','started')
         this.save()
         this.started = true
@@ -508,9 +513,9 @@ Torrent.prototype = {
         for (var i=0; i<this.pieces.items.length; i++) {
             this.pieces.items[i].resetData()
         }
+        // TODO -- move these into some kind of resetState function?
         this.pieces.clear()
-
-        
+        this.unflushedPieceDataSize = 0
 
         this.set('state','stopped')
         this.save()
