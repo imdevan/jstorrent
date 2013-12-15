@@ -2,11 +2,12 @@ function File(opts) {
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.num = opts.num
+    this.set('downloaded',0) // not zero! need to get our spanning pieces and add up the components...
     this.set('complete',0)
 
     if (this.torrent.multifile) {
-        // should we prepend torrent name?
-        var path = this.torrent.infodict.files[this.num].path;
+        // should we prepend torrent name? Yes.
+        var path = [this.torrent.get('name')].concat( this.torrent.infodict.files[this.num].path )
         this.path = path
         this.name = path[path.length-1]
 
@@ -24,6 +25,9 @@ function File(opts) {
 }
 jstorrent.File = File
 File.prototype = {
+    updatePercentComplete: function() {
+        
+    },
     get_key: function() {
         return this.num
     },

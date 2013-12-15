@@ -250,7 +250,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',type)
+        //console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -542,7 +542,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        console.log('Received message',data.type)
+        //console.log('Received message',data.type)
 
         this.handleMessage(data)
     },

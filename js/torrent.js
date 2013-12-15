@@ -324,9 +324,12 @@ Torrent.prototype = {
         // affected by this.
 
         var filesSpan = piece.getSpanningFilesInfo()
-
+        var fileSpan, file
         for (var i=0; i<filesSpan.length; i++) {
-            
+            fileSpan = filesSpan[i]
+            file = this.getFile(fileSpan.fileNum)
+            file.set('downloaded',file.get('downloaded')+fileSpan.size)
+            file.set('complete', file.get('downloaded') / file.size )
         }
     },
     isComplete: function() {

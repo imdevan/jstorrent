@@ -187,6 +187,7 @@ DiskIO.prototype = {
             if (entry.isFile) {
                 if (job.opts.type == 'write') {
                     entry.getMetadata( function(metaData) {
+                        if (job.opts.size == 4096) { debugger }
                         //console.log(job.opts.jobId, 'doJob.getMetadata')
                         if (job.opts.fileOffset <= metaData.size) {
                             _this.doJobReadyToWrite(entry, job)
@@ -216,8 +217,11 @@ DiskIO.prototype = {
         
         for (var i=0; i<filesSpanInfo.length; i++) {
             fileSpanInfo = filesSpanInfo[i]
+            console.log('writepiecefilespan',fileSpanInfo)
 
             // need to slice off the data from the piece here...
+
+            // XXX - this is broken until we actually slice it. you fucking retard.
             var buf = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size).buffer
             job = new jstorrent.DiskIOJob( {type: 'write',
                                             data: buf,

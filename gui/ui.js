@@ -68,7 +68,8 @@ function UI(opts) {
             {attr:'num'},
             {attr:'name', width:400},
             {attr:'size', formatVal:byteUnits},
-            {attr:'complete', formatVal: fracToPercent},
+            {id:'downloaded', formatVal:byteUnits},
+            {id:'complete', formatVal: fracToPercent},
         ],
         'pieces':[
             {attr:'num'},

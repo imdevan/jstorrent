@@ -316,7 +316,7 @@ debugger
         })
     },
     getSpanningFilesInfo: function(offset, size) {
-        // returns a list of [fileNum, fileOffset, size]
+        // returns a dict with lotsa keys... hrm.
         if (offset === undefined) { offset = 0 }
         if (size === undefined) { size = this.size }
 
