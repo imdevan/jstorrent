@@ -94,7 +94,7 @@ PeerConnection.prototype = {
         }
 
         if (this.writing || this.reading) {
-            console.warn('called close on socket that had pending read/write callbacks')
+            //console.warn('called close on socket that had pending read/write callbacks')
         }
         
         this.hasclosed = true
@@ -109,7 +109,7 @@ PeerConnection.prototype = {
         this.trigger('disconnect')
     },
     connect: function() {
-        console.log(this.get_key(),'connecting...')
+        //console.log(this.get_key(),'connecting...')
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
@@ -125,7 +125,7 @@ PeerConnection.prototype = {
         if (connectInfo < 0) {
             this.peer.set('connectionResult', connectInfo)
 
-            console.error('socket connect error:',connectInfo)
+            //console.error('socket connect error:',connectInfo)
             this.error('connect_error')
             return
         }
@@ -133,7 +133,7 @@ PeerConnection.prototype = {
         if (! this.sockInfo) {
             console.log('onconnect, but we already timed out')
         }
-        console.log(this.get_key(),'connected!')
+        //console.log(this.get_key(),'connected!')
         //this.log('peer onconnect',connectInfo);
         this.set('state','connected')
         this.peer.set('connected_ever',true)
@@ -252,16 +252,16 @@ PeerConnection.prototype = {
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
         if(writeResult.bytesWritten != this.writing_length) {
-            console.error('bytes written does not match!', writeResult.bytesWritten)
             if (writeResult.bytesWritten < 0) {
-                
+                this.error('negative bytesWritten',writeResult.bytesWritten)
             } else {
-                debugger
+                console.error('bytes written does not match!', writeResult.bytesWritten)
+                chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
+                    console.log('socket info -',socketStatus)
+                })
+                this.error('did not write everything')
             }
-            chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
-                console.log('socket info -',socketStatus)
-            })
-            this.error('did not write everything')
+
         } else {
             this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
             this.torrent.set('bytes_sent', this.torrent.get('bytes_sent') + this.writing_length)
@@ -402,7 +402,7 @@ PeerConnection.prototype = {
         console.log.apply(console, args)
     },
     error: function(msg) {
-        this.log(msg)
+        //this.log(msg)
         chrome.socket.disconnect(this.sockInfo.socketId)
         chrome.socket.destroy(this.sockInfo.socketId)
         this.trigger('error')
@@ -674,7 +674,7 @@ PeerConnection.prototype = {
                 // some space. but that's silly :-)
                 this.peerBitfield = new Uint8Array(arr)
             } else {
-                for (var i=0; i<this.peerBitfield.byteLength; i++) {
+                for (var i=0; i<this.torrent.numPieces; i++) { // SHITTY
                     this.peerBitfield[i] = 1
                 }
             }
@@ -685,23 +685,12 @@ PeerConnection.prototype = {
         if (! this.torrent.has_infodict()) {
             this.doAfterInfodict(msg)
         } else {
-
             var bitfield = new Uint8Array(msg.payload, 5)
-            var arr = []
-            var bit
-
-            for (var i=0; i<bitfield.length; i++) {
-                for (var j=0; j<8; j++) {
-                    bit = Math.pow(2,7-i) & bitfield[i]
-                    arr.push(bit ? 1 : 0) // lol, we were pushing the whole bit
-                    if (arr.length == this.torrent.numPieces) {
-                        break
-                    }
-                }
-            }
+            var arr = jstorrent.protocol.parseBitfield(bitfield, this.torrent.numPieces)
             // it would be cool to use an actual bitmask and save
             // some space. but that's silly :-)
             this.peerBitfield = new Uint8Array(arr)
+            //console.log('set peer bitfield', Torrent.attributeSerializers.bitfield.serialize(ui82arr(this.peerBitfield)))
             console.assert(this.peerBitfield.length == this.torrent.numPieces)
         }
         this.updatePercentComplete()

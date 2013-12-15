@@ -2,6 +2,7 @@ function File(opts) {
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.num = opts.num
+    this.set('complete',0)
 
     if (this.torrent.multifile) {
         // should we prepend torrent name?

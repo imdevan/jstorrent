@@ -23,7 +23,7 @@ function UI(opts) {
         ],
         'peers':[
             {id:"address", width:110},
-            {id:'peerClientName'},
+            {id:'peerClientName', width:130},
             {id:"state", name: "State", width:100},
             {id:"complete", name: "% Complete", formatVal: fracToPercent},
             {id:"amChoked"},

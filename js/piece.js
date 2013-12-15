@@ -98,6 +98,7 @@ Piece.prototype = {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
                         console.warn('resetting piece data, not punishing peers...')
                         this.resetData()
+                        this.collection.remove(this)
 
                         // first of all, throw away this piece's data entirely...
 
@@ -144,6 +145,13 @@ Piece.prototype = {
             // TODO -- # worker threads, perhaps show a warning, and
             // in the options page, optional permission to get CPU
             // info and adjust number of workers debugger
+
+            // this can happen randomly because serendipidously we get
+            // two chunks in at nearly the same time and they complete
+            // a chunk. only if this error occurs VERY frequently does
+            // it actually slow down our download rate. and that's
+            // only if the unflushed data pipeline limit is set rather
+            // low.
         }
         worker.send( { chunks: this.chunkResponsesChosenPlain,
                        command: 'hashChunks' },
@@ -191,7 +199,7 @@ debugger
     },
     checkChunkTimeouts: function(chunkNums) {
         if (this.haveData || this.haveDataPersisted) { return }
-        console.log('piece',this.num,'checkChunkTimeouts',chunkNums)
+        //console.log('piece',this.num,'checkChunkTimeouts',chunkNums)
         var chunksWithoutResponses = []
         var chunkNum, requests, responses, requestData, responseData, foundResponse
         //var curTime = new Date()

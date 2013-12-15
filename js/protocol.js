@@ -82,6 +82,39 @@ function test_handshake() {
     console.assert(parsed.peerid && parsed.infohash)
 }
 
+jstorrent.protocol.parseBitfield = function(bitfield, numTorrentPieces) {
+    var arr = []
+    var bit
+
+    console.log('parsing bitfield', ui82str(bitfield))
+    for (var i=0; i<bitfield.length; i++) {
+        for (var j=0; j<8; j++) {
+            bit = Math.pow(2,7-i) & bitfield[i] // this math must be wrong...
+            if (bit == 0) { debugger } 
+            arr.push(bit ? 1 : 0) // lol, we were pushing the whole bit
+            if (arr.length == numTorrentPieces) {
+                break
+            }
+        }
+    }
+    console.log('parsed bitfield as',arr)
+    return arr
+}
+
+function test_parseBitfield() {
+    var bf = []
+    for (var i=0; i<70; i++) {
+        bf.push(255)
+    }
+    //bf[60]=254
+    //bf[30]=64
+    var bitfield = new Uint8Array(bf)
+    var arr = jstorrent.protocol.parseBitfield(bitfield)
+
+}
+
+
 if (jstorrent.options.run_unit_tests) {
     test_handshake()
+    test_parseBitfield()
 }

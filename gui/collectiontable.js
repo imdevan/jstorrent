@@ -118,7 +118,7 @@ SlickCollectionTable.prototype = {
             // need to perhaps clear selection
 
             // XXX - THIS BREAKS KEEPING ITEM SELECTED THOUGH! SO RESTORE SELECTION after we do this...
-            if (this.collection.itemClass == jstorrent.torrent) {
+            if (this.collection.itemClass == jstorrent.Torrent) {
                 // maybe only do this on the torrent table, where it isn't so important, since torrents only get removed when user clicks somewhere else
                 this.grid.setActiveCell(0,0)
                 this.grid.setActiveCell(0,1)
