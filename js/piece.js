@@ -12,6 +12,46 @@ function Piece(opts) {
     this.wasReset = false
 }
 jstorrent.Piece = Piece
+
+Piece.getSpanningFilesInfo = function(this_torrent, this_num, this_size, offset, size) {
+    if (offset === undefined) { offset = 0 }
+    if (size === undefined) { size = this_size }
+
+    var startByte = this_torrent.pieceLength * this_num + offset
+    var endByte = this_torrent.pieceLength * this_num + offset + size - 1
+
+    var infos = []
+
+    var idx = bisect_right(this_torrent.fileOffsets, startByte)
+    var curFileNum = idx-1
+    var curFileStartByte, curFileEndByte
+    while (curFileNum < this_torrent.numFiles) {
+        curFileStartByte = this_torrent.fileOffsets[curFileNum]
+
+        if (curFileNum == this_torrent.numFiles - 1) {
+            curFileEndByte = this_torrent.size - 1
+        } else {
+            curFileEndByte = this_torrent.fileOffsets[curFileNum + 1] - 1
+        }
+        var intersection = intersect( curFileStartByte, curFileEndByte,
+                                      startByte, endByte )
+        if (intersection) {
+            var intersectionStart = intersection[0]
+            var intersectionEnd = intersection[1]
+            var info = {fileNum: curFileNum,
+                        pieceOffset: intersectionStart - startByte,
+                        fileOffset: intersectionStart - curFileStartByte,
+                        size: intersectionEnd - intersectionStart + 1}
+            infos.push( info )
+            curFileNum++
+        } else {
+            break
+        }
+    }
+    console.assert(infos.length > 0)
+    return infos
+}
+
 Piece.prototype = {
     resetData: function() {
         // able to store multiple copies of chunk responses,
@@ -316,55 +356,7 @@ debugger
         })
     },
     getSpanningFilesInfo: function(offset, size) {
-        // returns a dict with lotsa keys... hrm.
-        if (offset === undefined) { offset = 0 }
-        if (size === undefined) { size = this.size }
-
-        var startByte = this.torrent.pieceLength * this.num + offset
-        var endByte = this.torrent.pieceLength * this.num + offset + size - 1
-
-        var infos = []
-
-        var idx = bisect_right(this.torrent.fileOffsets, startByte)
-        var curFileNum = idx-1
-        var curFileStartByte, curFileEndByte
-        while (curFileNum < this.torrent.numFiles) {
-            curFileStartByte = this.torrent.fileOffsets[curFileNum]
-
-            if (curFileNum == this.torrent.numFiles - 1) {
-                curFileEndByte = this.torrent.size - 1
-            } else {
-                curFileEndByte = this.torrent.fileOffsets[curFileNum + 1] - 1
-            }
-            var intersection = intersect( curFileStartByte, curFileEndByte,
-                                          startByte, endByte )
-            if (intersection) {
-                var intersectionStart = intersection[0]
-                var intersectionEnd = intersection[1]
-                var info = {fileNum: curFileNum,
-                             pieceOffset: intersectionStart - startByte,
-                             fileOffset: intersectionStart - curFileStartByte,
-                             size: intersectionEnd - intersectionStart + 1}
-                //console.log(this.num, 'got spanning file info', info)
-                infos.push( info )
-                curFileNum++
-            } else {
-                break
-            }
-        }
-        console.assert(infos.length > 0)
-        return infos
-    },
-    getSpanningFilesData: function(offset, size, callback) {
-        // spawns diskIO for retreiving actual data from the disk
-
-        var filesSpanInfo = this.getSpanningFilesInfo()
-        // create a bunch of diskio jobs
-
-        this.torrent.diskio.readPiece(this, offset, size, function(data) {
-            debugger
-        })
-
+        return Piece.getSpanningFilesInfo(this.torrent, this.num, this.size, offset, size)
     }
 }
 for (var method in jstorrent.Item.prototype) {

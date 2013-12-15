@@ -292,25 +292,6 @@ Torrent.prototype = {
             })
         }
     },
-    getPieceData: function(pieceNum, offset, size, callback) {
-        // used for serving PIECE requests
-
-        var cachehit = this.client.diskcache.checkHave(pieceNum, offset, size)
-        if (cachehit) {
-            var data = this.client.diskcache.retreiveFromCache(pieceNum, offset, size)
-            callback(data)
-        } else {
-            var piece = this.getPiece(pieceNum)
-
-
-            piece.getSpanningFilesData(offset, size, function(spanningFilesData) {
-                // more useful function :-)
-            })
-
-            // create diskIO jobs for each file
-            
-        }
-    },
     getPercentComplete: function() {
         var count = 0
         for (var i=0; i<this.numPieces; i++) {

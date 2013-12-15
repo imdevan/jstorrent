@@ -43,8 +43,8 @@ File.prototype = {
 
         var curPiece
         for (var i=leftPiece; i<rightPiece; i++) {
-            curPiece = this.torrent.getPiece(i)
-            curInfos = curPiece.getSpanningFilesInfo()
+            //curPiece = this.torrent.getPiece(i)
+            curInfos = Piece.getSpanningFilesInfo(this.torrent, i, this.torrent.getPieceSize(i))
             for (var j=0; j<curInfos.length; j++) {
                 if (curInfos[j].fileNum == this.num) {
                     curInfos[j].pieceNum = i
