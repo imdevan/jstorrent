@@ -458,7 +458,7 @@ Torrent.prototype = {
     },
     initializeTrackers: function() {
         var url, tracker
-        var announce_list = []
+        var announce_list = [], urls = []
         if (this.magnet_info && this.magnet_info.tr) {
             for (var i=0; i<this.magnet_info.tr.length; i++) {
                 url = this.magnet_info.tr[i];
@@ -473,30 +473,29 @@ Torrent.prototype = {
             // trackers are stored in "tiers", whatever. magnet links
             // dont support that. put all in first tier.
             this.metadata['announce-list'] = [announce_list]
-        }
+        } else {
 
-        var urls = []
-        var url
-        if (this.metadata) {
-            if (this.metadata.announce) {
-                url = this.metadata.announce
-                urls.push(url)
-            } else if (this.metadata['announce-list']) {
-                for (var tier in this.metadata['announce-list']) {
-                    for (var i=0; i<this.metadata['announce-list'][tier].length; i++) {
-                        urls.push( this.metadata['announce-list'][tier][i] )
+            if (this.metadata) {
+                if (this.metadata.announce) {
+                    url = this.metadata.announce
+                    urls.push(url)
+                } else if (this.metadata['announce-list']) {
+                    for (var tier in this.metadata['announce-list']) {
+                        for (var i=0; i<this.metadata['announce-list'][tier].length; i++) {
+                            urls.push( this.metadata['announce-list'][tier][i] )
+                        }
                     }
                 }
-            }
 
-            for (var i=0; i<urls.length; i++) {
-                url = urls[i]
-                if (url.toLowerCase().match('^udp')) {
-                    tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
-                } else {
-                    tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+                for (var i=0; i<urls.length; i++) {
+                    url = urls[i]
+                    if (url.toLowerCase().match('^udp')) {
+                        tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
+                    } else {
+                        tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+                    }
+                    this.trackers.add( tracker )
                 }
-                this.trackers.add( tracker )
             }
         }
     },
