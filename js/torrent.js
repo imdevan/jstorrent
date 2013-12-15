@@ -329,6 +329,9 @@ Torrent.prototype = {
             
         }
     },
+    isComplete: function() {
+        return this.get('complete') == 1
+    },
     persistPieceResult: function(result) {
         if (result.error) {
             console.error('persist piece result',result)
@@ -353,6 +356,7 @@ Torrent.prototype = {
             }
             if (! foundmissing) {
                 console.log('%cTORRENT DONE?','color:#f0f')
+                this.set('state','complete')
 
                 // TODO -- turn this into progress notification type
                 this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
@@ -435,6 +439,20 @@ Torrent.prototype = {
                 }
             }
         }
+    },
+    registerPieceRequested: function(peerconn, pieceNum, offset, size) {
+        // first off, can this torrent even handle doing more disk i/o right now?
+        // if so...
+        var piece = this.getPiece(pieceNum)
+        piece.getData(offset, size, function(result) {
+            // what if peer disconnects before we even get around to starting this disk i/o job?
+            // dont want to waste cycles reading...
+            var header = new Uint8Array(8)
+            var v = new DataView(header.buffer)
+            v.setUint32(0, pieceNum)
+            v.setUint32(4, offset)
+            peerconn.sendMessage('PIECE', [header.buffer, result])
+        })
     },
     has_infodict: function() {
         return this.infodict ? true : false

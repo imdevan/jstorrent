@@ -91,7 +91,7 @@ DiskIO.prototype = {
         if (this.jobsLeftInGroup[job.opts.jobGroup] == 0) {
             var callback = this.jobGroupCallbacks[job.opts.jobGroup]
             delete this.jobGroupCallbacks[job.opts.jobGroup]
-            callback({piece:job.opts.piece})
+            callback({piece:job.opts.piece, data:(evt.target && evt.target.result)})
         }
         this.thinkNewState()
     },
@@ -102,6 +102,24 @@ DiskIO.prototype = {
         var callback = this.jobGroupCallbacks[job.opts.jobGroup]
         delete this.jobGroupCallbacks[job.opts.jobGroup]
         callback({error:evt})
+    },
+    doJobReadyToRead: function(entry, job) {
+        var _this = this
+        entry.file( function(file) {
+            if (! file) {
+                _this.jobError(job, 'error getting file')
+            } else {
+                var reader = new FileReader
+                reader.onload = function(evt) {
+                    _this.jobDone(job, evt)
+                }
+                reader.onerror = function(evt) {
+                    _this.jobError(job, 'error reading file')
+                }
+                var blobSlice = file.slice(job.opts.fileOffset, job.opts.fileOffset + job.opts.size)
+                reader.readAsArrayBuffer(blobSlice)
+            }
+        })
     },
     doJobReadyToWrite: function(entry, job) {
         //console.log(job.opts.jobId, 'doJobReadyToWrite')
@@ -178,13 +196,7 @@ DiskIO.prototype = {
                         }
                     })
                 } else {
-                    // not yet supporting disk i/o read jobs
-                    debugger
-                    // just assume the file actually is the right size etc
-                    entry.createReader( function(reader) {
-                        var jobData = job.opts // 
-                        debugger
-                    })
+                    _this.doJobReadyToRead(entry, job)
                 }
             } else {
                 this.disk.client.error('fatal disk i/o error')

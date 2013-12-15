@@ -23,6 +23,10 @@ function PeerConnection(opts) {
     this.set('peerChoked',true)
     this.set('amChoked',true)
 
+    this.sentHandshake = false
+    this.sentExtensionHandshake = false
+    this.sentBitfield = false
+
     this.peerHandshake = null
     this.peerExtensionHandshake = null
     this.peerExtensionHandshakeCodes = {}
@@ -191,6 +195,9 @@ PeerConnection.prototype = {
         this.doRead()
         this.sendHandshake()
         this.sendExtensionHandshake()
+        if (this.torrent.has_infodict()) {
+            this.sendBitfield()
+        }
     },
     doRead: function() {
         console.assert(! this.reading)
@@ -199,6 +206,7 @@ PeerConnection.prototype = {
         chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
     },
     sendExtensionHandshake: function() {
+        this.sentExtensionHandshake = true
         if (this.peerHandshake &&
             (this.peerHandshake.reserved[5] & 0x10) == 0) {
             // will not send extension handshake to people that don't have 0x10 in 6th byte...
@@ -233,7 +241,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',type)
+        console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -253,6 +261,7 @@ PeerConnection.prototype = {
         this.write(b.buffer)
     },
     sendHandshake: function() {
+        this.sentHandshake = true
         var bytes = []
         bytes.push( jstorrent.protocol.protocolName.length )
         for (var i=0; i<jstorrent.protocol.protocolName.length; i++) {
@@ -377,6 +386,13 @@ PeerConnection.prototype = {
         
     },
     newStateThink: function() {
+        if (this.torrent.isComplete()) { 
+
+
+
+
+            return 
+        }
         // thintk about the next thing we might want to write to the socket :-)
         this.checkBuffer()
 
@@ -520,7 +536,7 @@ PeerConnection.prototype = {
             data.payload = buf
         }
 
-        //console.log('Received message',data.type)
+        console.log('Received message',data.type)
 
         this.handleMessage(data)
     },
@@ -540,7 +556,15 @@ PeerConnection.prototype = {
         // TODO -- if write buffer is pretty full, don't create diskio
         //job yet, since we want to do it more lazily, not too
         //eagerly.  :-) todo -- make this work better haha
-        this.sendMessage("REJECT_REQUEST", msg.payload)
+        // this.sendMessage("REJECT_REQUEST", msg.payload)
+
+        // parse message
+        var header = new DataView(msg.payload, 5, 12)
+        var pieceNum = header.getUint32(0)
+        var offset = header.getUint32(4)
+        var size = header.getUint32(8)
+
+        this.torrent.registerPieceRequested(this, pieceNum, offset, size)
     },
     handle_SUGGEST_PIECE: function(msg) {
         var pieceNum = new DataView(msg.payload, 5, 4).getUint32(0)
@@ -576,6 +600,7 @@ PeerConnection.prototype = {
     },
     handle_INTERESTED: function() {
         this.peerInterested = true
+        this.sendMessage('UNCHOKE') // TODO - under what conditions?
     },
     handle_NOT_INTERESTED: function() {
         this.peerInterested = false
@@ -726,6 +751,26 @@ PeerConnection.prototype = {
             }
         }
         this.updatePercentComplete()
+    },
+    sendBitfield: function() {
+        this.sentBitfield = true
+        var maxi = Math.ceil(this.torrent.numPieces/8)
+        var arr = []
+        var curByte
+        var idx
+
+        for (var i=0; i<maxi; i++) {
+            curByte = 0
+            idx = 8*i
+            for (var j=0; j<8; j++) {
+                idx++
+                if (idx < this.torrent.numPieces) {
+                    curByte = (curByte | (this.torrent._attributes.bitfield[idx] << j))
+                }
+            }
+            arr.push(curByte)
+        }
+        this.sendMessage('BITFIELD',[new Uint8Array(arr).buffer])
     },
     handle_BITFIELD: function(msg) {
         if (! this.torrent.has_infodict()) {

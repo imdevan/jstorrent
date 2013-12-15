@@ -309,6 +309,12 @@ debugger
         }
         return payloads
     },
+    getData: function(offset, size, callback) {
+        //var filesSpan = this.getSpanningFilesInfo(offset, size)
+        this.torrent.getStorage().diskio.readPiece(this, offset, size, function(result) {
+            callback(result.data)
+        })
+    },
     getSpanningFilesInfo: function(offset, size) {
         // returns a list of [fileNum, fileOffset, size]
         if (offset === undefined) { offset = 0 }
