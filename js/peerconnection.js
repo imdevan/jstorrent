@@ -96,7 +96,8 @@ PeerConnection.prototype = {
                         if (chunkRequest.peerconn == this) {
                             // DELETE this fucker!
                             console.log('peer disconnected that had outstanding chunk request and we deleted it. yay')
-                            delete chunkRequests[i]
+                            // delete chunkRequests[i] // delete dont work cuz .length still set, gotta do splice
+                            chunkRequests.splice(i,1)
                             break
                         }
                     }
