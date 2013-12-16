@@ -6,8 +6,7 @@
     "manifest_version": 2,
     "permissions": [
         "contextMenus",
-        "*://*.jstorrent.com/*",
-        "*://jstorrent.com/*"
+        "*://*.jstorrent.com/*"
     ],
     "background": {
         "scripts": ["background.js"]

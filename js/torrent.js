@@ -142,6 +142,11 @@ Torrent.prototype = {
         reader.onload = _.bind(function(evt) {
             //console.log('read torrent data',evt)
 
+            if (evt.target.result.byteLength == 0) {
+                callback({error:"read 0 bytes"})
+                return
+            }
+
             function onHashResult(result) {
                 var hash = result.hash
                 if (hash) {
@@ -244,11 +249,11 @@ Torrent.prototype = {
         this.set('name', this.infodict.name)
         this.set('size',this.size)
 
-        for (var i=0; i<this.peers.items.length; i++) {
+        this.peers.each(function(peer){
             // send new extension handshake to everybody, because now it has ut_metadata...
-            this.peers.items[i].sendExtensionHandshake()
-            this.peers.items[i].newStateThink() // in case we dont send them extension handshake because they dont advertise the bit
-        }
+            peer.sendExtensionHandshake()
+            peer.newStateThink() // in case we dont send them extension handshake because they dont advertise the bit
+        })
         this.set('metadata',true)
         this.save()
         this.saveMetadata() // trackers maybe not initialized so they arent being saved...
@@ -354,21 +359,20 @@ Torrent.prototype = {
                 this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
 
                 // send everybody NOT_INTERESTED!
-                for (var i=0; i<this.peers.items.length; i++) {
-                    this.peers.items[i].sendMessage("NOT_INTERESTED")
-                }
+                this.peers.each( function(peer) {
+                    peer.sendMessage("NOT_INTERESTED")
+                })
             }
             // send HAVE message to all connected peers
             payload = new Uint8Array(4)
             var v = new DataView(payload.buffer)
             v.setUint32(0,result.piece.num)
 
-            for (var i=0; i<this.peers.items.length; i++) {
-                if (this.peers.items[i].peerHandshake) {
-                    this.peers.items[i].sendMessage("HAVE", [payload.buffer])
+            this.peers.each( function(peer) {
+                if (peer.peerHandshake) {
+                    peer.sendMessage("HAVE", [payload.buffer])
                 }
-
-            }
+            })
         }
         this.set('downloaded', this.getDownloaded())
         this.set('complete', this.get('downloaded') / this.size)
@@ -457,7 +461,13 @@ Torrent.prototype = {
         this.set('state','error')
         this.lasterror = msg
         console.error('torrent error:',msg)
-        this.client.app.notifyNeedDownloadDirectory()
+
+        if (msg == 'read 0 bytes') {
+            this.client.app.onClientError(msg, "Torrent file invalid")
+        } else {
+            // need a more generic error...
+            this.client.app.notifyNeedDownloadDirectory()
+        }
         this.started = false
         this.starting = false
         this.save()
@@ -595,28 +605,39 @@ Torrent.prototype = {
         this.trigger('start')
         this.newStateThink()
     },
+    maybePropagatePEX: function(data) {
+        this.peers.each( function(peer) {
+            if (peer.peer.host == '127.0.0.1') {
+                // definitely send it
+                peer.sendPEX(data)
+            }
+        })
+    },
     stop: function() {
         this.starting = false
+        this.set('state','stopped')
+        this.started = false
+
         if (this.think_interval) { 
             clearInterval(this.think_interval)
             this.think_interval = null
         }
         // prevent newStateThink from reconnecting us
-        _.defer( _.bind(function() {
-        for (var i=0; i<this.peers.items.length; i++) {
-            this.peers.items[i].close('torrent stopped')
-        }
+
+        this.peers.each( function(peer) {
+            // this is not closing all the connections because it modifies .items...
+            // need to iterate better...
+            peer.close('torrent stopped')
+        })
+
         for (var i=0; i<this.pieces.items.length; i++) {
             this.pieces.items[i].resetData()
         }
-        },this))
         // TODO -- move these into some kind of resetState function?
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
 
-        this.set('state','stopped')
         this.save()
-        this.started = false
     },
     remove: function() {
         this.stop()

@@ -18,6 +18,8 @@ function PeerConnection(opts) {
     this.amInterested = false
     this.amChoked = true
 
+    this.readThrottled = false
+
     this.peerInterested = false
     this.peerChoked = true
     this.set('peerChoked',true)
@@ -197,6 +199,9 @@ PeerConnection.prototype = {
             this.connect_timeout_callback = null
             this.connecting = false
         }
+
+        this.torrent.maybePropagatePEX({added: this.peer.serialize()})
+
         this.doRead()
         this.sendHandshake()
         this.sendExtensionHandshake()
@@ -206,6 +211,7 @@ PeerConnection.prototype = {
     },
     doRead: function() {
         console.assert(! this.reading)
+        if (this.hasclosed) { return }
         if (this.reading) { return }
         this.reading = true
         chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
@@ -395,9 +401,18 @@ PeerConnection.prototype = {
         
     },
     newStateThink: function() {
-        while (this.checkBuffer()) {}
+        if (! this.readThrottled) {
+            while (this.checkBuffer()) {}
+        }
 
         if (this.torrent.isComplete()) { 
+
+            if (this.get('complete') == 1) {
+                if (! this.peerInterested) {
+                    this.close('both complete and peer not interested')
+                }
+            }
+
             return 
         }
         // thintk about the next thing we might want to write to the socket :-)
@@ -474,6 +489,19 @@ PeerConnection.prototype = {
         chrome.socket.destroy(this.sockInfo.socketId)
         this.trigger('error')
     },
+    shouldThrottleRead: function() { 
+        // if byte upload rate too high?
+        if (this.peer.host == '127.0.0.1') { return true }
+    },
+    checkShouldUnthrottleRead: function() {
+        if (true) { // throttling just means a delay for now
+            if (! this.hasclosed) {
+                this.readThrottled = false
+                this.checkBuffer()
+                this.doRead()
+            }
+        }
+    },
     onRead: function(readResult) {
         if (! this.torrent.started) {
             console.error('onRead, but torrent stopped')
@@ -493,8 +521,15 @@ PeerConnection.prototype = {
             this.torrent.set('bytes_received', this.torrent.get('bytes_received') + readResult.data.byteLength)
             //this.log('onRead',readResult.data.byteLength)
             this.readBuffer.add( readResult.data )
-            this.checkBuffer()
-            this.doRead() // TODO -- only if we are actually interested right now...
+
+            //this.doRead() // TODO -- only if we are actually interested right now...
+            if (this.shouldThrottleRead()) {
+                this.readThrottled = true
+                setTimeout( _.bind(this.checkShouldUnthrottleRead,this), 10000 )
+            } else {
+                this.checkBuffer()
+                this.doRead()
+            }
         }
         //this.close('no real reason')
     },
@@ -517,6 +552,7 @@ PeerConnection.prototype = {
             if (curbufsz >= 4) {
                 var msgsize = new DataView(this.readBuffer.consume(4,true)).getUint32(0)
                 if (msgsize > jstorrent.protocol.maxPacketSize) {
+                    console.error('protocol message too large',msgsize)
                     this.close('message too large')
                 } else {
                     if (curbufsz >= msgsize + 4) {
@@ -562,15 +598,18 @@ PeerConnection.prototype = {
         // TODO -- if write buffer is pretty full, don't create diskio
         //job yet, since we want to do it more lazily, not too
         //eagerly.  :-) todo -- make this work better haha
-        // this.sendMessage("REJECT_REQUEST", msg.payload)
 
         // parse message
         var header = new DataView(msg.payload, 5, 12)
         var pieceNum = header.getUint32(0)
         var offset = header.getUint32(4)
         var size = header.getUint32(8)
+        if (this.torrent.has_infodict() && this.torrent._attributes.bitfield[pieceNum]) {
+            this.torrent.registerPieceRequested(this, pieceNum, offset, size)            
+        } else {
+            this.sendMessage("REJECT_REQUEST", msg.payload) 
+        }
 
-        this.torrent.registerPieceRequested(this, pieceNum, offset, size)
     },
     handle_SUGGEST_PIECE: function(msg) {
         var pieceNum = new DataView(msg.payload, 5, 4).getUint32(0)
@@ -654,6 +693,25 @@ PeerConnection.prototype = {
         var data = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
         // TODO -- use this data :-)
         //console.log('ut_pex data', data)
+        var idx, host, port, peer
+        if (data.added) {
+            var numPeers = data.added.length/6
+
+            for (var i=0; i<numPeers; i++) {
+                idx = numPeers*i
+                host = [data.added.charCodeAt( idx ),
+                            data.added.charCodeAt( idx+1 ),
+                            data.added.charCodeAt( idx+2 ),
+                            data.added.charCodeAt( idx+3 )].join('.')
+                port = data.added.charCodeAt( idx+4 ) * 256 + data.added.charCodeAt( idx+5 )
+                peer = new jstorrent.Peer({host:host, port:port})
+                if (! this.torrent.swarm.contains(peer)) {
+                    console.log('got new ut pex peer',host,port)
+                    this.torrent.swarm.add(peer)
+                }
+            }
+        }
+        this.torrent.maybePropagatePEX(data)
     },
     handle_UTORRENT_MSG_ut_metadata: function(msg) {
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
@@ -706,6 +764,15 @@ PeerConnection.prototype = {
                               newbuf.buffer])
         } else {
             debugger
+        }
+    },
+    sendPEX: function(data) {
+        if (this.peerExtensionHandshake) {
+            var code = this.peerExtensionHandshake.m.ut_pex
+            this.sendMessage("UTORRENT_MSG",
+                             [new Uint8Array([code]).buffer,
+                              new Uint8Array(bencode(data)).buffer])
+            console.log('sent PEX to', this.get('address'))
         }
     },
     processCompleteInfodictResponses: function() {

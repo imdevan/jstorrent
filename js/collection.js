@@ -208,9 +208,15 @@ Collection.prototype = {
         },this))
     },
     each: function(iterfunc) {
+        var items = []
 
         for (var i=0; i<this.items.length; i++) {
-            iterfunc( this.items[i] )
+            // if we calliterfunc here, it might modify this.items...
+            items.push(this.items[i])
+        }
+
+        for (var i=0; i<items.length; i++) {
+            iterfunc(items[i])
         }
 
 /*        for (var key in this.keyeditems) {

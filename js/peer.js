@@ -8,6 +8,16 @@ jstorrent.Peer = Peer
 Peer.prototype = {
     get_key: function() {
         return this.host + ':' + this.port
+    },
+    serialize: function() {
+        var hostparts = this.host.split('.')
+        var parts = [String.fromCharCode(hostparts[0]),
+                     String.fromCharCode(hostparts[1]),
+                     String.fromCharCode(hostparts[2]),
+                     String.fromCharCode(hostparts[3]),
+                     String.fromCharCode(this.port >> 8),
+                     String.fromCharCode(this.port & 0xff)]
+        return parts.join('')
     }
 }
 for (var method in jstorrent.Item.prototype) {
