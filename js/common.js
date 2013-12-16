@@ -1,5 +1,5 @@
 // common stuff
-jstorrent = window.jstorrent || {}
+window['jstorrent'] = window['jstorrent'] || {}
 jstorrent.constants = {
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),

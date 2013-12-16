@@ -35,7 +35,9 @@ var app_options = {
 
     'max_unflushed_piece_data': {
 //        'default': 16384 * 20, // needs to be much larger, or else we will get "stuck" a lot...
-        'default': 16384 * 20 * 10, // needs to be much larger, or else we will get "stuck" a lot...
+        'default': 4, // needs to be much larger, or else we will get "stuck" a lot...
+        // i.e. store up to 4 complete pieces in RAM
+        // this actually needs to be a multiple of each piece chunk size..
         'type': 'int'
     }
     

@@ -190,9 +190,11 @@ Collection.prototype = {
                 chrome.storage.local.get(fullItemKeys, _.bind(function(itemsResult) {
                     for (var i=0; i<itemKeys.length; i++) {
                         itemData = itemsResult[ fullItemKeys[i] ]
+/*
                         if (! itemData) {
                             //console.log('fetch itemData for key',fullItemKeys[i],'was empty. did you .save() it?')
                         }
+*/
                         item = new this.itemClass({id: itemKeys[i],
                                                    parent: this,
                                                    itemClass: this.itemClass,

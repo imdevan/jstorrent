@@ -1,6 +1,7 @@
 function Peer(opts) {
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
+    console.assert(this.torrent)
     this.host = opts.host
     this.port = opts.port
 }

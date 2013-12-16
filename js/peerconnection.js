@@ -148,9 +148,11 @@ PeerConnection.prototype = {
             return
         }
 
+/*
         if (this.writing || this.reading) {
             //console.warn('called close on socket that had pending read/write callbacks')
         }
+*/
         
         this.hasclosed = true
         //this.log('closing',reason)
@@ -351,7 +353,8 @@ PeerConnection.prototype = {
             return
         }
 
-        if (this.torrent.unflushedPieceDataSize > this.torrent.client.app.options.get('max_unflushed_piece_data')) {
+        var lim = this.torrent.client.app.options.get('max_unflushed_piece_data') * this.torrent.pieceLength
+        if (this.torrent.unflushedPieceDataSize > lim) {
             console.log('not requesting more pieces -- need disk io to write out more first')
             return
         }
@@ -695,21 +698,7 @@ PeerConnection.prototype = {
         //console.log('ut_pex data', data)
         var idx, host, port, peer
         if (data.added) {
-            var numPeers = data.added.length/6
-
-            for (var i=0; i<numPeers; i++) {
-                idx = numPeers*i
-                host = [data.added.charCodeAt( idx ),
-                            data.added.charCodeAt( idx+1 ),
-                            data.added.charCodeAt( idx+2 ),
-                            data.added.charCodeAt( idx+3 )].join('.')
-                port = data.added.charCodeAt( idx+4 ) * 256 + data.added.charCodeAt( idx+5 )
-                peer = new jstorrent.Peer({host:host, port:port})
-                if (! this.torrent.swarm.contains(peer)) {
-                    console.log('got new ut pex peer',host,port)
-                    this.torrent.swarm.add(peer)
-                }
-            }
+            this.torrent.addCompactPeerBuffer(data.added)
         }
         this.torrent.maybePropagatePEX(data)
     },

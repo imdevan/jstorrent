@@ -1,6 +1,6 @@
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
-    this.__name__ == arguments.callee.name
+    this.__name__ = arguments.callee.name
     this.client = opts.client || opts.parent.parent
     console.assert(this.client)
     this.hashhexlower = null
@@ -134,6 +134,23 @@ Torrent.prototype = {
         }
         console.assert(s.length == 40)
         return s
+    },
+    addCompactPeerBuffer: function(added) {
+        var numPeers = added.length/6
+        for (var i=0; i<numPeers; i++) {
+            idx = 6*i
+            host = [added.charCodeAt( idx ),
+                    added.charCodeAt( idx+1 ),
+                    added.charCodeAt( idx+2 ),
+                    added.charCodeAt( idx+3 )].join('.')
+            port = added.charCodeAt( idx+4 ) * 256 + added.charCodeAt( idx+5 )
+            peer = new jstorrent.Peer({host:host, port:port, torrent:this})
+            if (! this.swarm.contains(peer)) {
+                console.log('peer buffer added new peer',host,port)
+                this.swarm.add(peer)
+            }
+        }
+
     },
     initializeFromEntry: function(entry, callback) {
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.

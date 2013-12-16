@@ -59,21 +59,32 @@ for (var method in jstorrent.Item.prototype) {
     jstorrent.Tracker.prototype[method] = jstorrent.Item.prototype[method]
 }
 
-
 function HTTPTracker() {
     Tracker.apply(this, arguments)
+    this.response = null
 }
 
 HTTPTracker.prototype = {
+    paramEncode: function(param) {
+        if (typeof param == 'number') {
+            param = param.toString()
+        }
+        var res = ''
+        for (var i=0; i<param.length; i++) {
+            if (encodeURIComponent(param[i]) == param[i]) {
+                res += param[i]
+            } else {
+                res += '%' + pad( param.charCodeAt(i).toString(16), '0', 2)
+            }
+        }
+        return res
+    },
     announce: function() {
-        // TODO -- implement!!!
-
         var data = {
             event: 'started',
             downloaded: this.torrent.get('downloaded'),
             uploaded: this.torrent.get('uploaded'),
             compact: 1,
-//            info_hash: this.torrent.hashhexlower,
             peer_id: ui82str(this.torrent.client.peeridbytes),
             port: 0,
             left: this.torrent.get('size') - this.torrent.get('downloaded')
@@ -81,15 +92,22 @@ HTTPTracker.prototype = {
         console.log('http tracker announce data',data)
         var xhr = new XMLHttpRequest;
 
-        var url = this.url + '?info_hash=' + this.torrent.hashhexlower
+        var url = this.url + '?info_hash=' + this.paramEncode(ui82str(this.torrent.hashbytes))
         for (var key in data) {
-            url = url + '&' + key + '=' + encodeURIComponent(data[key]) // is this the right format?
+            url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
 
+        console.log('http tracker request url',url)
 
         xhr.responseType = 'arraybuffer'
         xhr.onload = _.bind(function(evt) {
-            debugger
+            var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
+            console.log('http tracker response',data)
+            this.response = data
+            if (data.peers) {
+                this.torrent.addCompactPeerBuffer(data.peers)
+            }
+
         },this)
         xhr.onerror = _.bind(function(evt) {
             this.set_error('xhr error', evt)
