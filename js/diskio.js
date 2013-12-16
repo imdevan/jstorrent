@@ -50,11 +50,13 @@ DiskIO.prototype = {
     readPiece: function(piece, offset, size, callback) {
         // reads a bunch of piece data from all the spanning files
         var filesSpanInfo = piece.getSpanningFilesInfo(offset, size)
+
+        //if (piece.num == 10) { debugger }
         var job,fileSpanInfo
         var jobs = []
         var jobGroup = this.jobGroupCounter++
         this.jobsLeftInGroup[jobGroup] = 0
-        this.jobGroupCallbacks[jobGroup] = callback
+        this.jobGroupCallbacks[jobGroup] = {data:[],callback:callback}
         
         for (var i=0; i<filesSpanInfo.length; i++) {
             fileSpanInfo = filesSpanInfo[i]
@@ -89,19 +91,22 @@ DiskIO.prototype = {
         this.jobsLeftInGroup[job.opts.jobGroup]--
 
         if (this.jobsLeftInGroup[job.opts.jobGroup] == 0) {
-            var callback = this.jobGroupCallbacks[job.opts.jobGroup]
+            var callback = this.jobGroupCallbacks[job.opts.jobGroup].callback
+            var data = this.jobGroupCallbacks[job.opts.jobGroup].data
             delete this.jobGroupCallbacks[job.opts.jobGroup]
-            callback({piece:job.opts.piece, data:(evt.target && evt.target.result)})
+            callback({piece:job.opts.piece, data:data})
         }
         this.thinkNewState()
     },
     jobError: function(job, evt) {
         job.set('state','error')
+        console.log('joberror',job,evt)
         this.diskActive = false
         this.disk.client.error('fatal disk job error')
         var callback = this.jobGroupCallbacks[job.opts.jobGroup]
         delete this.jobGroupCallbacks[job.opts.jobGroup]
         callback({error:evt})
+        this.thinkNewState()
     },
     doJobReadyToRead: function(entry, job) {
         var _this = this
@@ -111,12 +116,15 @@ DiskIO.prototype = {
             } else {
                 var reader = new FileReader
                 reader.onload = function(evt) {
+                    // XXX is data.push sufficient to keep things in order?
+                    _this.jobGroupCallbacks[job.opts.jobGroup].data.push(evt.target.result)
                     _this.jobDone(job, evt)
                 }
                 reader.onerror = function(evt) {
                     _this.jobError(job, 'error reading file')
                 }
                 var blobSlice = file.slice(job.opts.fileOffset, job.opts.fileOffset + job.opts.size)
+                // console.log('blobslice...read',blobSlice)
                 reader.readAsArrayBuffer(blobSlice)
             }
         })

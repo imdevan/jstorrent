@@ -8,6 +8,7 @@ function Piece(opts) {
     this.set('responses', 0)
     this.set('timeouts', 0)
     this.timeoutIds = []
+    this.firstInit = true
     this.resetData()
     this.wasReset = false
 }
@@ -54,6 +55,12 @@ Piece.getSpanningFilesInfo = function(this_torrent, this_num, this_size, offset,
 
 Piece.prototype = {
     resetData: function() {
+        // this is dangerous to call, it can mean we get more responses than recorded requests...
+        if (! this.firstInit) {
+            console.log(this.num,'resetData')
+        }
+        this.firstInit = false
+
         // able to store multiple copies of chunk responses,
         // per each peer this serves endgame mode. we can
         // attempt to hash-check a complete piece that is not
@@ -81,6 +88,8 @@ Piece.prototype = {
         return this.num
     },
     registerChunkResponseFromPeer: function(peerconn, chunkOffset, data) {
+        // at this point ,have not checked whether this piece was requested
+
         this.set('responses', this.get('responses')+1)
         var chunkNum = chunkOffset / jstorrent.protocol.chunkSize
         // received a chunk response from peer
@@ -148,12 +157,12 @@ Piece.prototype = {
                 },this))
             }
         } else {
+            console.log(this.num,'got unexpected chunk',peerconn.get('address'), chunkNum)
             // request had timed out
         }
     },
     notifyPiecePersisted: function() {
         // maybe do some other stuff, like send CANCEL message to any other peers
-
         // now destroy my data
         this.resetData()
         this.haveDataPersisted = true
@@ -164,9 +173,7 @@ Piece.prototype = {
     },
     checkChunkResponseHash: function(preferredPeer, callback) {
         // TODO - allow this to prefer assembling from a specific peer
-
         // the actual digest happens in the thread
-
         var responses, curChoice
         //var digest = new Digest.SHA1()
         this.chunkResponsesChosen = []
@@ -178,7 +185,10 @@ Piece.prototype = {
             this.chunkResponsesChosen.push( curChoice )
             this.chunkResponsesChosenPlain.push( curChoice.data )
         }
-
+        var chunks = this.chunkResponsesChosenPlain
+        this.checkPieceHashMatch( chunks, callback )
+    },
+    checkPieceHashMatch: function(chunks, callback) {
         var worker = this.torrent.client.workerthread
         if (worker.busy) {
             console.warn('worker busy indicates we should have more than one thread')
@@ -193,11 +203,10 @@ Piece.prototype = {
             // only if the unflushed data pipeline limit is set rather
             // low.
         }
-        worker.send( { chunks: this.chunkResponsesChosenPlain,
+        worker.send( { chunks: chunks,
                        command: 'hashChunks' },
                      _.bind(function(result) {
                          if (result && result.hash) {
-
                              var responseHash = ui82str(result.hash)
                              if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
                                  //console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
@@ -207,14 +216,11 @@ Piece.prototype = {
                                  console.log('%cBAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
                                  callback(false)
                              }
-
                          } else {
                              console.error('error with sha1 hashing worker thread')
                              callback(false)
                          }
-
                      },this));
-
     },
     checkChunkResponsesFilled: function() {
         for (var i=0; i<this.numChunks; i++) {
@@ -227,6 +233,8 @@ Piece.prototype = {
         return true
     },
     unregisterAllRequestsForPeer: function(peerconn) {
+        // is anyone calling this? if not, why not?
+        debugger
 
         for (var chunkNum in this.chunkRequests) {
             //requests = this.chunkRequests[chunkNum]
@@ -286,9 +294,6 @@ debugger
                 }
             }
         }
-
-
-
     },
     registerChunkRequestForPeer: function(peerconn, chunkNum, chunkOffset, chunkSize) {
         this.set('requests', this.get('requests')+1)
@@ -323,7 +328,8 @@ debugger
                 chunkSize = this.size - chunkNum * chunkSize
             }
 
-            if (this.chunkRequests[chunkNum] || this.chunkResponses[chunkNum]) {
+            if ((this.chunkRequests[chunkNum] && this.chunkRequests[chunkNum].length > 0) || 
+                (this.chunkResponses[chunkNum] && this.chunkResponses[chunkNum].length > 0)) {
                 // if ENDGAME, analyze further.
                 if (this.torrent.isEndGame) {
                     debugger

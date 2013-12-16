@@ -27,6 +27,7 @@ if (self.jstorrent) {
             callback(msg)
         },
         send: function(msg, callback) {
+            //console.log('compute hash')
             this.busy = true
             var id = this.messageCounter++
             msg._id = id

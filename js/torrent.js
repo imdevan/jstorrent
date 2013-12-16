@@ -274,23 +274,32 @@ Torrent.prototype = {
         this.set('metadata',true)
         this.save()
         this.saveMetadata() // trackers maybe not initialized so they arent being saved...
-        this.recheckData()
+        //this.recheckData() // only do this under what conditions?
     },
     getMetadataFilename: function() {
         return this.get('name') + '.torrent'
     },
-    loadMetadataEntry: function(callback) {
-        var storage = this.getStorage()
-        if (! storage) {
-            callback({error:'disk missing'})
-        } else {
-            storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
-                if (entry) {
-                    callback({success:true, entry:entry})
+    loadMetadata: function(callback) {
+        var _this = this
+        if (this.get('metadata')) {
+            if (this.infodict) {
+                callback({torrent:this})
+            } else {
+                var storage = this.getStorage()
+                if (storage) {
+                    storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
+                        if (entry) {
+                            _this.initializeFromEntry(entry, callback)
+                        } else {
+                            callback({error:'file missing'})
+                        }
+                    })
                 } else {
-                    callback({error:'file missing'})
+                    callback({error:'disk missing'})
                 }
-            })
+            }
+        } else {
+            callback({error:'have no metadata'})
         }
     },
     saveMetadata: function(callback) {
@@ -429,11 +438,76 @@ Torrent.prototype = {
             return storage
         }
     },
+    printComplete: function() {
+        return this._attributes.bitfield.join('')
+    },
     recheckData: function() {
         // checks registered or default torrent download location for
         // torrent data
         // this.set('complete',0)
         console.log('Re-check data')
+        if (this.started) {
+            this.error('cannot check while started')
+            return
+        }
+
+        if (this.get('metadata')) {
+            this.loadMetadata( _.bind(function(result) {
+
+                var results = {}
+                var resultsCollected = {num:0, total:this.numPieces}
+                console.assert(this.numPieces)
+                function recordResult(i,result) {
+                    console.log('record result', resultsCollected)
+                    results[i] = result
+                    resultsCollected.num++
+                    if (resultsCollected.num == resultsCollected.total) {
+                        console.log('done checking',results)
+                        debugger
+                    }
+                }
+
+
+                if (result.error) {
+                    this.error('no metadata')
+                } else {
+                    _.range(0,this.numPieces).forEach( _.bind(function(i) {
+
+                        var piece
+                        // this is a horribly fucked nightmare mess
+
+                        if (this._attributes.bitfield[i]) {
+                            piece = this.getPiece(i)
+                            piece.getData(undefined, undefined, function(pieceDataResult) {
+                                if (pieceDataResult.error) {
+                                    recordResult(i,false)
+                                } else {
+                                    var s = 0
+
+                                    for (var i=0; i<pieceDataResult.length; i++) {
+                                        s += pieceDataResult[i].byteLength
+                                    }
+
+                                    if (piece.size != s) {
+                                        console.error('sizes dont add up bro!',s,'should be',piece.size)
+                                        recordResult(i,false)
+                                    } else {
+                                        piece.checkPieceHashMatch(pieceDataResult, function(matched) {
+                                            recordResult(i, (matched ? true : false))
+                                        })
+                                    }
+                                }
+                            })
+                        } else {
+                            resultsCollected.num++
+                            console.log('0 bitmask',i,'increment collected',resultsCollected.num)
+                        }
+                    },this) )
+                }
+            },this))
+        } else {
+            console.error('cannot re-check, dont have metadata')
+        }
     },
     on_peer_connect_timeout: function(peer) {
         // TODO -- fix this up so it doesn't get triggered unneccesarily
@@ -564,24 +638,13 @@ Torrent.prototype = {
             return
         }
 
-        if (this.get('metadata') && ! this.infodict) {
-            this.loadMetadataEntry( _.bind(function(result) {
-                //console.log('metadataentry',result)
-                if (result && result.entry) {
-                    this.initializeFromEntry(result.entry, _.bind(function(initResult) {
-                        if (initResult.error) {
-                            this.error(initResult.error)
-                        } else {
-                            this.readyToStart()
-                        }
-                    },this))
-                } else {
-                    this.error('unable to load metadata')
-                }
-            },this))
-        } else {
-            this.readyToStart()
-        }
+        this.loadMetadata( _.bind(function(result) {
+            if (result.error) {
+                this.error(result.error)
+            } else {
+                this.readyToStart()
+            }
+        },this))
     },
     readyToStart: function() {
         this.set('state','started')

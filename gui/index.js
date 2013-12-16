@@ -42,6 +42,8 @@ function onappready() {
 
     document.getElementById("add-form").addEventListener('submit', onadd)
 
+
+
     window.UI = new UI({client:client})
     window.app.set_ui(UI)
 
@@ -87,6 +89,11 @@ function bind_events() {
     tabs.forEach(function(tab) {
 	$('#detail-' + tab).click( click_detail.bind(this, tab) )
     });
+
+    $('#re-check').click( function(evt) {
+        app.toolbar_recheck()
+    })
+
     $('#button-options').click( function(evt) {
         app.focus_or_open_options();
     })

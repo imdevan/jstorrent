@@ -153,6 +153,13 @@ App.prototype = {
     suspend: function() {
         this.client.stop()
     },
+    toolbar_recheck: function() {
+        var torrents = this.UI.get_selected_torrents()
+        for (var i=0; i<torrents.length; i++) {
+            console.log('recheck',i)
+            torrents[i].recheckData()
+        }
+    },
     toolbar_start: function() {
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {

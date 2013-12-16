@@ -107,7 +107,7 @@ PeerConnection.prototype = {
                             // DELETE this fucker!
                             console.log('peer disconnected that had outstanding chunk request and we deleted it. yay')
                             // delete chunkRequests[i] // delete dont work cuz .length still set, gotta do splice
-                            chunkRequests.splice(i,1)
+                            chunkRequests.splice(i,1) // XXX - it removes the entry, but requests still not being made!
                             break
                         }
                     }
@@ -353,7 +353,11 @@ PeerConnection.prototype = {
             return
         }
 
-        var lim = this.torrent.client.app.options.get('max_unflushed_piece_data') * this.torrent.pieceLength
+        var lim = this.torrent.client.app.options.get('max_unflushed_piece_data') * Math.max(this.torrent.pieceLength,
+                                                                                             jstorrent.protocol.chunkSize * 64)
+
+
+
         if (this.torrent.unflushedPieceDataSize > lim) {
             console.log('not requesting more pieces -- need disk io to write out more first')
             return
@@ -636,7 +640,6 @@ PeerConnection.prototype = {
         this.torrent.unflushedPieceDataSize += data.byteLength
         //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
         this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
-
     },
     handle_UNCHOKE: function() {
         this.set('amChoked',false)
