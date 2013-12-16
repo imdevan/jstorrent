@@ -108,9 +108,8 @@ function onAppLaunchMessage(launchData) {
 }
 
 if (chrome.runtime.setUninstallUrl) {
-// doesn't seem to exist ! Maybe only for extensions
     chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall?version=' + 
-                                   encodeURIComponent(chrome.runtime.getManifest()).version
+                                   encodeURIComponent(chrome.runtime.getManifest().version)
                                   )
 }
 
