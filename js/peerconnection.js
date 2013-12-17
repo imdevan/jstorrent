@@ -91,6 +91,12 @@ PeerConnection.prototype = {
         this.writeBuffer.clear()
     },
     cleanupRequests: function() {
+
+        var idx = this.torrent.connectionsServingInfodict.indexOf(this)
+        if (idx != -1) {
+            this.torrent.connectionsServingInfodict.splice(idx, 1)
+        }
+
         var parts, pieceNum, chunkNum, piece, chunkRequests, chunkRequest
         for (var key in this.pieceChunkRequests) {
             parts = key.split('/')
@@ -306,7 +312,8 @@ PeerConnection.prototype = {
         console.assert(! this.hasclosed)
         if (! this.sockInfo) {
             //console.error('cannot write from buffer, sockInfo null (somebody closed connection on us...)')
-            this.close('sockInfo missing writeFromBuffer')
+            console.warn('sockInfo missing writeFromBuffer')
+            return
         }
         console.assert(! this.writing)
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
@@ -455,7 +462,7 @@ PeerConnection.prototype = {
                 this.peerExtensionHandshake.m && 
                 this.peerExtensionHandshake.m.ut_metadata &&
                 this.peerExtensionHandshake.metadata_size &&
-                this.torrent.connectionsServingInfodict.length == 0)
+                this.torrent.connectionsServingInfodict.length < 3)
             {
                 // we have no infodict and this peer does!
                 this.torrent.connectionsServingInfodict.push( this )
@@ -464,6 +471,7 @@ PeerConnection.prototype = {
         }
     },
     requestInfodict: function() {
+        console.log('requestinfodict')
         var infodictBytes = this.peerExtensionHandshake.metadata_size
         var d
         var numChunks = Math.ceil( infodictBytes / jstorrent.protocol.pieceSize )
@@ -639,7 +647,12 @@ PeerConnection.prototype = {
         console.assert(data.length <= jstorrent.protocol.chunkSize)
         this.torrent.unflushedPieceDataSize += data.byteLength
         //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
-        this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
+        if (! this.torrent.pieces.containsKey(pieceNum)) {
+            // we didn't ask for this piece
+            
+        } else {
+            this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
+        }
     },
     handle_UNCHOKE: function() {
         this.set('amChoked',false)
@@ -674,7 +687,7 @@ PeerConnection.prototype = {
         if (extType == jstorrent.protocol.extensionMessageHandshakeCode) {
             // bencoded extension message handshake follows
             this.peerExtensionHandshake = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
-            this.set('peerClientName',this.peerExtensionHandshake.v)
+            this.set('peerClientName',jstorrent.protocol.tweakPeerClientName(this.peerExtensionHandshake.v))
             if (this.peerExtensionHandshake.m) {
                 for (var key in this.peerExtensionHandshake.m) {
                     this.peerExtensionHandshakeCodes[this.peerExtensionHandshake.m[key]] = key
@@ -707,6 +720,7 @@ PeerConnection.prototype = {
     },
     handle_UTORRENT_MSG_ut_metadata: function(msg) {
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
+        console.log(this.get('address'),'ut_metadata',extMessageBencodedData)
         var infodictCode = extMessageBencodedData.msg_type
         var infodictMsgType = jstorrent.protocol.infodictExtensionMessageCodes[infodictCode]
 
@@ -716,7 +730,7 @@ PeerConnection.prototype = {
             var dataStartIdx = bencode(extMessageBencodedData).length;
             var infodictDataChunk = new Uint8Array(msg.payload, 6 + dataStartIdx)
             var infodictChunkNum = extMessageBencodedData.piece
-
+debugger
             if (this.registeredRequests['infodictRequest'][infodictChunkNum]) {
                 this.registeredRequests['infodictRequest'][infodictChunkNum].received = true
                 this.infodictResponses[infodictChunkNum] = infodictDataChunk

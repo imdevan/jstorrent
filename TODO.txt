@@ -2,7 +2,6 @@
 - when close main window, have it close any subwindows (i.e. options
    window)
 
-- refactor openMainWindow to use "id" argument and simplify logic,
-  always append to list of launchData and if app is ready, ask it to
-  handle.
+- add by url magnet link with trackers, dont start it, then restart app. trackers missing
 
+- add by url .torrent http url

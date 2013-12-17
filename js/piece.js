@@ -57,7 +57,7 @@ Piece.prototype = {
     resetData: function() {
         // this is dangerous to call, it can mean we get more responses than recorded requests...
         if (! this.firstInit) {
-            console.log(this.num,'resetData')
+            // console.log(this.num,'resetData')
         }
         this.firstInit = false
 

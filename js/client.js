@@ -148,6 +148,7 @@ Client.prototype = {
         } else {
             this.torrents.add( torrent )
             this.torrents.save()
+            //torrent.save()
         }
     },
     frame: function() {

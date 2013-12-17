@@ -72,9 +72,9 @@ function Torrent(opts) {
             // initialize my trackers
             this.initializeTrackers()
         }
-
+        this.set('url',opts.url)
         this.hashhexlower = this.magnet_info.hashhexlower
-
+        this.save()
     } else if (opts.id) {
         this.hashhexlower = opts.id
     } else if (opts.entry) {
@@ -207,6 +207,10 @@ Torrent.prototype = {
             this.client = this.parent.parent
         }
 */
+        if (this.get('url') && ! this.get('metadata')) {
+            this.magnet_info = parse_magnet(this.get('url'))
+            this.initializeTrackers()
+        }
 
         if (this.get('state' ) == 'started') {
             this.start()
@@ -458,8 +462,8 @@ Torrent.prototype = {
                 var resultsCollected = {num:0, total:this.numPieces}
                 console.assert(this.numPieces)
                 function recordResult(i,result) {
-                    console.log('record result', resultsCollected)
-                    results[i] = result
+                    console.log('record result', resultsCollected, i,result)
+                    results[i] = [result,'fuckme']
                     resultsCollected.num++
                     if (resultsCollected.num == resultsCollected.total) {
                         console.log('done checking',results)
@@ -492,9 +496,13 @@ Torrent.prototype = {
                                         console.error('sizes dont add up bro!',s,'should be',piece.size)
                                         recordResult(i,false)
                                     } else {
-                                        piece.checkPieceHashMatch(pieceDataResult, function(matched) {
-                                            recordResult(i, (matched ? true : false))
-                                        })
+                                        piece.checkPieceHashMatch(pieceDataResult, _.bind(function(i,matched) {
+                                            if (matched) {
+                                                recordResult(i, true)
+                                            } else {
+                                                recordResult(i, false)
+                                            }
+                                        },this,i))
                                     }
                                 }
                             })
@@ -542,7 +550,7 @@ Torrent.prototype = {
             var v = new DataView(header.buffer)
             v.setUint32(0, pieceNum)
             v.setUint32(4, offset)
-            peerconn.sendMessage('PIECE', [header.buffer, result])
+            peerconn.sendMessage('PIECE', [header.buffer].concat(result))
         })
     },
     has_infodict: function() {
@@ -638,13 +646,17 @@ Torrent.prototype = {
             return
         }
 
-        this.loadMetadata( _.bind(function(result) {
-            if (result.error) {
-                this.error(result.error)
-            } else {
-                this.readyToStart()
-            }
-        },this))
+        if (this.get('metadata')) {
+            this.loadMetadata( _.bind(function(result) {
+                if (result.error) {
+                    this.error(result.error)
+                } else {
+                    this.readyToStart()
+                }
+            },this))
+        } else {
+            this.readyToStart()
+        }
     },
     readyToStart: function() {
         this.set('state','started')

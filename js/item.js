@@ -33,12 +33,13 @@ jstorrent.Item = Item
 
 Item.prototype = {
     getParentIdList: function() {
-        var myKey = [this.id || (this.opts && this.opts.id) || this.get_key()]
+        var myKey = this.id || (this.opts && this.opts.id) || this.get_key()
+        console.assert(myKey)
         var parent = (this.opts && this.opts.parent) || this.parent
         if (parent) {
-            return parent.getParentIdList().concat(myKey)
+            return parent.getParentIdList().concat([myKey])
         } else {
-            return myKey
+            return [myKey]
         }
     },
     getStoreKey: function() {

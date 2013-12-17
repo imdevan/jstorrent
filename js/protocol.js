@@ -54,6 +54,13 @@ for (var i=0; i<jstorrent.protocol.messages.length; i++) {
 for (var key in jstorrent.protocol.extensionMessages) {
     jstorrent.protocol.extensionMessageCodes[jstorrent.protocol.extensionMessages[key]] = key
 }
+jstorrent.protocol.tweakPeerClientName = function(s) {
+    if (s.charCodeAt(0) == 194 && s.charCodeAt(1) == 181) {
+        return s.slice(1)
+    } else {
+        return s
+    }
+}
 jstorrent.protocol.parseHandshake = function(buf) {
     var toret = {}
     sofar = 0;

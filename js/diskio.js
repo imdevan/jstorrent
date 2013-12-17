@@ -103,9 +103,10 @@ DiskIO.prototype = {
         console.log('joberror',job,evt)
         this.diskActive = false
         this.disk.client.error('fatal disk job error')
-        var callback = this.jobGroupCallbacks[job.opts.jobGroup]
+        var callback = this.jobGroupCallbacks[job.opts.jobGroup].callback
+        var data = this.jobGroupCallbacks[job.opts.jobGroup].data
         delete this.jobGroupCallbacks[job.opts.jobGroup]
-        callback({error:evt})
+        callback({error:evt, data:data})
         this.thinkNewState()
     },
     doJobReadyToRead: function(entry, job) {
@@ -221,7 +222,7 @@ DiskIO.prototype = {
         var jobs = []
         var jobGroup = this.jobGroupCounter++
         this.jobsLeftInGroup[jobGroup] = 0
-        this.jobGroupCallbacks[jobGroup] = callback
+        this.jobGroupCallbacks[jobGroup] = {data:[],callback:callback}
         
         for (var i=0; i<filesSpanInfo.length; i++) {
             fileSpanInfo = filesSpanInfo[i]
