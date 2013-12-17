@@ -33,8 +33,8 @@ function UI(opts) {
             {id:"complete", name: "% Complete", formatVal: fracToPercent},
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
-            {id:'requests'},
-            {id:'responses'},
+            {id:'requests', name:"Req", width:50},
+            {id:'responses', name:"Resp", width:50},
             {id:"last_message_sent", name: "Last Sent"},
             {id:"last_message_received", name: "Last Received", width:150},
             {id:"amChoked"},
@@ -77,8 +77,8 @@ function UI(opts) {
             {attr:'num'},
             {attr:'size', formatVal:byteUnits},
             {attr:'haveData'},
-            {id:'requests'},
-            {id:'responses'},
+            {id:'requests', name:"Req", width:50},
+            {id:'responses', name:"Resp", width:50},
             {id:'timeouts'},
             {attr:'haveDataPersisted'},
             {attr:'numChunks'}
@@ -154,7 +154,8 @@ UI.prototype = {
                     if (torrent.infodict) {
                         torrent.initializeFiles()
                     } else {
-                        this.detailtable.grid.setData(['No metadata yet...'])
+                        // XXX TODO -- make torrent list refresh once metadata is completed...
+                        this.detailtable.grid.setData([])
                     }
                 }
             }

@@ -21,6 +21,8 @@ function DiskIOJob(opts) {
 }
 jstorrent.DiskIOJob = DiskIOJob
 
+DiskIOJob.jobTimeoutInterval = 2000
+
 DiskIOJob.prototype = {
     get_key: function() {
         return this.jobId
@@ -84,6 +86,10 @@ DiskIO.prototype = {
         }
     },
     jobDone: function(job, evt) {
+        if (job.get('state') == 'error') {
+            console.warn('jobDone triggered, but was in error state',job)
+            return
+        }
         job.set('state','idle')
         //console.log(job.opts.jobId,'jobDone')
         this.diskActive = false
@@ -91,6 +97,7 @@ DiskIO.prototype = {
         this.jobsLeftInGroup[job.opts.jobGroup]--
 
         if (this.jobsLeftInGroup[job.opts.jobGroup] == 0) {
+            delete this.jobsLeftInGroup[job.opts.jobGroup]
             var callback = this.jobGroupCallbacks[job.opts.jobGroup].callback
             var data = this.jobGroupCallbacks[job.opts.jobGroup].data
             delete this.jobGroupCallbacks[job.opts.jobGroup]
@@ -100,9 +107,10 @@ DiskIO.prototype = {
     },
     jobError: function(job, evt) {
         job.set('state','error')
-        console.log('joberror',job,evt)
+        console.error('joberror',job,evt)
         this.diskActive = false
-        this.disk.client.error('fatal disk job error')
+        this.remove(job)
+        this.opts.disk.client.error('fatal disk job error')
         var callback = this.jobGroupCallbacks[job.opts.jobGroup].callback
         var data = this.jobGroupCallbacks[job.opts.jobGroup].data
         delete this.jobGroupCallbacks[job.opts.jobGroup]
@@ -185,9 +193,24 @@ DiskIO.prototype = {
         }
         next()
     },
+    checkJobTimeout: function(job) {
+        if (this.items.length > 0 &&
+            this.get_at(0) == job &&
+            job.get('state') == 'active') {
+            console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF")
+            this.jobError(job,'timeout')
+
+            // jobDone may still get triggered! hmm...
+        }
+    },
     doJob: function() {
+        // XXX -- need to use a timeout! when a job starts, it should
+        // finish within a second! otherwise, there has been some kind
+        // of unforeseen error...
+
         var _this = this
         var job = this.get_at(0)
+        setTimeout( _.bind(this.checkJobTimeout, this, job), DiskIOJob.jobTimeoutInterval )
         //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup)
         job.set('state','active')
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
@@ -209,7 +232,7 @@ DiskIO.prototype = {
                     _this.doJobReadyToRead(entry, job)
                 }
             } else {
-                this.disk.client.error('fatal disk i/o error')
+                this.opts.disk.client.error('fatal disk i/o error')
                 console.error('fatal diskio processing job')
             }
         })

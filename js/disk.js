@@ -2,7 +2,7 @@ function Disk(opts) {
     jstorrent.Item.apply(this, arguments)
 
     this.diskio = new jstorrent.DiskIO({disk:this})
-    this.client = opts.client
+    this.client = opts.parent.parent
 
     if (opts.id) {
         // being restored, need to call restoreEntry

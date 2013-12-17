@@ -301,6 +301,7 @@ Torrent.prototype = {
         this.set('metadata',true)
         this.save()
         this.saveMetadata() // trackers maybe not initialized so they arent being saved...
+        this.trigger('havemetadata')
         //this.recheckData() // only do this under what conditions?
     },
     getMetadataFilename: function() {
@@ -499,12 +500,17 @@ Torrent.prototype = {
         // checks registered or default torrent download location for
         // torrent data
         // this.set('complete',0)
+
+        // XXX this needs to clear pieces when done hashing them.
+        // XXX this should not read more quickly than it can hash...
+
         console.log('Re-check data')
+        return // too buggy
         if (this.started) {
             this.error('cannot check while started')
             return
         }
-
+        this.set('state','checking')
         if (this.get('metadata')) {
             this.loadMetadata( _.bind(function(result) {
 
@@ -781,6 +787,10 @@ Torrent.prototype = {
             this.pieces.items[i].resetData()
         }
         // TODO -- move these into some kind of resetState function?
+
+
+        // TODO - stop all disk i/o jobs for this torrent...
+
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
         this.trigger('stop')

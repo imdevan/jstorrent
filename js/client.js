@@ -120,6 +120,9 @@ Client.prototype = {
 
         }
     },
+    error: function(msg) {
+        this.trigger('error',msg)
+    },
     onError: function(e) {
         console.error('client error',e)
         // app binds to our error and shows notification

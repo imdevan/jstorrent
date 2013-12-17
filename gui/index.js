@@ -98,6 +98,10 @@ function bind_events() {
         app.toolbar_recheck()
     })
 
+    $('#get-share-url').click( function(evt) {
+        app.open_share_window()
+    })
+
     $('#button-options').click( function(evt) {
         app.focus_or_open_options();
     })

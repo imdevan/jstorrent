@@ -29,6 +29,7 @@ App.prototype = {
     initialize_client: function() {
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
+        this.client.torrents.on('havemetadata', _.bind(this.onTorrentHaveMetadata, this))
         this.client.torrents.on('stop', _.bind(this.onTorrentStop, this))
         this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
         this.client.torrents.on('complete', _.bind(this.onTorrentComplete, this))
@@ -69,14 +70,14 @@ App.prototype = {
         }
     },
     notificationClosed: function(id, byUser) {
-        console.log('closed notification with id',id)
+        //console.log('closed notification with id',id)
         var notification = this.notifications.get(id)
         if (notification) {
             this.notifications.remove(notification)
         }
     },
     notificationClicked: function(id) {
-        console.log('clicked on notification with id',id)
+        //console.log('clicked on notification with id',id)
         var notification = this.notifications.get(id)
         notification.handleClick()
     },
@@ -88,6 +89,12 @@ App.prototype = {
     },
     showPopupWindowDialog: function(details) {
         this.createNotification({details:details})
+    },
+    onTorrentHaveMetadata: function(torrent) {
+        if (this.UI.get_selected_torrent() == torrent) {
+            // reset the detail view
+            this.UI.set_detail(this.UI.detailtype, torrent)
+        }
     },
     onTorrentComplete: function(torrent) {
         var id = torrent.hashhexlower
@@ -173,6 +180,12 @@ App.prototype = {
     },
     suspend: function() {
         this.client.stop()
+    },
+    open_share_window: function() {
+        var torrent = this.UI.get_selected_torrent()
+        if (torrent) {
+            window.open('http://jstorrent.com/share#hash=' + torrent.hashhexlower + '&dn=' + encodeURIComponent(torrent.get('name')), '_blank')
+        }
     },
     toolbar_recheck: function() {
         app.analytics.tracker.sendEvent("Toolbar", "Click", "Recheck")
