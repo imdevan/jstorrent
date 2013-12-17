@@ -29,6 +29,8 @@ function PeerConnection(opts) {
     this.sentExtensionHandshake = false
     this.sentBitfield = false
 
+    this.connectedWhen = null
+
     this.peerHandshake = null
     this.peerExtensionHandshake = null
     this.peerExtensionHandshakeCodes = {}
@@ -187,6 +189,7 @@ PeerConnection.prototype = {
         chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
+        this.connectedWhen = new Date()
         if (connectInfo < 0) {
             this.peer.set('connectionResult', connectInfo)
 

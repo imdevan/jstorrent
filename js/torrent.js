@@ -359,6 +359,27 @@ Torrent.prototype = {
     isComplete: function() {
         return this.get('complete') == 1
     },
+    maybeDropShittyConnection: function() {
+        var now = new Date()
+        // looks at our current connections and sees if we maybe want to disconnect from somebody.
+        if (this.started) {
+            if (this.swarm.items.length > this.peers.items.length) {
+                var connected = _.filter( this.peers.items, function(p) { return p.get('state') == 'connected' })
+
+                if (connected.length > this.getMaxConns() * 0.8) { // 80% of connections are connected
+                    var chokers = _.filter( connected, function(p) { 
+                        return (p.amChoked &&
+                                now - p.connectedWhen > 10000)
+                    } )
+                    if (chokers.length > 0) {
+                        chokers.sort( function(a,b) { return a.connectedWhen < b.connectedWhen } )
+                        console.log('closing shittiest',chokers[0])
+                        chokers[0].close('shittiest connection')
+                    }
+                }
+            }
+        }
+    },
     persistPieceResult: function(result) {
         if (result.error) {
             console.error('persist piece result',result)
@@ -782,6 +803,8 @@ Torrent.prototype = {
         if (! this.started) { return }
         //console.log('torrent frame!')
 
+        this.maybeDropShittyConnection()
+
         var idx, peer, peerconn
         if (this.should_add_peers() && this.swarm.length > 0) {
             idx = Math.floor( Math.random() * this.swarm.length )
@@ -797,10 +820,13 @@ Torrent.prototype = {
             // peer.set('only_connect_once',true) // huh?
         }
     },
+    getMaxConns: function() {
+        return this.get('maxconns') || this.client.app.options.get('maxconns')
+    },
     should_add_peers: function() {
         if (this.started) {
 
-            var maxconns = this.get('maxconns') || this.client.app.options.get('maxconns')
+            var maxconns = this.getMaxConns()
             if (this.peers.length < maxconns) {
                 return true
             }
