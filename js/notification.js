@@ -37,6 +37,9 @@ Notification.prototype = {
             // hopefully onClosed gets triggered... ?
         })
     },
+    close: function() {
+        chrome.notifications.clear(this.id, function(){})
+    },
     get_key: function() {
         return this.id
     },

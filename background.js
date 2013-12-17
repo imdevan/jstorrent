@@ -66,7 +66,19 @@ WindowManager.prototype = {
 			        );
     },
     onClosedMainWindow: function() {
-        console.log('main window closed')
+        var app = this.mainWindow.contentWindow.app
+
+        if (app.options_window) {
+            app.options_window.close()
+        }
+        if (app.help_window) {
+            app.help_window.close()
+        }
+        // app cannot close the notificationts, but we can grab data from it beforehand
+        // cannot do anything async on main window javascript context at this point
+        for (var key in app.notifications.keyeditems) {
+            chrome.notifications.clear(key, function(){})
+        }
         this.mainWindow = null
     }
 }

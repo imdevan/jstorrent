@@ -100,6 +100,8 @@ function bind_events() {
 
     $('#get-share-url').click( function(evt) {
         app.open_share_window()
+        evt.preventDefault()
+        return false
     })
 
     $('#button-options').click( function(evt) {

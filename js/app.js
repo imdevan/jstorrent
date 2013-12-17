@@ -8,6 +8,7 @@ function App() {
     chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
 
     this.options_window = null
+    this.help_window = null
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
 
     this.analytics = new jstorrent.Analytics({app:this})
@@ -26,6 +27,11 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    closeNotifications: function() {
+        this.notifications.each( function(n) {
+            n.close()
+        })
+    },
     initialize_client: function() {
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
@@ -279,7 +285,7 @@ App.prototype = {
         //console.log("Set default download location to",entry)
         var s = jstorrent.getLocaleString(jstorrent.strings.NOTIFY_SET_DOWNLOAD_DIR, entry.name)
         this.createNotification({details:s, priority:0})
-        var disk = new jstorrent.Disk({entry:entry})
+        var disk = new jstorrent.Disk({entry:entry, parent: this.client.disks})
         this.client.disks.add(disk)
         this.client.disks.setAttribute('default',disk.get_key())
         this.client.disks.save()

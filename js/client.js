@@ -21,6 +21,7 @@ function Client(opts) {
     //console.log('fetching disks')
     this.disks.fetch(_.bind(function() {
         if (this.disks.items.length == 0) {
+            console.log('disks length == 0')
             this.app.notifyNeedDownloadDirectory()
         }
         this.torrents.fetch(_.bind(function() {
@@ -123,8 +124,9 @@ Client.prototype = {
     error: function(msg) {
         this.trigger('error',msg)
     },
-    onError: function(e) {
-        console.error('client error',e)
+    onError: function(e, msg) {
+        console.error('client error',e, msg)
+        //this.app.createNotification(e)
         // app binds to our error and shows notification
     },
     stop: function() {
