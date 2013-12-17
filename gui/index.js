@@ -97,6 +97,9 @@ function bind_events() {
     $('#re-check').click( function(evt) {
         app.toolbar_recheck()
     })
+    $('#reset-state').click( function(evt) {
+        app.toolbar_resetstate()
+    })
 
     $('#get-share-url').click( function(evt) {
         app.open_share_window()

@@ -110,6 +110,7 @@ Torrent.attributeSerializers = {
             return v.join('')
         },
         deserialize: function(v) {
+            if (! v) { return null }
             var arr = [], len = v.length
             for (var i=0; i<len; i++) {
                 arr.push(parseInt(v[i]))
@@ -495,6 +496,21 @@ Torrent.prototype = {
     },
     printComplete: function() {
         return this._attributes.bitfield.join('')
+    },
+    resetState: function() {
+        // resets torrent to 0% and, if unable to load metadata, clears that, too.
+        this.stop()
+
+        var url = this.get('url')
+        if (url) {
+            this.unset('metadata')
+            this.unset('bitfield')
+            this.unset('disk')
+            this.unset('complete')
+        } else {
+            debugger
+        }
+
     },
     recheckData: function() {
         // checks registered or default torrent download location for

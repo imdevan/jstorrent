@@ -193,6 +193,13 @@ App.prototype = {
             window.open('http://jstorrent.com/share#hash=' + torrent.hashhexlower + '&dn=' + encodeURIComponent(torrent.get('name')), '_blank')
         }
     },
+    toolbar_resetstate: function() {
+        app.analytics.tracker.sendEvent("Toolbar", "Click", "ResetState")
+        var torrents = this.UI.get_selected_torrents()
+        for (var i=0; i<torrents.length; i++) {
+            torrents[i].resetState()
+        }
+    },
     toolbar_recheck: function() {
         app.analytics.tracker.sendEvent("Toolbar", "Click", "Recheck")
         var torrents = this.UI.get_selected_torrents()

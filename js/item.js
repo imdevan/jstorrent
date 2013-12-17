@@ -117,6 +117,9 @@ Item.prototype = {
         }
         this._event_listeners[event_name].push(callback)
     },
+    unset: function(k) {
+        delete this._attributes[k]
+    },
     set: function(k,v) {
         var oldval = this._attributes[k]
         this._attributes[k] = v

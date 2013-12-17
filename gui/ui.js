@@ -137,10 +137,14 @@ UI.prototype = {
         var domid = 'detailGrid'
 
         if (type == 'diskio') {
-            this.detailtable = new SlickCollectionTable({collection: torrent.getStorage().diskio,
-                                                         domid: domid,
-                                                         columns: this.coldefs[type]
-                                                        });
+            if (torrent.getStorage()) {
+                this.detailtable = new SlickCollectionTable({collection: torrent.getStorage().diskio,
+                                                             domid: domid,
+                                                             columns: this.coldefs[type]
+                                                            });
+            } else {
+                // no storage...
+            }
         } else {
             if (! torrent[type] || ! this.coldefs[type]) {
                 console.warn('invalid table definition for type',type)
