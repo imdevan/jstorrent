@@ -360,6 +360,8 @@ Torrent.prototype = {
         return this.get('complete') == 1
     },
     maybeDropShittyConnection: function() {
+        if (! this.infodict) { return }
+
         var now = new Date()
         // looks at our current connections and sees if we maybe want to disconnect from somebody.
         if (this.started) {
@@ -408,6 +410,8 @@ Torrent.prototype = {
 
                 // TODO -- turn this into progress notification type
                 this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
+
+                app.analytics.tracker.sendEvent("Torrent", "Completed", null, this.size)
 
                 // send everybody NOT_INTERESTED!
                 this.peers.each( function(peer) {
@@ -660,6 +664,8 @@ Torrent.prototype = {
     },
     start: function() {
         if (this.started || this.starting) { return }
+        app.analytics.tracker.sendEvent("Torrent", "Starting")
+
         this.starting = true
         this.think_interval = setInterval( _.bind(this.newStateThink, this), 1000 )
         if (! this.getStorage()) {
@@ -727,6 +733,8 @@ Torrent.prototype = {
         })
     },
     stop: function() {
+        if (this.get('state') == 'stopped') { return }
+        app.analytics.tracker.sendEvent("Torrent", "Stopping")
         this.starting = false
         this.set('state','stopped')
         this.started = false

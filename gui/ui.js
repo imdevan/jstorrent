@@ -35,7 +35,7 @@ function UI(opts) {
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
             {id:"last_message_sent", name: "Last Sent"},
-            {id:"last_message_received", name: "Last Received"}
+            {id:"last_message_received", name: "Last Received", width:150}
         ],
         'swarm':[
             {attr:"host", width:110},

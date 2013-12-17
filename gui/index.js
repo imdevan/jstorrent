@@ -49,6 +49,8 @@ function onappready() {
 
     bind_events()
 
+    app.analytics.tracker.sendAppView("MainView")
+
     if (jstorrent.options.add_torrents_on_start) {
 
         setTimeout( function() {

@@ -96,6 +96,7 @@ PeerConnection.prototype = {
 
         var idx = this.torrent.connectionsServingInfodict.indexOf(this)
         if (idx != -1) {
+            console.log('removing self from connections serving infodicts')
             this.torrent.connectionsServingInfodict.splice(idx, 1)
         }
 
@@ -455,29 +456,29 @@ PeerConnection.prototype = {
                 }
             }
         } else {
-/*
-            if (! this.amInterested) {
-                this.sendMessage("INTERESTED")
-            }
-*/
-
             if (this.peerExtensionHandshake && 
                 this.peerExtensionHandshake.m && 
                 this.peerExtensionHandshake.m.ut_metadata &&
                 this.peerExtensionHandshake.metadata_size &&
-                this.torrent.connectionsServingInfodict.length < 3)
+                this.torrent.connectionsServingInfodict.length < this.torrent.connectionsServingInfodictLimit)
             {
                 // we have no infodict and this peer does!
-                this.torrent.connectionsServingInfodict.push( this )
-                this.requestInfodict()
+                if (! this.registeredRequests['infodictRequest']) { // dont do this again lol
+                    this.torrent.connectionsServingInfodict.push( this )
+                    this.requestInfodict()
+                }
             }
         }
     },
     requestInfodict: function() {
+        // TODO -- add timeout handling
         console.log('requestinfodict')
         var infodictBytes = this.peerExtensionHandshake.metadata_size
         var d
         var numChunks = Math.ceil( infodictBytes / jstorrent.protocol.pieceSize )
+        console.log('requestinfodict determines # chunks',numChunks)
+
+        this.infodictResponses = []
         for (var i=0; i<numChunks; i++) {
             this.infodictResponses.push(null)
         }
@@ -491,6 +492,7 @@ PeerConnection.prototype = {
             var code = this.peerExtensionHandshake.m.ut_metadata
             var info = {}
             this.registerExpectResponse('infodictRequest', i, info)
+            console.log(this.get('address'),'requested infodict',d)
             this.sendMessage('UTORRENT_MSG', [new Uint8Array([code]).buffer, new Uint8Array(bencode(d)).buffer])
         }
     },
@@ -733,15 +735,20 @@ PeerConnection.prototype = {
             var dataStartIdx = bencode(extMessageBencodedData).length;
             var infodictDataChunk = new Uint8Array(msg.payload, 6 + dataStartIdx)
             var infodictChunkNum = extMessageBencodedData.piece
-debugger
+
+            this.set('last_message_received', 'UT_METADATA '+infodictChunkNum)
+
             if (this.registeredRequests['infodictRequest'][infodictChunkNum]) {
+
                 this.registeredRequests['infodictRequest'][infodictChunkNum].received = true
                 this.infodictResponses[infodictChunkNum] = infodictDataChunk
 
                 var ismissing = false // check if we received everything
                 for (var i=0; i<this.infodictResponses.length; i++) {
                     if (this.infodictResponses[i] === null) {
+                        console.log(this.get('address'),'infodict responses was missing chunk',i,'total',this.infodictResponses.length)
                         ismissing = true
+                        break
                     }
                 }
                 if (! ismissing) {

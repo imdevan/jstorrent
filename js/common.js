@@ -1,6 +1,8 @@
 // common stuff
 window['jstorrent'] = window['jstorrent'] || {}
 jstorrent.constants = {
+    cws_jstorrent: "anhdpjpojoipgpmfanmedjghaligalgb",
+    cws_jstorrent_lite: "abmohcnlldaiaodkpacnldcdnjjgldfh",
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),
     chunkRequestTimeoutInterval: 12000
@@ -151,6 +153,9 @@ window.onerror = function(message, url, line) {
         window.app.createNotification({message:"Unexpected Error!",
                                        priority: 2,
                                        details: 'ver ' + jstorrent.constants.manifest.version+". In file " + url + " at line " + line + ', ' + message})
+
+        window.app.analytics.tracker.sendEvent("window.onerror", url, line)
+
     }
     console.log('window.onerror triggered',message,url,line)
 }

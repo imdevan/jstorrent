@@ -10,7 +10,7 @@ function App() {
     this.options_window = null
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
 
-
+    this.analytics = new jstorrent.Analytics({app:this})
 
     // need to store a bunch of notifications keyed by either torrents or other things...
     this.notificationCounter = 0
@@ -118,6 +118,7 @@ App.prototype = {
     },
     handleDrop: function(evt) {
         console.log('handleDrop')
+        //app.analytics.tracker.sendEvent("MainWindow", "Drop")
         // handle drop in file event
         var files = evt.dataTransfer.files, file, item
         
@@ -137,10 +138,12 @@ App.prototype = {
                     var entry = item.webkitGetAsEntry()
                     console.log('was able to extract entry.',entry)
                     if (item.type == 'application/x-bittorrent') {
+                        app.analytics.tracker.sendEvent("MainWindow", "Drop", "Torrent")
                         this.client.handleLaunchWithItem({entry:entry,
                                                           type:item.type})
 
                     } else {
+                        app.analytics.tracker.sendEvent("MainWindow", "Drop", "Entry")
                         this.createNotification({details:"Sorry. Creating torrents is not yet supported."})
                     }
                     // cool, now I can call chrome.fileSystem.retainEntry ...
@@ -154,6 +157,7 @@ App.prototype = {
         this.client.stop()
     },
     toolbar_recheck: function() {
+        app.analytics.tracker.sendEvent("Toolbar", "Click", "Recheck")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             console.log('recheck',i)
@@ -161,18 +165,21 @@ App.prototype = {
         }
     },
     toolbar_start: function() {
+        app.analytics.tracker.sendEvent("Toolbar", "Click", "Start")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             torrents[i].start()
         }
     },
     toolbar_stop: function() {
+        app.analytics.tracker.sendEvent("Toolbar", "Click", "Stop")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             torrents[i].stop()
         }
     },
     toolbar_remove: function() {
+        app.analytics.tracker.sendEvent("Toolbar", "Click", "Remove")
         var torrents = this.UI.get_selected_torrents()
         this.UI.torrenttable.grid.setSelectedRows([])
         for (var i=0; i<torrents.length; i++) {
@@ -194,11 +201,13 @@ App.prototype = {
         this.options_window_opening = true
         chrome.app.window.create( 'gui/options.html', 
                                   { width: 400,
+                                    id: "options",
                                     height: 400 },
                                   _.bind(this.options_window_opened, this)
                                 );
     },
     options_window_opened: function(optionsWindow) {
+        app.analytics.tracker.sendAppView("OptionsView")
         this.options_window_opening = false
         this.options_window = optionsWindow
         optionsWindow.contentWindow.mainAppWindow = window;
@@ -216,11 +225,13 @@ App.prototype = {
         this.help_window_opening = true
         chrome.app.window.create( 'gui/help.html', 
                                   { width: 520,
+                                    id:"help",
                                     height: 480 },
                                   _.bind(this.help_window_opened, this)
                                 );
     },
     help_window_opened: function(helpWindow) {
+        app.analytics.tracker.sendAppView("HelpView")
         this.help_window_opening = false
         this.help_window = helpWindow
         helpWindow.contentWindow.mainAppWindow = window;
