@@ -55,8 +55,10 @@ function onappready() {
 
         setTimeout( function() {
             //client.add_from_url( window.example_url_betas )
-            client.add_from_url( window.example_url_southpark )
+            //client.add_from_url( window.example_url_southpark )
+            client.add_from_url( "http://www.clearbits.net/get/19-lawrence-lessig---free-culture-audiobook.torrent" )
         }, 1000);
+
 
         //client.add_from_url( example_url )
         //client.add_from_url( example_url_2 )

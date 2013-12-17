@@ -254,7 +254,7 @@ App.prototype = {
         this.client.disks.save()
     },
     notify: function(msg) {
-        this.createNotification({details:message, priority:0})
+        this.createNotification({details:msg, priority:0})
         console.warn('notification:',msg);
     },
     initialize: function(callback) {

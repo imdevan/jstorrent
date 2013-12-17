@@ -53,11 +53,9 @@ function Torrent(opts) {
 
     this.think_interval = null
 
-    if (opts.url) {
+    if (opts.url && opts.url.toLowerCase().match('^magnet:')) {
         // initialize torrent from a URL...
-
         // parse trackers
-
         this.magnet_info = parse_magnet(opts.url);
         if (! this.magnet_info) {
             this.invalid = true;
@@ -75,6 +73,9 @@ function Torrent(opts) {
         this.set('url',opts.url)
         this.hashhexlower = this.magnet_info.hashhexlower
         this.save()
+    } else if (opts.url) {
+        // http or https url ...
+        this.initializeFromWeb(opts.url, opts.callback)
     } else if (opts.id) {
         this.hashhexlower = opts.id
     } else if (opts.entry) {
@@ -82,11 +83,12 @@ function Torrent(opts) {
         console.assert(opts.callback)
         this.initializeFromEntry(opts.entry, opts.callback)
     } else {
-        console.error('unsupported torrent initializer')
-        debugger
+        console.error('unsupported torrent initializer', opts)
+        this.invalid = true
+        return
     }
 
-    if (opts.entry) {
+    if (opts.entry || (opts.url && ! this.magnet_info)) {
         console.log('inited torrent without hash known yet!')
     } else {
         console.assert(this.hashhexlower)
@@ -152,6 +154,50 @@ Torrent.prototype = {
         }
 
     },
+    initializeFromWeb: function(url, callback) {
+        var xhr = new XMLHttpRequest;
+        xhr.open("GET", url, true)
+        xhr.responseType = 'arraybuffer'
+        var app = this.app
+        xhr.onload = _.bind(function(evt) {
+            var headers = xhr.getAllResponseHeaders()
+            console.log('loaded url',url, headers)
+            this.initializeFromBuffer(evt.target.response, callback)
+        },this)
+        xhr.onerror = function(evt) {
+            console.error('unable to load torrent url',evt)
+            app.notify("Unable to load Torrent. Download and Drag it in")
+        }
+        xhr.send()
+    },
+    initializeFromBuffer: function(buffer, callback) {
+        var _this = this
+        function onHashResult(result) {
+            var hash = result.hash
+            if (hash) {
+                //console.log('hashed input torrent file to',hash)
+                _this.hashbytes = ui82arr(hash)
+                _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
+                _this.initializeTrackers()
+                _this.metadataPresentInitialize()
+                console.assert(_this.hashhexlower.length == 40)
+                if (callback) { callback({torrent:_this}) }
+            } else {
+                callback({error:'hasher error'})
+            }
+        }
+        try {
+            this.metadata = bdecode(ui82str(new Uint8Array(buffer)))
+        } catch(e) {
+            callback({error:"Invalid torrent file"})
+            return
+        }
+        this.infodict = this.metadata.info
+        this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
+        var chunkData = this.infodict_buffer
+        this.client.workerthread.send( { command: 'hashChunks',
+                                         chunks: [chunkData] }, onHashResult )
+    },
     initializeFromEntry: function(entry, callback) {
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
         var _this = this
@@ -164,31 +210,8 @@ Torrent.prototype = {
                 return
             }
 
-            function onHashResult(result) {
-                var hash = result.hash
-                if (hash) {
-                    //console.log('hashed input torrent file to',hash)
-                    _this.hashbytes = ui82arr(hash)
-                    _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
-                    console.assert(_this.hashhexlower.length == 40)
-                    callback({torrent:_this})
-                } else {
-                    callback({error:'hasher error'})
-                }
-            }
-            try {
-                this.metadata = bdecode(ui82str(new Uint8Array(evt.target.result)))
-            } catch(e) {
-                callback({error:"Invalid torrent file"})
-                return
-            }
-            this.infodict = this.metadata.info
-            this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
-            this.initializeTrackers()
-            this.metadataPresentInitialize()
-            var chunkData = this.infodict_buffer
-            this.client.workerthread.send( { command: 'hashChunks',
-                                             chunks: [chunkData] }, onHashResult )
+            this.initializeFromBuffer(evt.target.result, callback)
+
         },this)
         reader.onerror = _.bind(function(evt) {
             // TODO -- maybe cause a notification, with level

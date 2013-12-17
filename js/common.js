@@ -23,7 +23,7 @@ jstorrent.getLocaleString = function(s) {
 }
 jstorrent.options = {
     load_options_on_start: false,
-    add_torrents_on_start: false,
+    add_torrents_on_start: true,
     run_unit_tests: false,
     disable_trackers: false,
     manual_peer_connect_on_start: {
