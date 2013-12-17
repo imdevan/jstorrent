@@ -30,7 +30,7 @@ Tracker.prototype = {
     },
     set_state: function(state) {
         if (state == 'error') {
-            console.error('tracker',this.url,state, this.lasterror);
+            //console.error('tracker',this.url,state, this.lasterror);
         } else {
             //console.log('tracker',this.url,state, this.lasterror);
         }
@@ -89,7 +89,7 @@ HTTPTracker.prototype = {
             port: 0,
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
-        console.log('http tracker announce data',data)
+        //console.log('http tracker announce data',data)
         var xhr = new XMLHttpRequest;
 
         var url = this.url + '?info_hash=' + this.paramEncode(ui82str(this.torrent.hashbytes))
@@ -97,12 +97,12 @@ HTTPTracker.prototype = {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
 
-        console.log('http tracker request url',url)
+        //console.log('http tracker request url',url)
 
         xhr.responseType = 'arraybuffer'
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
-            console.log('http tracker response',data)
+            //console.log('http tracker response',data)
             this.response = data
             if (data.peers) {
                 this.torrent.addCompactPeerBuffer(data.peers)
@@ -148,7 +148,7 @@ UDPTracker.prototype = {
         console.assert( respTransactionId == announceRequest.transactionId )
 
         var countPeers = (readResponse.data.byteLength - 20)/6
-        console.log(this.url,'leechers',leechers,'seeders',seeders,'interval',respInterval, 'peers',countPeers)
+        //console.log(this.url,'leechers',leechers,'seeders',seeders,'interval',respInterval, 'peers',countPeers)
 
         for (var i=0; i<countPeers; i++) {
             var ipbytes = [v.getUint8( 20 + (i*6) ),

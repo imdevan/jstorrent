@@ -19,7 +19,6 @@
 
   <script src="../js/common.js"></script>
   <script src="../js/analytics.js"></script>
-  <script src="../js/common_override.js"></script>
   <script src="../js/bencode.js"></script>
   <script src="../js/collection.js"></script>
   <script src="../js/item.js"></script>
@@ -194,19 +193,19 @@ Disk Usage
 
 </div>
 
-<div id="torrentGrid" style="border: 1px solid blue"></div>
+<div id="torrentGrid" ></div>
 
 <div style="clear:both"></div>
 
 <!--Select Detail View: -->
 <ul class="nav nav-tabs" id="detail-tabs">
 
-  <li class="active">
+  <!--li class="active">
     <a href="#" id="detail-info">
       <span class="glyphicon glyphicon-th"></span>
       Info
     </a>
-  </li>
+  </li-->
 
   <li>
     <a href="#" id="detail-files">
@@ -215,7 +214,7 @@ Disk Usage
     </a>
   </li>
 
-  <li>
+  <li class="active">
     <a href="#" id="detail-peers">
       <span class="glyphicon glyphicon-user"></span>
       Peers
@@ -260,7 +259,7 @@ Disk Usage
 
 </ul>
 
-<div id="detailGrid" style="border: 1px solid blue"></div>
+<div id="detailGrid" ></div>
 
 </body>
 </html>

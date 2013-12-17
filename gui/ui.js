@@ -3,49 +3,49 @@ function UI(opts) {
         if (val === undefined) { return '' }
         return (val * 100).toFixed(1) + '%';
     }
+    function fileAction(val) {
+        return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
+    }
 
     this.client = opts.client
 
     this.detailtable = null
-    this.detailtype = 'trackers'
+    var default_tab = 'peers'
+    this.detailtype = default_tab
 
     this.coldefs = {
         'torrent': [
             {id: "name", name: "Name", width:400},
             {id: "state", name: "State"},
-            {id: 'downloaded', formatVal:byteUnits},
-            {id: "size", name: "Size", formatVal: byteUnits},
+            {id: "bytes_received", name: "Bytes Received", formatVal: byteUnits, width:100},
+            {id: "size", name: "Size", formatVal: byteUnits, width: 100},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
-            {id: "bytes_sent", name: "Bytes Sent"},
-            {id: "bytes_received", name: "Bytes Received"},
+            {id: "bytes_sent", name: "Bytes Sent", formatVal: byteUnits},
+            {id: 'downloaded', formatVal:byteUnits},
             {id: "added"},
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
-            {id:"address", width:110},
-            {id:'peerClientName', width:130},
+            {name:"Address", id:"address", width:125},
+            {name:"Client", id:'peerClientName', width:125},
             {id:"state", name: "State", width:100},
             {id:"complete", name: "% Complete", formatVal: fracToPercent},
-            {id:"amChoked"},
-            {id:"peerChoked"},
-            {id:'requests'},
-            {id:'responses'},
-            {id:'timeouts'},
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
+            {id:'requests'},
+            {id:'responses'},
             {id:"last_message_sent", name: "Last Sent"},
-            {id:"last_message_received", name: "Last Received", width:150}
+            {id:"last_message_received", name: "Last Received", width:150},
+            {id:"amChoked"},
+            {id:"peerChoked"},
+            {id:'timeouts'}
         ],
         'swarm':[
             {attr:"host", width:110},
             {attr:"port"},
             {id:"connected_ever", name: "Ever Connected"},
-            {id:'connectionResult'},
-            {id:"state", name: "State"},
-            {id:"percent", name: "Percent"},
-            {id:"bytes_sent", name: "Bytes Sent"},
-            {id:"bytes_received", name: "Bytes Received"},
+            {id:'connectionResult'}
         ],
         'trackers':[
             {attr:'url'},
@@ -71,6 +71,7 @@ function UI(opts) {
             {attr:'size', formatVal:byteUnits},
             {id:'downloaded', formatVal:byteUnits},
             {id:'complete', formatVal: fracToPercent},
+            {name:"Action" , displayFunc: fileAction}
         ],
         'pieces':[
             {attr:'num'},

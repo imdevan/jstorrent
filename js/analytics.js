@@ -64,7 +64,7 @@ function Analytics(opts) {
 jstorrent.Analytics = Analytics
 
 Analytics.prototype = {
-    initAnalyticsConfig: function(evt,a,b,c) {
-        console.log('init analytics config',evt,a,b,c)
+    initAnalyticsConfig: function(evt) {
+        //console.log('init analytics config',evt)
     }
 }

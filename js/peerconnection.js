@@ -114,7 +114,7 @@ PeerConnection.prototype = {
                         chunkRequest = chunkRequests[i]
                         if (chunkRequest.peerconn == this) {
                             // DELETE this fucker!
-                            console.log('peer disconnected that had outstanding chunk request and we deleted it. yay')
+                            //console.log('peer disconnected that had outstanding chunk request and we deleted it. yay')
                             // delete chunkRequests[i] // delete dont work cuz .length still set, gotta do splice
                             chunkRequests.splice(i,1) // XXX - it removes the entry, but requests still not being made!
                             break
@@ -190,6 +190,8 @@ PeerConnection.prototype = {
         chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
+        if (this.hasclosed) { return } // XXX -- better handling for closing of sockets still in connecting state?
+
         this.connectedWhen = new Date()
         if (connectInfo < 0) {
             this.peer.set('connectionResult', connectInfo)
@@ -510,6 +512,7 @@ PeerConnection.prototype = {
         this.trigger('error')
     },
     shouldThrottleRead: function() { 
+        return false
         // if byte upload rate too high?
         if (this.peer.host == '127.0.0.1') { return true }
     },

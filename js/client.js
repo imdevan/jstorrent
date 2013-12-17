@@ -54,8 +54,10 @@ Client.prototype = {
         console.log('onBatchTimeout',keys)
     },
     onTorrentAdd: function(torrent) {
-        if (this.app.options.get('new_torrents_auto_start')) {
-            torrent.start()
+        if (this.app.options.get('new_torrents_auto_start')) { // only for NEW torrents, dummy
+            if (torrent._opts.initializedBy != 'collection.fetch') {
+                torrent.start()
+            }
         }
     },
     onReady: function() {
@@ -133,6 +135,8 @@ Client.prototype = {
             if (! this.torrents.containsKey(data.torrent.hashhexlower)) {
                 this.torrents.add( data.torrent )
                 this.torrents.save()
+
+
             }
         } else {
             console.error('add url response',data)

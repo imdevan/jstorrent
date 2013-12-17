@@ -21,6 +21,10 @@ function Notification(opts) {
         iconUrl: "/icon48.png"
     }
 
+    if (opts.progress) {
+        this.notificationOpts.progress = opts.progress
+    }
+
     this.show()
 }
 jstorrent.Notification = Notification
@@ -38,7 +42,7 @@ Notification.prototype = {
     },
     show: function() {
         chrome.notifications.create(this.id, this.notificationOpts, function(id) {
-            console.log('created notification with id',id)
+            //console.log('created notification with id',id)
         })
     },
     handleClick: function() {

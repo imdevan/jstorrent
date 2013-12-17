@@ -157,7 +157,7 @@ Piece.prototype = {
                 },this))
             }
         } else {
-            console.log(this.num,'got unexpected chunk',peerconn.get('address'), chunkNum)
+            //console.log(this.num,'got unexpected chunk',peerconn.get('address'), chunkNum) // likely timeout
             // request had timed out
         }
     },

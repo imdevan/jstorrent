@@ -29,7 +29,7 @@ var app_options = {
     },
 
     'new_torrents_auto_start': {
-        'default': false,
+        'default': true,
         'type': 'bool'
     },
 

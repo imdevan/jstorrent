@@ -1,6 +1,6 @@
 var gui_opts = {
     torrentGrid_width: 800,
-    torrentGrid_height: 150,
+    torrentGrid_height: 170,
     detailGrid_width: 800,
     detailGrid_height: 300
 }
@@ -31,7 +31,7 @@ function onappready() {
     window.client = app.client
 
     if (window.example_url_2) {
-        document.getElementById("url").value = example_url_3
+        //document.getElementById("url").value = example_url_3
     }
 
     document.getElementById("torrentGrid").style.width = gui_opts.torrentGrid_width;

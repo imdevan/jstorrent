@@ -19,6 +19,8 @@ function SlickCollectionTable(opts) {
                 }
                 if (column.formatVal) {
                     return column.formatVal(val)
+                } else if (column.displayFunc) {
+                    return column.displayFunc(data)
                 } else {
                     return val
                 }

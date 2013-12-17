@@ -148,7 +148,7 @@ Torrent.prototype = {
             port = added.charCodeAt( idx+4 ) * 256 + added.charCodeAt( idx+5 )
             peer = new jstorrent.Peer({host:host, port:port, torrent:this})
             if (! this.swarm.contains(peer)) {
-                console.log('peer buffer added new peer',host,port)
+                //console.log('peer buffer added new peer',host,port)
                 this.swarm.add(peer)
             }
         }
@@ -384,6 +384,7 @@ Torrent.prototype = {
     },
     maybeDropShittyConnection: function() {
         if (! this.infodict) { return }
+        if (this.get('complete') == 1) { return }
 
         var now = new Date()
         // looks at our current connections and sees if we maybe want to disconnect from somebody.
@@ -398,7 +399,7 @@ Torrent.prototype = {
                     } )
                     if (chokers.length > 0) {
                         chokers.sort( function(a,b) { return a.connectedWhen < b.connectedWhen } )
-                        console.log('closing shittiest',chokers[0])
+                        //console.log('closing shittiest',chokers[0])
                         chokers[0].close('shittiest connection')
                     }
                 }
@@ -432,7 +433,8 @@ Torrent.prototype = {
                 this.set('state','complete')
 
                 // TODO -- turn this into progress notification type
-                this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
+                //this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
+                this.trigger('complete')
 
                 app.analytics.tracker.sendEvent("Torrent", "Completed", null, this.size)
 
@@ -748,6 +750,7 @@ Torrent.prototype = {
         this.newStateThink()
     },
     maybePropagatePEX: function(data) {
+        return
         this.peers.each( function(peer) {
             if (peer.peer.host == '127.0.0.1') {
                 // definitely send it
@@ -780,7 +783,7 @@ Torrent.prototype = {
         // TODO -- move these into some kind of resetState function?
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
-
+        this.trigger('stop')
         this.save()
     },
     remove: function() {

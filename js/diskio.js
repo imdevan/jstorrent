@@ -148,7 +148,7 @@ DiskIO.prototype = {
         })
     },
     needToPad: function(job, entry, numZeroes, metaData) {
-        console.log(job.opts.jobId,'needToPad')
+        //console.log(job.opts.jobId,'needToPad')
         // since .seek doesn't allow seeking past end of file, we pad
         // with arbitrary data (zeroes)
         var _this = this
@@ -168,7 +168,7 @@ DiskIO.prototype = {
             var buf = new Uint8Array(curZeroes)
             entry.createWriter( function(writer) {
                 writer.onwrite = function(evt) {
-                    console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
+                    //console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
                     if (writtenSoFar == numZeroes) {
                         _this.doJobReadyToWrite(entry, job)
                     } else {
@@ -230,9 +230,16 @@ DiskIO.prototype = {
 
             var bufslice = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size)
 
-            // TODO -- can make more efficient if piece fully contained in this file (dont have to do this copy)
-            var buftowrite = new Uint8Array(fileSpanInfo.size)
-            buftowrite.set(bufslice, 0)
+
+
+            if (fileSpanInfo.pieceOffset == 0 && fileSpanInfo.size == piece.data.byteLength) {
+                // TODO -- more efficient if piece fully contained in this file (dont have to do this copy)
+                var buftowrite = bufslice
+            } else {
+                var buftowrite = new Uint8Array(fileSpanInfo.size)
+                buftowrite.set(bufslice, 0)
+            }
+
 
             job = new jstorrent.DiskIOJob( {type: 'write',
                                             data: buftowrite.buffer,

@@ -3,7 +3,7 @@
 // rather should have a better separation ...
 
 function App() {
-    console.log('creating app')
+    //console.log('creating app')
     chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
     chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
 
@@ -29,7 +29,9 @@ App.prototype = {
     initialize_client: function() {
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
+        this.client.torrents.on('stop', _.bind(this.onTorrentStop, this))
         this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
+        this.client.torrents.on('complete', _.bind(this.onTorrentComplete, this))
         this.client.on('error', _.bind(this.onClientError, this))
     },
     reinstall: function() {
@@ -79,7 +81,6 @@ App.prototype = {
         notification.handleClick()
     },
     createNotification: function(opts) {
-        console.log('createNotification',opts)
         opts.id = opts.id || ('notification' + this.notificationCounter++)
         opts.parent = this
         var notification = new jstorrent.Notification(opts)
@@ -87,6 +88,15 @@ App.prototype = {
     },
     showPopupWindowDialog: function(details) {
         this.createNotification({details:details})
+    },
+    onTorrentComplete: function(torrent) {
+        var id = torrent.hashhexlower
+        if (this.notifications.get(id)) {
+            chrome.notifications.update(id,
+                                        {progress: Math.floor(100 * torrent.get('complete')),
+                                         message: torrent.get('name') + " finished downloading!"},
+                                        function(){})
+        }
     },
     onTorrentProgress: function(torrent) {
         var id = torrent.hashhexlower
@@ -96,15 +106,23 @@ App.prototype = {
                                         function(){})
         }
     },
+    onTorrentStop: function(torrent) {
+        var id = torrent.hashhexlower
+        if (this.notifications.get(id)) {
+            chrome.notifications.clear(id, function(){})
+        }
+    },
     onTorrentStart: function(torrent) {
+        if (torrent.get('complete') == 1) { return }
         var id = torrent.hashhexlower
         if (this.notifications.get(id)) {
             // already had this notification... hrmmm
         } else {
-            this.createNotification({type: 'progress',
-                                     progress: 3,
-                                     details: 'Downloading ' + torrent.get('name'),
-                                     id: id})
+            var opts = {type: 'progress',
+                        progress: Math.floor(100*torrent.get('complete')),
+                        details: 'Downloading ' + torrent.get('name'),
+                        id: id}
+            this.createNotification(opts)
         }
     },
     onClientError: function(evt, e) {
