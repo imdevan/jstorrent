@@ -144,10 +144,10 @@ Torrent.prototype = {
     initializeFromWeb: function(url, callback) {
         console.log('torrent initialize from web')
 
-        if (opts.url.toLowerCase().match('^magnet:')) {
+        if (url.toLowerCase().match('^magnet:')) {
             // initialize torrent from a URL...
             // parse trackers
-            this.magnet_info = parse_magnet(opts.url);
+            this.magnet_info = parse_magnet(url);
             if (! this.magnet_info) {
                 this.invalid = true;
                 return
@@ -161,7 +161,7 @@ Torrent.prototype = {
                 // initialize my trackers
                 this.initializeTrackers()
             }
-            this.set('url',opts.url)
+            this.set('url',url)
             this.hashhexlower = this.magnet_info.hashhexlower
             this.save()
             if (callback) { callback(this) }
@@ -514,7 +514,6 @@ Torrent.prototype = {
     resetState: function() {
         console.log('reset torrent state')
         if (this.started) { return }
-        return
         // resets torrent to 0% and, if unable to load metadata, clears that, too.
         //this.stop()
 
@@ -827,7 +826,9 @@ Torrent.prototype = {
 
 
         // TODO - stop all disk i/o jobs for this torrent...
-        this.getStorage().cancelTorrentJobs(this)
+        if (this.getStorage()) {
+            this.getStorage().cancelTorrentJobs(this)
+        }
 
         this.pieces.clear()
         this.unflushedPieceDataSize = 0

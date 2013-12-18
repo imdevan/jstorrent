@@ -157,6 +157,8 @@ window.onerror = function(message, url, line) {
                                        priority: 2,
                                        details: 'ver ' + jstorrent.constants.manifest.version+". In file " + url + " at line " + line + ', ' + message})
 
+        // if window.onerror has an error, then bad things happen.
+        // make sure sendEvent cant have bad errors :-)
         window.app.analytics.sendEvent("window.onerror", url + "(" + line + ")", message)
 
     }
