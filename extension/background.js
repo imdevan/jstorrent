@@ -9,11 +9,11 @@ var createProps = {
     onclick: function(info, tab) {
         //console.log(info, tab)
 
-        chrome.runtime.sendMessage(jstorrent_id, {url:info.linkUrl, pageUrl:info.pageUrl}, function(result) {
+        chrome.runtime.sendMessage(jstorrent_id, {command:'add-url',url:info.linkUrl, pageUrl:info.pageUrl}, function(result) {
             console.log('result of message from full',result,chrome.runtime.lastError)
             if (! result) {
                 // try lite
-                chrome.runtime.sendMessage(jstorrent_lite_id, {url:info.linkUrl, pageUrl:info.pageUrl}, function(result2) {
+                chrome.runtime.sendMessage(jstorrent_lite_id, {command:'add-url',url:info.linkUrl, pageUrl:info.pageUrl}, function(result2) {
                     console.log('result of message from lite',result2,chrome.runtime.lastError)
                     if (! result2) {
                         showInstallAppNotification()                        

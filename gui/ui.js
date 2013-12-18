@@ -1,6 +1,6 @@
 function UI(opts) {
     function fracToPercent(val) {
-        if (val === undefined) { return '' }
+        if (val === undefined || val === null) { return '' }
         return (val * 100).toFixed(1) + '%';
     }
     function fileAction(val) {
@@ -155,7 +155,9 @@ UI.prototype = {
                                                             });
 
                 if (this.detailtype == 'files') {
-                    if (torrent.infodict) {
+                    if (torrent.get('metadata') && ! torrent.infodict) {
+                        torrent.loadMetadata(function(){}) // this should initialize the files
+                    } else if (torrent.infodict) {
                         torrent.initializeFiles()
                     } else {
                         // XXX TODO -- make torrent list refresh once metadata is completed...

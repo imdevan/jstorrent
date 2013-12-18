@@ -26,7 +26,7 @@ function Notification(opts) {
         this.notificationOpts.buttons = opts.buttons
     }
     if (opts.progress) {
-        this.notificationOpts.progress = opts.progress
+        this.notificationOpts.progress = opts.progress || 0
     }
 
     this.show()

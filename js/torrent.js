@@ -6,7 +6,14 @@ function Torrent(opts) {
     this.hashhexlower = null
     this.hashbytes = null
     this.magnet_info = null
-
+    // the idea behind endgame is that when we are very near to
+    // torrent completion, requests made to slow peers prevent us from
+    // making the same requests to peers who would actually complete
+    // the requests. so in endgame mode, ignore the fact that there
+    // are outstanding requests to chunks to other peers. make up to
+    // (say, 3) requests to each chunk, as long as we aren't the one
+    // who made the request.
+    this.isEndgame = false
     this.set('bytes_sent', 0)
     this.set('bytes_received', 0)
     if (! this.get('downloaded')) {
@@ -53,27 +60,7 @@ function Torrent(opts) {
 
     this.think_interval = null
 
-    if (opts.url && opts.url.toLowerCase().match('^magnet:')) {
-        // initialize torrent from a URL...
-        // parse trackers
-        this.magnet_info = parse_magnet(opts.url);
-        if (! this.magnet_info) {
-            this.invalid = true;
-            return
-        }
-
-        if (this.magnet_info.dn) {
-            this.set('name', this.magnet_info.dn[0])
-        }
-
-        if (this.magnet_info.tr) {
-            // initialize my trackers
-            this.initializeTrackers()
-        }
-        this.set('url',opts.url)
-        this.hashhexlower = this.magnet_info.hashhexlower
-        this.save()
-    } else if (opts.url) {
+    if (opts.url) {
         // http or https url ...
         this.initializeFromWeb(opts.url, opts.callback)
     } else if (opts.id) {
@@ -156,20 +143,44 @@ Torrent.prototype = {
 
     },
     initializeFromWeb: function(url, callback) {
-        var xhr = new XMLHttpRequest;
-        xhr.open("GET", url, true)
-        xhr.responseType = 'arraybuffer'
-        var app = this.client.app
-        xhr.onload = _.bind(function(evt) {
-            var headers = xhr.getAllResponseHeaders()
-            console.log('loaded url',url, headers)
-            this.initializeFromBuffer(evt.target.response, callback)
-        },this)
-        xhr.onerror = function(evt) {
-            console.error('unable to load torrent url',evt)
-            app.notify("Unable to load Torrent. Download and Drag it in")
+
+        if (opts.url && opts.url.toLowerCase().match('^magnet:')) {
+            // initialize torrent from a URL...
+            // parse trackers
+            this.magnet_info = parse_magnet(opts.url);
+            if (! this.magnet_info) {
+                this.invalid = true;
+                return
+            }
+
+            if (this.magnet_info.dn) {
+                this.set('name', this.magnet_info.dn[0])
+            }
+
+            if (this.magnet_info.tr) {
+                // initialize my trackers
+                this.initializeTrackers()
+            }
+            this.set('url',opts.url)
+            this.hashhexlower = this.magnet_info.hashhexlower
+            this.save()
+            if (callback) { callback(this) }
+        } else {
+            var xhr = new XMLHttpRequest;
+            xhr.open("GET", url, true)
+            xhr.responseType = 'arraybuffer'
+            var app = this.client.app
+            xhr.onload = _.bind(function(evt) {
+                var headers = xhr.getAllResponseHeaders()
+                console.log('loaded url',url, headers)
+                this.initializeFromBuffer(evt.target.response, callback)
+            },this)
+            xhr.onerror = function(evt) {
+                console.error('unable to load torrent url',evt)
+                app.notify("Unable to load Torrent. Was the URL valid? If the site requires authentication, you must download it and drag it in.")
+            }
+            xhr.send()
         }
-        xhr.send()
     },
     initializeFromBuffer: function(buffer, callback) {
         var _this = this
@@ -430,21 +441,6 @@ Torrent.prototype = {
                     break
                 }
             }
-            if (! foundmissing) {
-                console.log('%cTORRENT DONE?','color:#f0f')
-                this.set('state','complete')
-
-                // TODO -- turn this into progress notification type
-                //this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
-                this.trigger('complete')
-
-                app.analytics.tracker.sendEvent("Torrent", "Completed", null, this.size)
-
-                // send everybody NOT_INTERESTED!
-                this.peers.each( function(peer) {
-                    peer.sendMessage("NOT_INTERESTED")
-                })
-            }
             // send HAVE message to all connected peers
             payload = new Uint8Array(4)
             var v = new DataView(payload.buffer)
@@ -454,8 +450,25 @@ Torrent.prototype = {
                 if (peer.peerHandshake) {
                     peer.sendMessage("HAVE", [payload.buffer])
                 }
-            })
+            });
         }
+        
+        if (! foundmissing) {
+            console.log('%cTORRENT DONE?','color:#f0f')
+            this.set('state','complete')
+
+            // TODO -- turn this into progress notification type
+            //this.client.app.createNotification({details:"Torrent finished! " + this.get('name')})
+            this.trigger('complete')
+
+            // send everybody NOT_INTERESTED!
+            this.peers.each( function(peer) {
+                peer.sendMessage("NOT_INTERESTED")
+            });
+
+            app.analytics.sendEvent("Torrent", "Completed")
+        }
+
         this.set('downloaded', this.getDownloaded())
         this.set('complete', this.get('downloaded') / this.size)
         this.trigger('progress')
@@ -463,11 +476,12 @@ Torrent.prototype = {
     },
     checkPieceChunkTimeouts: function(pieceNum, chunkNums) {
         // XXX this timeout will get called even if this torrent was removed and its data .reset()'d
-
         //console.log('checkPieceChunkTimeouts',pieceNum,chunkNums)
         if (this._attributes.bitfield[pieceNum]) { return }
-        if (this.pieces.keyeditems[pieceNum]) {
+        if (this.pieces.containsKey(pieceNum)) {
             this.getPiece(pieceNum).checkChunkTimeouts(chunkNums)
+        } else {
+            debugger
         }
     },
     persistPiece: function(piece) {
@@ -498,6 +512,7 @@ Torrent.prototype = {
         return this._attributes.bitfield.join('')
     },
     resetState: function() {
+        console.log('reset torrent state')
         // resets torrent to 0% and, if unable to load metadata, clears that, too.
         this.stop()
 
@@ -507,7 +522,11 @@ Torrent.prototype = {
             this.unset('bitfield')
             this.unset('disk')
             this.unset('complete')
+            this.initializeFromWeb(url)
+            //this.initializeTrackers() // trackers are missing now :-(
+
         } else {
+            // unsupported...
             debugger
         }
 
@@ -711,7 +730,7 @@ Torrent.prototype = {
     },
     start: function() {
         if (this.started || this.starting) { return }
-        app.analytics.tracker.sendEvent("Torrent", "Starting")
+        app.analytics.sendEvent("Torrent", "Starting")
 
         this.starting = true
         this.think_interval = setInterval( _.bind(this.newStateThink, this), 1000 )
@@ -782,7 +801,7 @@ Torrent.prototype = {
     },
     stop: function() {
         if (this.get('state') == 'stopped') { return }
-        app.analytics.tracker.sendEvent("Torrent", "Stopping")
+        app.analytics.sendEvent("Torrent", "Stopping")
         this.starting = false
         this.set('state','stopped')
         this.started = false
@@ -806,6 +825,7 @@ Torrent.prototype = {
 
 
         // TODO - stop all disk i/o jobs for this torrent...
+        this.getStorage().cancelTorrentJobs(this)
 
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
@@ -885,6 +905,9 @@ Torrent.prototype = {
     },
     should_add_peers: function() {
         if (this.started) {
+            if (this.isComplete()) {
+                return false // TODO -- how to seed?
+            }
 
             var maxconns = this.getMaxConns()
             if (this.peers.length < maxconns) {

@@ -118,7 +118,9 @@ Item.prototype = {
         this._event_listeners[event_name].push(callback)
     },
     unset: function(k) {
+        var oldval = this._attributes[k]
         delete this._attributes[k]
+        this.trigger('change',k,undefined,oldval)
     },
     set: function(k,v) {
         var oldval = this._attributes[k]

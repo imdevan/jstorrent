@@ -149,7 +149,7 @@ Client.prototype = {
     },
     add_from_url: function(url) {
         // adds a torrent from a text input url
-        app.analytics.tracker.sendEvent("Torrent", "Add", "URL")
+        app.analytics.sendEvent("Torrent", "Add", "URL")
         // parse url
         console.log('client add by url',url)
 

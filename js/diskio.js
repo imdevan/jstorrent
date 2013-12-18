@@ -21,7 +21,7 @@ function DiskIOJob(opts) {
 }
 jstorrent.DiskIOJob = DiskIOJob
 
-DiskIOJob.jobTimeoutInterval = 2000
+DiskIOJob.jobTimeoutInterval = 8000 // too low!
 
 DiskIOJob.prototype = {
     get_key: function() {
@@ -49,6 +49,16 @@ function DiskIO(opts) {
 jstorrent.DiskIO = DiskIO
 
 DiskIO.prototype = {
+    cancelTorrentJobs: function(torrent) {
+        this.each( _.bind(function(job) {
+            if (job.opts.piece.torrent == torrent) {
+                if (job.get('state') == 'idle') {
+                    console.log('cancel job',job._attributes)
+                    this.remove(job)
+                }
+            }
+        },this))
+    },
     readPiece: function(piece, offset, size, callback) {
         // reads a bunch of piece data from all the spanning files
         var filesSpanInfo = piece.getSpanningFilesInfo(offset, size)
@@ -106,6 +116,8 @@ DiskIO.prototype = {
         this.thinkNewState()
     },
     jobError: function(job, evt) {
+        // when a job errors, cancel the whole job group with an error
+
         job.set('state','error')
         console.error('joberror',job,evt)
         this.diskActive = false

@@ -138,16 +138,29 @@ chrome.runtime.sendMessage(extensionId, {running:true}, function(response) {
 
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
     console.log('onMessageExternal',request,sender)
-    // External messages come from a browser Extension that adds a right click
-    // context menu so that this App can handle magnet links.
-    var info = {type:'onMessageExternal',
-                request: request,
-                sender: sender,
-                sendResponse: sendResponse}
-    onAppLaunchMessage(info)
+    if (request && request.command == 'checkInstalled') {
+        sendResponse( {handled:true,
+                       installed: true,
+                       id: chrome.runtime.id,
+                       version: chrome.runtime.getManifest().version})
+        return
+    } else if (request && request.command == 'add-url') {
+        // External messages come from a browser Extension that adds a right click
+        // context menu so that this App can handle magnet links.
+        var info = {type:'onMessageExternal',
+                    request: request,
+                    sender: sender,
+                    sendResponse: sendResponse}
+        onAppLaunchMessage(info)
 
-    sendResponse({ handled: true, 
-                   id: chrome.runtime.id, 
-                   version: chrome.runtime.getManifest().version
-                 })
+        sendResponse({ handled: true, 
+                       id: chrome.runtime.id, 
+                       version: chrome.runtime.getManifest().version
+                     })
+    } else {
+        sendResponse({ handled: false,
+                       id: chrome.runtime.id, 
+                       version: chrome.runtime.getManifest().version,
+                       message: 'unknown command' })
+    }
 });

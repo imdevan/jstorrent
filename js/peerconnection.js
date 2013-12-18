@@ -5,14 +5,7 @@ function PeerConnection(opts) {
     this.peer = opts.peer
     this.torrent = opts.peer.torrent
 
-    this.isEndgame = false
-    // the idea behind endgame is that when we are very near to
-    // torrent completion, requests made to slow peers prevent us from
-    // making the same requests to peers who would actually complete
-    // the requests. so in endgame mode, ignore the fact that there
-    // are outstanding requests to chunks to other peers. make up to
-    // (say, 3) requests to each chunk, as long as we aren't the one
-    // who made the request.
+
 
     // initial bittorrent state settings
     this.amInterested = false
@@ -330,7 +323,7 @@ PeerConnection.prototype = {
     },
     onWrite: function(writeResult) {
         if (! this.sockInfo) {
-            console.error('onwrite for socket forcibly or otherwise closed')
+            //console.error('onwrite for socket forcibly or otherwise closed')
             return
         }
 
@@ -527,13 +520,13 @@ PeerConnection.prototype = {
     },
     onRead: function(readResult) {
         if (! this.torrent.started) {
-            console.error('onRead, but torrent stopped')
+            //console.error('onRead, but torrent stopped')
             this.close('torrent stopped')
         }
 
         this.reading = false
         if (! this.sockInfo) {
-            console.error('onRead for socket forcibly or otherwise closed')
+            //console.error('onRead for socket forcibly or otherwise closed')
             return
         }
         if (readResult.data.byteLength == 0) {
@@ -672,7 +665,7 @@ PeerConnection.prototype = {
     },
     handle_INTERESTED: function() {
         this.peerInterested = true
-        this.sendMessage('UNCHOKE') // TODO - under what conditions?
+        // this.sendMessage('UNCHOKE') // TODO - under what conditions?
     },
     handle_NOT_INTERESTED: function() {
         this.peerInterested = false

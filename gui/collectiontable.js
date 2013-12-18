@@ -90,9 +90,13 @@ function SlickCollectionTable(opts) {
     });
     this.grid = grid
 
-    this.collection.on('add', _.bind(this.on_add, this))
-    this.collection.on('remove', _.bind(this.on_remove, this))
-    this.collection.on('change', _.bind(this.on_change, this))
+    this.l_onadd = _.bind(this.on_add, this)
+    this.l_onremove = _.bind(this.on_remove, this)
+    this.l_onchange = _.bind(this.on_change, this)
+
+    this.collection.on('add', this.l_onadd)
+    this.collection.on('remove', this.l_onremove)
+    this.collection.on('change', this.l_onchange)
 }
 
 SlickCollectionTable.prototype = {
@@ -100,6 +104,13 @@ SlickCollectionTable.prototype = {
         // destroy
         this.grid.destroy()
         $("#"+this.domid).empty()
+
+        // remove collection listeners!!! very important!
+        this.collection.unon('add', this.l_onadd)
+        this.collection.unon('remove', this.l_onremove)
+        this.collection.unon('change', this.l_onchange)
+
+
     },
     on_change: function(item, attr, p1,p2,p3) {
         //console.log('collection item change',item,attr,p1,p2,p3)

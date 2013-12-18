@@ -35,6 +35,10 @@ Collection.prototype = {
     data: function() {
         return this.items;
     },
+    unon: function(event_type, callback) {
+        var idx = this.event_listeners[event_type].indexOf(callback)
+        this.event_listeners[event_type].splice(idx,1)
+    },
     on: function(event_type, callback) {
         if (! this.event_listeners[event_type]) {
             this.event_listeners[event_type] = []

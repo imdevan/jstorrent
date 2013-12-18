@@ -247,7 +247,6 @@ debugger
     },
     checkChunkTimeouts: function(chunkNums) {
         // XXX BUG here when request was made to a peer that's no longer in our peer list... ?
-
         if (this.haveData || this.haveDataPersisted) { return }
         //console.log('piece',this.num,'checkChunkTimeouts',chunkNums)
         var chunksWithoutResponses = []
@@ -270,12 +269,8 @@ debugger
                     // instead make sure to keep
                     // peerconn.pieceChunkRequests updated and use it
                     // when disconnecting from that peer
-
-                    if (! responses) {
-                        foundResponse = false
-                        // definitely timeout
-                    } else {
-                        foundResponse = false
+                    foundResponse = false
+                    if (responses) {
                         for (var k=0; k<responses.length; k++) {
                             responseData = responses[k]
                             if (requestData.peerconn == responseData.peerconn) {
@@ -283,8 +278,7 @@ debugger
                             }
                         }
                     }
-                    // checking the timestamp makes no sense. we set the timeout timestamp, duh.
-                    //if (curTime - requestData.time >= jstorrent.constants.chunkRequestTimeoutInterval) {
+
                     if (! foundResponse) {
                         this.set('timeouts',this.get('timeouts')+1)
                         requestData.peerconn.set('timeouts', requestData.peerconn.get('timeouts')+1)
@@ -350,7 +344,11 @@ debugger
         }
         if (payloads.length > 0) {
             // some kind of subtle bugs here with torrent start/stop. but let's just clear out everything on torrent stop.? no?
-            var id = setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,this.torrent,this.num,chunkNums), jstorrent.constants.chunkRequestTimeoutInterval )
+            var id = setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,
+                                        this.torrent,
+                                        this.num,
+                                        chunkNums),
+                                 jstorrent.constants.chunkRequestTimeoutInterval )
             //this.timeoutIds.push(id) // why are we putting these in a list?
         }
         return payloads

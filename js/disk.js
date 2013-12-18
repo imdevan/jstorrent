@@ -43,6 +43,9 @@ function Disk(opts) {
 }
 jstorrent.Disk = Disk
 Disk.prototype = {
+    cancelTorrentJobs: function(torrent) {
+        this.diskio.cancelTorrentJobs(torrent)
+    },
     get_key: function() {
         if (! this.key) { 
             this.key = chrome.fileSystem.retainEntry(this.entry)

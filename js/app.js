@@ -24,6 +24,17 @@ function App() {
     // maybe use notifications instead... ( or in addition ... )
     this.UI = null
     //this.checkIsExtensionInstalled()
+
+    this.freeTrialFreeDownloads = 10
+    this.totalDownloads = 0
+
+    if (this.isLite()) {
+        this.updateRemainingDownloadsDisplay()
+        $('#download-remain-container').show()
+        $('#title-lite').show()
+    } else {
+
+    }
 }
 
 jstorrent.App = App
@@ -57,6 +68,26 @@ App.prototype = {
                 reload()
             })
         })
+    },
+
+    notifyNoDownloadsLeft: function() {
+        function onclick(idx) {
+            console.log('notification clicked',idx)
+            if (idx == 1) {
+                this.open_upsell_page()
+            } else {
+                window.open(jstorrent.constants.cws_jstorrent_url,'_blank')
+            }
+        }
+        this.createNotification({ details:"Sorry, this is the free trial version, and you have used all your free downloads",
+                                  buttons: [ 
+                                      {title:"Get JSTorrent Full Version", iconUrl:"/cws_32.png"},
+                                      {title:"Why do I have to pay?"},
+                                  ],
+                                  id:'no-downloads-left',
+                                  priority:2,
+                                  onButtonClick: _.bind(onclick,this),
+                                  onClick: _.bind(onclick,this) })
     },
     notifyNeedDownloadDirectory: function() {
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
@@ -130,6 +161,38 @@ App.prototype = {
                                          message: torrent.get('name') + " finished downloading!"},
                                         function(){})
         }
+
+        // increment total downloads ...
+
+        this.incrementTotalDownloads( _.bind(function() {
+            this.updateRemainingDownloadsDisplay()
+        },this))
+    },
+    updateRemainingDownloadsDisplay: function() {
+        this.getTotalDownloads( _.bind(function(val) {
+            this.totalDownloads = val
+            $('#download-remain').text(this.freeTrialFreeDownloads - val)
+        },this))
+    },
+    canDownload: function() {
+        return false
+        if (! this.isLite()) { return true }
+        return this.totalDownloads < this.freeTrialFreeDownloads
+    },
+    getTotalDownloads: function(callback) {
+        chrome.storage.sync.get('totalDownloads', _.bind(function(resp) {
+            callback( resp['totalDownloads'] || 0 )
+        },this))
+    },
+    incrementTotalDownloads: function(callback) {
+        chrome.storage.sync.get('totalDownloads', _.bind(function(resp) {
+            var obj = {}
+            obj['totalDownloads'] = resp['totalDownloads'] + 1
+            chrome.storage.sync.set( obj, callback)
+        },this))
+    },
+    isLite: function() {
+        return chrome.runtime.id == "abmohcnlldaiaodkpacnldcdnjjgldfh"
     },
     onTorrentProgress: function(torrent) {
         var id = torrent.hashhexlower
@@ -169,7 +232,7 @@ App.prototype = {
     },
     handleDrop: function(evt) {
         console.log('handleDrop')
-        //app.analytics.tracker.sendEvent("MainWindow", "Drop")
+        //app.analytics.sendEvent("MainWindow", "Drop")
         // handle drop in file event
         var files = evt.dataTransfer.files, file, item
         
@@ -189,12 +252,12 @@ App.prototype = {
                     var entry = item.webkitGetAsEntry()
                     console.log('was able to extract entry.',entry)
                     if (item.type == 'application/x-bittorrent') {
-                        app.analytics.tracker.sendEvent("MainWindow", "Drop", "Torrent")
+                        app.analytics.sendEvent("MainWindow", "Drop", "Torrent")
                         this.client.handleLaunchWithItem({entry:entry,
                                                           type:item.type})
 
                     } else {
-                        app.analytics.tracker.sendEvent("MainWindow", "Drop", "Entry")
+                        app.analytics.sendEvent("MainWindow", "Drop", "Entry")
                         this.createNotification({details:"Sorry. Creating torrents is not yet supported."})
                     }
                     // cool, now I can call chrome.fileSystem.retainEntry ...
@@ -214,14 +277,14 @@ App.prototype = {
         }
     },
     toolbar_resetstate: function() {
-        app.analytics.tracker.sendEvent("Toolbar", "Click", "ResetState")
+        app.analytics.sendEvent("Toolbar", "Click", "ResetState")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             torrents[i].resetState()
         }
     },
     toolbar_recheck: function() {
-        app.analytics.tracker.sendEvent("Toolbar", "Click", "Recheck")
+        app.analytics.sendEvent("Toolbar", "Click", "Recheck")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             console.log('recheck',i)
@@ -229,21 +292,21 @@ App.prototype = {
         }
     },
     toolbar_start: function() {
-        app.analytics.tracker.sendEvent("Toolbar", "Click", "Start")
+        app.analytics.sendEvent("Toolbar", "Click", "Start")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             torrents[i].start()
         }
     },
     toolbar_stop: function() {
-        app.analytics.tracker.sendEvent("Toolbar", "Click", "Stop")
+        app.analytics.sendEvent("Toolbar", "Click", "Stop")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
             torrents[i].stop()
         }
     },
     toolbar_remove: function() {
-        app.analytics.tracker.sendEvent("Toolbar", "Click", "Remove")
+        app.analytics.sendEvent("Toolbar", "Click", "Remove")
         var torrents = this.UI.get_selected_torrents()
         this.UI.torrenttable.grid.setSelectedRows([])
         for (var i=0; i<torrents.length; i++) {
@@ -251,13 +314,17 @@ App.prototype = {
         }
     },
     add_from_url: function(url) {
+        if (! this.canDownload()) {
+            this.notifyNoDownloadsLeft()
+            return
+        }
         // show notification
 
         this.checkIsExtensionInstalled( _.bind(function(isInstalled) {
             if (! isInstalled) {
                 this.createNotification({id:"extension",
                                          buttons: [ 
-                                             {title:"Install Free"},
+                                             {title:"Install the Extension", iconUrl:"/cws_32.png"},
                                              {title:"Don't show this message again"}
                                                   ],
                                          onButtonClick: _.bind(function(idx) {
@@ -268,7 +335,7 @@ App.prototype = {
                                                  this.options.set('dont_show_extension_help',true)
                                              }
                                          },this),
-                                         details:"Did you know there is a browser extension that adds a right click menu to make adding torrents easier?"})
+                                         details:"Did you know there is a browser extension that adds a Right Click (context) Menu to make adding torrents from the Web easier?"})
 
             }
         },this))
@@ -295,7 +362,7 @@ App.prototype = {
                                 );
     },
     options_window_opened: function(optionsWindow) {
-        app.analytics.tracker.sendAppView("OptionsView")
+        app.analytics.sendAppView("OptionsView")
         this.options_window_opening = false
         this.options_window = optionsWindow
         optionsWindow.contentWindow.mainAppWindow = window;
@@ -303,6 +370,26 @@ App.prototype = {
     },
     options_window_closed: function() {
         this.options_window = null
+    },
+    open_upsell_page: function() {
+        if (this.upsell_window) {
+            this.upsell_window.focus()
+        }
+        chrome.app.window.create( 'gui/upsell.html', 
+                                  { width: 520,
+                                    id:"upsell",
+                                    height: 480 },
+                                  _.bind(this.upsell_window_opened, this)
+                                );
+    },
+    upsell_window_opened: function(upsellWindow) {
+        app.analytics.sendAppView("UpsellView")
+        this.upsell_window = upsellWindow
+        upsellWindow.contentWindow.mainAppWindow = window;
+        upsellWindow.onClosed.addListener( _.bind(this.upsell_window_closed, this) )
+    },
+    upsell_window_closed: function() {
+        this.upsell_window = null
     },
     focus_or_open_help: function() {
         if (this.help_window) { 
@@ -319,7 +406,7 @@ App.prototype = {
                                 );
     },
     help_window_opened: function(helpWindow) {
-        app.analytics.tracker.sendAppView("HelpView")
+        app.analytics.sendAppView("HelpView")
         this.help_window_opening = false
         this.help_window = helpWindow
         helpWindow.contentWindow.mainAppWindow = window;

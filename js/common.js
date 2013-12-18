@@ -5,6 +5,7 @@ jstorrent.constants = {
     cws_jstorrent_lite: "abmohcnlldaiaodkpacnldcdnjjgldfh",
     cws_jstorrent_extension: "bnceafpojmnimbnhamaeedgomdcgnbjk",
     cws_jstorrent_extension_url: "https://chrome.google.com/webstore/detail/bnceafpojmnimbnhamaeedgomdcgnbjk",
+    cws_url: "https://chrome.google.com/webstore/detail/",
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),
     chunkRequestTimeoutInterval: 12000
@@ -156,7 +157,7 @@ window.onerror = function(message, url, line) {
                                        priority: 2,
                                        details: 'ver ' + jstorrent.constants.manifest.version+". In file " + url + " at line " + line + ', ' + message})
 
-        window.app.analytics.tracker.sendEvent("window.onerror", url + "(" + line + ")", message)
+        window.app.analytics.sendEvent("window.onerror", url + "(" + line + ")", message)
 
     }
     console.log('window.onerror triggered',message,url,line)

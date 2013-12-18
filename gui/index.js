@@ -49,7 +49,7 @@ function onappready() {
 
     bind_events()
 
-    app.analytics.tracker.sendAppView("MainView")
+    app.analytics.sendAppView("MainView")
 
     if (jstorrent.options.add_torrents_on_start) {
 
@@ -94,6 +94,11 @@ function bind_events() {
 	$('#detail-' + tab).click( click_detail.bind(this, tab) )
     });
 
+
+    $('#download-remain-click').click( function(evt) {
+        //window.open("upsell.html", '_blank')
+        window.open(jstorrent.constants.cws_url + jstorrent.constants.cws_jstorrent,'_blank')
+    })
     $('#re-check').click( function(evt) {
         app.toolbar_recheck()
     })
