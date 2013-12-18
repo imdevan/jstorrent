@@ -655,6 +655,8 @@ Torrent.prototype = {
 
         if (msg == 'read 0 bytes') {
             this.client.app.onClientError(msg, "Torrent file invalid")
+        } else if (msg == 'Disk Missing') {
+            this.client.app.createNotification({details:'The disk this torrent was saving to cannot be found. Either "reset" this torrent (More Actions in the toolbar) or re-insert the disk'})
         } else {
             // need a more generic error...
             this.client.app.notifyNeedDownloadDirectory()

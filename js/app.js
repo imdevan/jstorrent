@@ -25,7 +25,7 @@ function App() {
     this.UI = null
     //this.checkIsExtensionInstalled()
 
-    this.freeTrialFreeDownloads = 10
+    this.freeTrialFreeDownloads = 20
     this.totalDownloads = 0
 
     if (this.isLite()) {
@@ -176,7 +176,6 @@ App.prototype = {
         },this))
     },
     canDownload: function() {
-        return false
         if (! this.isLite()) { return true }
         return this.totalDownloads < this.freeTrialFreeDownloads
     },
@@ -293,6 +292,10 @@ App.prototype = {
         }
     },
     toolbar_start: function() {
+        if (! this.canDownload()) {
+            this.notifyNoDownloadsLeft()
+            return
+        }
         app.analytics.sendEvent("Toolbar", "Click", "Start")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {

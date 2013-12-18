@@ -10,12 +10,12 @@ function SlickCollectionTable(opts) {
                 //console.log('called render on data',data, column.name)
                 var val
 
-                if (column.id) {
+                if (column.attr) {
+                    val = data[column.attr]
+                } else if (column.id) {
                     val = data.get(column.id)
                 } else if (column.func) {
                     val =  func(data,column)
-                } else if (column.attr) {
-                    val = data[column.attr]
                 }
                 if (column.formatVal) {
                     return column.formatVal(val)
@@ -47,6 +47,10 @@ function SlickCollectionTable(opts) {
 
         }
         this.columnNumberByAttribute[this.columns[i].id || this.columns[i].attr] = i
+
+        if (! this.columns[i].id) {
+            this.columns[i].id = (this.columns[i].attr || this.columns[i].name) // slickgrid REALLY wants there to be an id, otherwise selecting the cell dont work properly
+        }
     }
 
 
