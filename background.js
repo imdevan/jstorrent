@@ -1,5 +1,8 @@
 console.log('background page loaded')
 
+// the browser extension that adds a context menu
+var extensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
+
 function WindowManager() {
     // TODO -- if we add "id" to this, then chrome.app.window.create
     // won't create it twice.  plus, then its size and positioning
@@ -126,6 +129,13 @@ if (chrome.runtime.setUninstallUrl) {
                                   )
 }
 
+/*
+// detect if extension is installed... -- moved to js/app.js
+chrome.runtime.sendMessage(extensionId, {running:true}, function(response) {
+    console.log('got msg from extension',response, chrome.runtime.lastError)
+})
+*/
+
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
     console.log('onMessageExternal',request,sender)
     // External messages come from a browser Extension that adds a right click
@@ -135,5 +145,9 @@ chrome.runtime.onMessageExternal.addListener(function(request, sender, sendRespo
                 sender: sender,
                 sendResponse: sendResponse}
     onAppLaunchMessage(info)
-    sendResponse({handled: true, id: chrome.runtime.id})
+
+    sendResponse({ handled: true, 
+                   id: chrome.runtime.id, 
+                   version: chrome.runtime.getManifest().version
+                 })
 });

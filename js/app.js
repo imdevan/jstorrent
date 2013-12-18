@@ -17,11 +17,13 @@ function App() {
     this.notificationCounter = 0
     this.notifications = new jstorrent.Collection({parent:this, shouldPersist: false})
     chrome.notifications.onClicked.addListener(_.bind(this.notificationClicked, this))
+    chrome.notifications.onButtonClicked.addListener(_.bind(this.notificationButtonClicked, this))
     chrome.notifications.onClosed.addListener(_.bind(this.notificationClosed, this))
 
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
     // maybe use notifications instead... ( or in addition ... )
     this.UI = null
+    //this.checkIsExtensionInstalled()
 }
 
 jstorrent.App = App
@@ -59,12 +61,23 @@ App.prototype = {
     notifyNeedDownloadDirectory: function() {
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
                                  priority:2,
+                                 id: 'notifyneeddownload',
                                  onClick: _.bind(function() {
                                      chrome.fileSystem.chooseEntry({type:'openDirectory'},
                                                                    _.bind(this.set_default_download_location,this)
                                                                   )
                                      
                                  },this)})
+    },
+    checkIsExtensionInstalled: function(callback) {
+        chrome.runtime.sendMessage(jstorrent.constants.cws_jstorrent_extension, {command:'checkInstalled'}, function(response) {
+            console.log('checked if extension installed:',response,chrome.runtime.lastError)
+            var present = false
+            if (response && response.installed) {
+                present = true
+            }
+            if (callback){callback(present)}
+        })
     },
     registerLaunchData: function(launchData) {
         if (this.client.ready) {
@@ -87,11 +100,18 @@ App.prototype = {
         var notification = this.notifications.get(id)
         notification.handleClick()
     },
+    notificationButtonClicked: function(id, idx) {
+        //console.log('clicked on notification with id',id)
+        var notification = this.notifications.get(id)
+        notification.handleButtonClick(idx)
+    },
     createNotification: function(opts) {
         opts.id = opts.id || ('notification' + this.notificationCounter++)
         opts.parent = this
-        var notification = new jstorrent.Notification(opts)
-        this.notifications.add(notification)
+        if (! this.notifications.containsKey(opts.id)) {
+            var notification = new jstorrent.Notification(opts)
+            this.notifications.add(notification)
+        }
     },
     showPopupWindowDialog: function(details) {
         this.createNotification({details:details})
@@ -229,6 +249,30 @@ App.prototype = {
         for (var i=0; i<torrents.length; i++) {
             torrents[i].remove()
         }
+    },
+    add_from_url: function(url) {
+        // show notification
+
+        this.checkIsExtensionInstalled( _.bind(function(isInstalled) {
+            if (! isInstalled) {
+                this.createNotification({id:"extension",
+                                         buttons: [ 
+                                             {title:"Install Free"},
+                                             {title:"Don't show this message again"}
+                                                  ],
+                                         onButtonClick: _.bind(function(idx) {
+                                             console.log('button clicked',idx)
+                                             if (idx == 0) {
+                                                 window.open(jstorrent.constants.cws_jstorrent_extension_url,'_blank')
+                                             } else {
+                                                 this.options.set('dont_show_extension_help',true)
+                                             }
+                                         },this),
+                                         details:"Did you know there is a browser extension that adds a right click menu to make adding torrents easier?"})
+
+            }
+        },this))
+        client.add_from_url(url)
     },
     external_storage_attached: function(storageInfo) {
         console.log('external storage attached',storageInfo)

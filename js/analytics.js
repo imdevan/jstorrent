@@ -49,12 +49,22 @@ function Analytics(opts) {
         service = 'JSTorrent Lite'
         id = "UA-35025483-4"
     } else {
-        debugger
+        console.error('analytics disabled')
     }
 
-    this.service = analytics.getService(service);
-    this.service.getConfig().addCallback(_.bind(this.initAnalyticsConfig,this));
-    this.tracker = this.service.getTracker(id);
+
+    if (! id) {
+        function FakeTracker() {}
+        FakeTracker.prototype = {
+            sendAppView: function(){},
+            sendEvent: function(){}
+        }
+        this.tracker = new FakeTracker
+    } else {
+        this.service = analytics.getService(service);
+        this.service.getConfig().addCallback(_.bind(this.initAnalyticsConfig,this));
+        this.tracker = this.service.getTracker(id);
+    }
 
     // Record an "appView" each time the user launches your app or goes to a new
     // screen within the app.

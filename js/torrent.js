@@ -159,7 +159,7 @@ Torrent.prototype = {
         var xhr = new XMLHttpRequest;
         xhr.open("GET", url, true)
         xhr.responseType = 'arraybuffer'
-        var app = this.app
+        var app = this.client.app
         xhr.onload = _.bind(function(evt) {
             var headers = xhr.getAllResponseHeaders()
             console.log('loaded url',url, headers)

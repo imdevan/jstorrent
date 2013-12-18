@@ -9,13 +9,13 @@ document.addEventListener("DOMContentLoaded", onready);
 
 function onaddkeydown(evt) {
     if (evt && evt.keyCode == 13) {
-	client.add_from_url(url);
+        app.add_from_url(url);
     }
 }
 
 function onadd(evt) {
     var url = document.getElementById("url").value;
-    client.add_from_url(url);
+    app.add_from_url(url)
     document.getElementById("url").value = ''
     if (evt) evt.preventDefault()
 }

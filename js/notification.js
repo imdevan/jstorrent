@@ -2,6 +2,7 @@ function Notification(opts) {
     jstorrent.Item.apply(this, arguments)
     this.id = opts.id
     this.onClick = opts.onClick || this.defaultOnClick
+    this.onButtonClick = opts.onButtonClick || this.defaultOnButtonClick
     this.data = opts.data
     this.closeOnClick = true
     var message = opts.message || jstorrent.constants.manifest.name
@@ -21,6 +22,9 @@ function Notification(opts) {
         iconUrl: "/icon48.png"
     }
 
+    if (opts.buttons) {
+        this.notificationOpts.buttons = opts.buttons
+    }
     if (opts.progress) {
         this.notificationOpts.progress = opts.progress
     }
@@ -37,6 +41,13 @@ Notification.prototype = {
             // hopefully onClosed gets triggered... ?
         })
     },
+    defaultOnButtonClick: function(idx) {
+        //this._collection each blah.remove(this) // onClosed event gets triggered, which does this
+        chrome.notifications.clear(this.id, function(id) {
+            console.log('(button click) cleared notification with id,idx',id,idx)
+            // hopefully onClosed gets triggered... ?
+        })
+    },
     close: function() {
         chrome.notifications.clear(this.id, function(){})
     },
@@ -44,12 +55,23 @@ Notification.prototype = {
         return this.id
     },
     show: function() {
-        chrome.notifications.create(this.id, this.notificationOpts, function(id) {
+        var notification = chrome.notifications.create(this.id, this.notificationOpts, function(id) {
             //console.log('created notification with id',id)
         })
     },
     handleClick: function() {
         this.onClick()
+        if (this.closeOnClick) {
+            this.defaultOnClick()
+        }
+    },
+    handleButtonClick: function(idx) {
+        if (this.onButtonClick) {
+            this.onButtonClick(idx)
+        } else {
+            this.defaultOnButtonClick(idx)
+        }
+        // suspect
         if (this.closeOnClick) {
             this.defaultOnClick()
         }
