@@ -46,6 +46,7 @@ App.prototype = {
         })
     },
     initialize_client: function() {
+        console.log('app:initialize_client')
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
         this.client.torrents.on('havemetadata', _.bind(this.onTorrentHaveMetadata, this))

@@ -51,6 +51,7 @@ function Analytics(opts) {
     } else {
         console.error('analytics disabled')
     }
+
     id = null
 
     if (! id) {
@@ -75,14 +76,14 @@ jstorrent.Analytics = Analytics
 
 Analytics.prototype = {
     sendEvent: function(a,b,c,d) {
-        try {
-            this.sendEvent(a,b,c,d)
-        } catch(e){console.warn('GA sendEvent fail')}
+//        try {
+            this.tracker.sendEvent(a,b,c,d)
+//        } catch(e){console.warn('GA sendEvent fail')}
     },
     sendAppView: function(s) {
-        try {
+//        try {
             this.tracker.sendAppView(s)
-        } catch(e){console.warn("GA sendAppView fail")}
+//        } catch(e){console.warn("GA sendAppView fail")}
     },
     initAnalyticsConfig: function(evt) {
         //console.log('init analytics config',evt)

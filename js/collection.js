@@ -5,8 +5,10 @@ function Collection(opts) {
 
     this.opts = opts
     this.parent = opts.parent
+
+    // 
     if (opts.shouldPersist === undefined) {
-        this.shouldPersist = true
+        this.shouldPersist = false
     } else {
         this.shouldPersist = opts.shouldPersist
     }
@@ -57,7 +59,7 @@ Collection.prototype = {
         }
     },
     clear: function() {
-        var items = _.clone(this.items)
+        var items = _.clone(this.items) // crashing?
         
         for (var i=0;i<items.length;i++) {
             this.remove(items[i])
@@ -162,6 +164,7 @@ Collection.prototype = {
     getSaveData: function() {
         // recursively get parent collections or parent items
         var key = this.getStoreKey()
+        if (key == "Collection") { debugger }
         var items = []
         for (var i=0; i<this.items.length; i++) {
             items.push(this.items[i].get_key())
@@ -190,7 +193,6 @@ Collection.prototype = {
                 var item, itemData
 
                 this._attributes = result[collectionKey].attributes
-
                 chrome.storage.local.get(fullItemKeys, _.bind(function(itemsResult) {
                     for (var i=0; i<itemKeys.length; i++) {
                         itemData = itemsResult[ fullItemKeys[i] ]

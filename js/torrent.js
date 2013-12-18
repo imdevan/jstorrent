@@ -61,7 +61,6 @@ function Torrent(opts) {
     this.think_interval = null
 
     if (opts.url) {
-        // http or https url ...
         this.initializeFromWeb(opts.url, opts.callback)
     } else if (opts.id) {
         this.hashhexlower = opts.id
@@ -143,8 +142,9 @@ Torrent.prototype = {
 
     },
     initializeFromWeb: function(url, callback) {
+        console.log('torrent initialize from web')
 
-        if (opts.url && opts.url.toLowerCase().match('^magnet:')) {
+        if (opts.url.toLowerCase().match('^magnet:')) {
             // initialize torrent from a URL...
             // parse trackers
             this.magnet_info = parse_magnet(opts.url);
@@ -513,8 +513,10 @@ Torrent.prototype = {
     },
     resetState: function() {
         console.log('reset torrent state')
+        if (this.started) { return }
+        return
         // resets torrent to 0% and, if unable to load metadata, clears that, too.
-        this.stop()
+        //this.stop()
 
         var url = this.get('url')
         if (url) {
@@ -647,10 +649,10 @@ Torrent.prototype = {
     has_infodict: function() {
         return this.infodict ? true : false
     },
-    error: function(msg) {
+    error: function(msg, detail) {
         this.set('state','error')
         this.lasterror = msg
-        console.error('torrent error:',msg)
+        console.error('torrent error:',msg,detail)
 
         if (msg == 'read 0 bytes') {
             this.client.app.onClientError(msg, "Torrent file invalid")
