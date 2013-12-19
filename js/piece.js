@@ -151,7 +151,7 @@ Piece.prototype = {
                         return
                     }
 
-                    if (valid && false) {
+                    if (valid) {
                         if (this.torrent.get('state') != 'started') { return }
 
                         //console.log('hashchecked valid piece',this.num)
