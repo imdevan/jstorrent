@@ -485,6 +485,18 @@ Torrent.prototype = {
         this.trigger('progress')
         this.save()
     },
+    notifyInvalidPiece: function(piece) {
+        // when a piece comes back invalid, we delete the piece, and now need to clean up the peers too... ?
+        this.peers.each( function(peerconn) {
+            for (var key in peerconn.pieceChunkRequests) {
+                if (key.split('/')[0] == piece.num) {
+                    // TODO -- make more accurate
+                    peerconn.close('contributed to invalid piece')
+                    break
+                }
+            }
+        })
+    },
     checkPieceChunkTimeouts: function(pieceNum, chunkNums) {
         // XXX this timeout will get called even if this torrent was removed and its data .reset()'d
         //console.log('checkPieceChunkTimeouts',pieceNum,chunkNums)

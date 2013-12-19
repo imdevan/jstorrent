@@ -151,7 +151,7 @@ Piece.prototype = {
                         return
                     }
 
-                    if (valid) {
+                    if (valid && false) {
                         if (this.torrent.get('state') != 'started') { return }
 
                         //console.log('hashchecked valid piece',this.num)
@@ -171,7 +171,8 @@ Piece.prototype = {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
                         console.warn('resetting piece data, not punishing peers...')
                         this.resetData()
-                        this.collection.remove(this)
+                        this._opts.torrent.notifyInvalidPiece(this)
+                        this._opts.torrent.pieces.remove(this)
 
                         // first of all, throw away this piece's data entirely...
 
