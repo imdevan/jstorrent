@@ -134,6 +134,27 @@ chrome.runtime.onStartup.addListener(function() {
 })
 
 chrome.runtime.onInstalled.addListener(function(details) {
+    var sk = 'onInstalledInfo'
+    chrome.storage.sync.get(sk, function(resp) {
+        console.log('got previous install info',resp.sk)
+
+        details.date = new Date().getTime()
+        details.cur = chrome.runtime.getManifest().version
+
+        if (resp.sk) {
+            resp.sk.push(details)
+        } else {
+            resp.sk = [details]
+        }
+
+        if (resp.sk.length > 30) {
+            // purge really old entries
+            resp.sk.splice(0,1)
+        }
+
+        chrome.storage.set(resp, function(){console.log('persisted onInstalled info')})
+    })
+    
     console.log('onInstalled',details.reason, details)
     //details.reason // install, update, chrome_update
     //details.previousVersion // only if update

@@ -82,9 +82,14 @@ PeerConnection.prototype = {
     registerPieceChunkRequest: function(pieceNum, chunkNum) {
         this.pieceChunkRequests[pieceNum + '/' + chunkNum] = true
     },
+    requestedPieceChunk: function(pieceNum, chunkNum) {
+        return this.pieceChunkRequests[pieceNum + '/' + chunkNum]
+    },
     registerPieceChunkTimeout: function(pieceNum, chunkNum) {
         this.outstandingPieceChunkRequestCount--
         this.set('outstanding',this.get('outstanding')-1)
+        var hadRequest = this.pieceChunkRequests[pieceNum + '/' + chunkNum]
+        console.assert(hadRequest)
         delete this.pieceChunkRequests[pieceNum + '/' + chunkNum]
         this.set('timeouts', this.get('timeouts')+1)
         this.newStateThink() // make sure to do this! or we get stuck doin nothin'

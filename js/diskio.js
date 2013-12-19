@@ -4,7 +4,6 @@
 
 
 function DiskIOJob(opts) {
-    this.client = opts.client
     this.jobId = opts.jobId
     this.opts = opts
 
@@ -35,9 +34,7 @@ for (var method in jstorrent.Item.prototype) {
 }
 
 function DiskIO(opts) {
-    this.client = opts.client
-    this.filesystem = opts.filesystem
-
+    this.opts = opts
     this.jobIdCounter = 0
     this.jobGroupCounter = 0
     this.jobGroupCallbacks = {}
@@ -118,9 +115,8 @@ DiskIO.prototype = {
     },
     jobError: function(job, evt) {
         // when a job errors, cancel the whole job group with an error
-
         job.set('state','error')
-        console.error('joberror',job.opts.jobId,evt)
+        console.log('joberror, job:',job.opts.jobId,'group',job.opts.jobGroup,evt)
         this.diskActive = false
         this.remove(job)
         this.opts.disk.client.error('fatal disk job error')
@@ -219,9 +215,9 @@ DiskIO.prototype = {
         // XXX -- need to use a timeout! when a job starts, it should
         // finish within a second! otherwise, there has been some kind
         // of unforeseen error...
-
         var _this = this
         var job = this.get_at(0)
+        console.assert(job.opts.jobGroup !== undefined)
         setTimeout( _.bind(this.checkJobTimeout, this, job), DiskIOJob.jobTimeoutInterval )
         //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
         job.set('state','active')

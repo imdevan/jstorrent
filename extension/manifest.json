@@ -1,9 +1,10 @@
 {
-
+    "key":"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC86AHTjKpKcEelQF50ifTV9H5uOE3fPnvIw1QeStr3aTHbknE5XmvwJY2zjw+iILOvqyaC5iLXFgiOh2guRvFLWpDq/YGIGH+ZRwEr4Vs0ulN95crCvbQHr5jNuXFcnLix5ehBQ6lTkmyILdnHtCB1UOfGYFv6DDTvUXa+vUG3pwIDAQAB",
     "name": "JSTorrent contextmenu extension",
     "description": "Javascript Torrent Client helper extension",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "manifest_version": 2,
+    "minimum_chrome_version": "31",
     "permissions": [
         "contextMenus",
         "notifications",
@@ -16,7 +17,8 @@
           "abmohcnlldaiaodkpacnldcdnjjgldfh"
        ],
       "matches": [
-          "*://*.jstorrent.com/*"
+          "*://*.jstorrent.com/*",
+          "*://jstorrent.com/*"
       ]
     },
     "background": {

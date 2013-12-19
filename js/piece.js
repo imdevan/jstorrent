@@ -105,12 +105,21 @@ Piece.prototype = {
         //console.log("Chunk response from peer!", this.num, chunkNum)
         var handled = false
 
+        // there are TWO places we register the requests, on the peer
+        // connection, as well as on the piece! confusing, i know!
+
         if (this.chunkRequests[chunkNum]) {
             for (var i=0; i<this.chunkRequests[chunkNum].length; i++) {
                 if (this.chunkRequests[chunkNum][i].peerconn == peerconn) {
                     handled = true
                     break
                 }
+            }
+        }
+
+        if (! handled) {
+            if (peerconn.requestedPieceChunk(this.num, chunkNum)) {
+                console.warn('chunk response found no corresponding request, however it was in peer connection request list')
             }
         }
 
@@ -136,6 +145,12 @@ Piece.prototype = {
             if (filled) {
                 this.checkingChunkResponseHash = true
                 this.checkChunkResponseHash( null, _.bind(function(valid) {
+
+                    if (this.wasReset) {
+                        console.warn('this piece was reset while it was being hash checked... why?',this.num)
+                        return
+                    }
+
                     if (valid) {
                         if (this.torrent.get('state') != 'started') { return }
 
@@ -193,7 +208,7 @@ Piece.prototype = {
         for (var i=0; i<this.numChunks; i++) {
             responses = this.chunkResponses[i]
             if (responses.length > 1) {
-                console.log('made non canonical choice for chunk response',responses)
+                //console.log('made non canonical choice for chunk response',responses)
             }
             curChoice = responses[0] // for now just grab the first response for this chunk received
             //digest.update(curChoice.data)
@@ -314,16 +329,15 @@ debugger
                         if (this.torrent.isEndgame) {
                             //console.log('endgame timeout before',this.chunkRequests[chunkNum])
                         }
+                        var foundRequest = false
                         for (var k=0; k<this.chunkRequests[chunkNum].length; k++) {
                             if (this.chunkRequests[chunkNum][k].peerconn == requestData.peerconn) {
                                 this.chunkRequests[chunkNum].splice(k,1)
+                                foundRequest = true
                                 break
                             }
                         }
-                        if (this.torrent.isEndgame) {
-                            //console.log('endgame timeout after',this.chunkRequests[chunkNum])
-                        }
-
+                        console.assert(foundRequest)
                     }
                 }
             }
@@ -389,7 +403,7 @@ debugger
                         }
 
                         if (! foundThisPeer) {
-                            //console.log('making special endgame request!',this.num,chunkNum)
+                            console.log('making special endgame request!',this.num,chunkNum)
                             willRequestThisChunk = true
                         }
                     }

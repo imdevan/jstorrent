@@ -313,6 +313,7 @@ Torrent.prototype = {
             peer.newStateThink() // in case we dont send them extension handshake because they dont advertise the bit
         })
         this.set('metadata',true)
+        this.set('complete', this.getPercentComplete())
         this.save()
         this.saveMetadata() // trackers maybe not initialized so they arent being saved...
         this.trigger('havemetadata')
@@ -373,6 +374,7 @@ Torrent.prototype = {
         }
     },
     getDownloaded: function() {
+        if (! this.has_infodict() ) { return 0 }
         var count = 0
         for (var i=0; i<this.numPieces; i++) {
             count += this._attributes.bitfield[i] * this.getPieceSize(i)
