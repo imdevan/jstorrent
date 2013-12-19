@@ -1,4 +1,6 @@
+// computed based on 800/600
 var gui_opts = {
+    otherstuff_height: 128,
     torrentGrid_width: 800,
     torrentGrid_height: 170,
     detailGrid_width: 800,
@@ -6,6 +8,9 @@ var gui_opts = {
 }
 
 document.addEventListener("DOMContentLoaded", onready);
+window.onresize = _.debounce(function(evt) {
+    onresizewindow()
+},100)
 
 function onaddkeydown(evt) {
     if (evt && evt.keyCode == 13) {
@@ -18,6 +23,21 @@ function onadd(evt) {
     app.add_from_url(url)
     document.getElementById("url").value = ''
     if (evt) evt.preventDefault()
+}
+
+function onresizewindow() {
+    var toph = $('#chrome-top').height()
+    var tabh = $('#detail-tabs').height()
+    var totalchrome = toph + tabh
+
+    var width = $(window).width()
+    var height = $(window).height()
+    $("#torrentGrid")[0].style.width = width
+    $("#detailGrid")[0].style.width = width
+    $("#torrentGrid")[0].style.height = Math.floor((height - totalchrome) * 0.4)
+    $("#detailGrid")[0].style.height = Math.ceil((height - totalchrome) * 0.6)
+    if (app && app.UI && app.UI.detailtable) { app.UI.detailtable.grid.resizeCanvas() }
+    if (app && app.UI && app.UI.torrenttable) { app.UI.torrenttable.grid.resizeCanvas() }
 }
 
 function onappready() {
@@ -33,13 +53,14 @@ function onappready() {
     if (window.example_url_2) {
         //document.getElementById("url").value = example_url_3
     }
-
+    onresizewindow()
+/*
     document.getElementById("torrentGrid").style.width = gui_opts.torrentGrid_width;
     document.getElementById("torrentGrid").style.height = gui_opts.torrentGrid_height;
 
     document.getElementById("detailGrid").style.width = gui_opts.detailGrid_width;
     document.getElementById("detailGrid").style.height = gui_opts.detailGrid_height;
-
+*/
     document.getElementById("add-form").addEventListener('submit', onadd)
 
 

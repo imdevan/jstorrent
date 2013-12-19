@@ -405,11 +405,13 @@ Torrent.prototype = {
             if (this.swarm.items.length > this.peers.items.length) {
                 var connected = _.filter( this.peers.items, function(p) { return p.get('state') == 'connected' })
 
-                if (connected.length > this.getMaxConns() * 0.8) { // 80% of connections are connected
+                if (connected.length > this.getMaxConns() * 0.7) { // 70% of connections are connected
+
                     var chokers = _.filter( connected, function(p) { 
                         return (p.amChoked &&
                                 now - p.connectedWhen > 10000)
                     } )
+
                     if (chokers.length > 0) {
                         chokers.sort( function(a,b) { return a.connectedWhen < b.connectedWhen } )
                         //console.log('closing shittiest',chokers[0])
@@ -420,6 +422,7 @@ Torrent.prototype = {
         }
     },
     persistPieceResult: function(result) {
+        var foundmissing = true
         if (result.error) {
             console.error('persist piece result',result)
             this.error('error persisting piece: ' + result.error)
@@ -433,7 +436,7 @@ Torrent.prototype = {
             this._attributes.bitfield[result.piece.num] = 1
 
             // TODO -- move below into checkDone() method
-            var foundmissing = false
+            foundmissing = false
             for (var i=this.bitfieldFirstMissing; i<this._attributes.bitfield.length; i++) {
                 if (this._attributes.bitfield[i] == 0) {
                     this.bitfieldFirstMissing = i
@@ -468,6 +471,7 @@ Torrent.prototype = {
 
             app.analytics.sendEvent("Torrent", "Completed")
         }
+
 
         this.set('downloaded', this.getDownloaded())
         this.set('complete', this.get('downloaded') / this.size)
@@ -516,7 +520,7 @@ Torrent.prototype = {
         if (this.started) { return }
         // resets torrent to 0% and, if unable to load metadata, clears that, too.
         //this.stop()
-
+        this.bitfieldFirstMissing = 0
         var url = this.get('url')
         if (url) {
             this.unset('metadata')
@@ -655,8 +659,10 @@ Torrent.prototype = {
 
         if (msg == 'read 0 bytes') {
             this.client.app.onClientError(msg, "Torrent file invalid")
+/*
         } else if (msg == 'Disk Missing') {
             this.client.app.createNotification({details:'The disk this torrent was saving to cannot be found. Either "reset" this torrent (More Actions in the toolbar) or re-insert the disk'})
+*/
         } else {
             // need a more generic error...
             this.client.app.notifyNeedDownloadDirectory()

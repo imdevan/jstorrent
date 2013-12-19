@@ -8,10 +8,10 @@ jstorrent.constants = {
     cws_url: "https://chrome.google.com/webstore/detail/",
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),
-    chunkRequestTimeoutInterval: 12000
+    chunkRequestTimeoutInterval: 20000
 }
 jstorrent.strings = {
-    NOTIFY_NO_DOWNLOAD_FOLDER: "No Download Folder selected. Click to select your Download Directory.",
+    NOTIFY_NO_DOWNLOAD_FOLDER: 'No Download Folder selected. Click to select your Download Directory.',
     NOTIFY_HOW_TO_CHANGE_DOWNLOAD_DIR: "You can change the download directory in the Options page",
     NOTIFY_SET_DOWNLOAD_DIR: "Set default download location to "
 }

@@ -101,7 +101,7 @@ DiskIO.prototype = {
             return
         }
         job.set('state','idle')
-        //console.log(job.opts.jobId,'jobDone')
+        console.log(job.opts.jobId,'jobDone')
         this.diskActive = false
         this.remove(job)
         this.jobsLeftInGroup[job.opts.jobGroup]--
@@ -119,7 +119,7 @@ DiskIO.prototype = {
         // when a job errors, cancel the whole job group with an error
 
         job.set('state','error')
-        console.error('joberror',job,evt)
+        console.error('joberror',job.opts.jobId,evt)
         this.diskActive = false
         this.remove(job)
         this.opts.disk.client.error('fatal disk job error')
@@ -155,9 +155,8 @@ DiskIO.prototype = {
         var _this = this
 
         entry.createWriter( function(writer) {
-            //console.log('createdWriter')
             writer.onwrite = function(evt) {
-                //console.log(job.opts.jobId, 'diskio wrote',evt.loaded,'/',evt.total)
+                console.log(job.opts.jobId, 'offset',job.opts.fileOffset,'diskio wrote',evt.loaded)
                 _this.jobDone(job, evt)
             }
             writer.onerror = function(evt) {
@@ -182,7 +181,7 @@ DiskIO.prototype = {
             console.assert(entry)
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
-            //console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
+            console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
             console.assert(curZeroes > 0)
 
             var buf = new Uint8Array(curZeroes)
@@ -209,7 +208,7 @@ DiskIO.prototype = {
         if (this.items.length > 0 &&
             this.get_at(0) == job &&
             job.get('state') == 'active') {
-            console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF")
+            console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId)
             this.jobError(job,'timeout')
 
             // jobDone may still get triggered! hmm...
@@ -223,7 +222,7 @@ DiskIO.prototype = {
         var _this = this
         var job = this.get_at(0)
         setTimeout( _.bind(this.checkJobTimeout, this, job), DiskIOJob.jobTimeoutInterval )
-        //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup)
+        console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
         job.set('state','active')
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 

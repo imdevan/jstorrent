@@ -50,7 +50,7 @@ function PeerConnection(opts) {
     this.pieceChunkRequests = {} // XXX not being stored here? wtf. we need that data!!!
 
     this.outstandingPieceChunkRequestCount = 0
-    this.pieceChunkRequestPipelineLimit = 3 // TODO - make self adjusting
+    this.pieceChunkRequestPipelineLimit = 2 // TODO - make self adjusting
 
     // inefficient that we create this for everybody in the
     // swarm... (not actual peer objects) but whatever, good enough
@@ -81,12 +81,17 @@ PeerConnection.prototype = {
     registerPieceChunkRequest: function(pieceNum, chunkNum) {
         this.pieceChunkRequests[pieceNum + '/' + chunkNum] = true
     },
+    registerPieceChunkTimeout: function(pieceNum, chunkNum) {
+        this.outstandingPieceChunkRequestCount--
+        delete this.pieceChunkRequests[pieceNum + '/' + chunkNum]
+        this.set('timeouts', this.get('timeouts')+1)
+    },
     cleanup: function() {
         this.readBuffer.clear()
         this.writeBuffer.clear()
     },
     cleanupRequests: function() {
-
+        // when does this get called?
         var idx = this.torrent.connectionsServingInfodict.indexOf(this)
         if (idx != -1) {
             console.log('removing self from connections serving infodicts')
@@ -487,7 +492,7 @@ PeerConnection.prototype = {
             var code = this.peerExtensionHandshake.m.ut_metadata
             var info = {}
             this.registerExpectResponse('infodictRequest', i, info)
-            console.log(this.get('address'),'requested infodict',d)
+            //console.log(this.get('address'),'requested infodict',d)
             this.sendMessage('UTORRENT_MSG', [new Uint8Array([code]).buffer, new Uint8Array(bencode(d)).buffer])
         }
     },
@@ -639,6 +644,11 @@ PeerConnection.prototype = {
         }
     },
     handle_PIECE: function(msg) {
+        if (this.peerChoked) { 
+            // silently dont handle PIECE requests from choked peers.
+            return 
+        }
+        
         this.set('responses',this.get('responses')+1)
         var v = new DataView(msg.payload, 5, 12)
         var pieceNum = v.getUint32(0)
@@ -720,8 +730,13 @@ PeerConnection.prototype = {
         this.torrent.maybePropagatePEX(data)
     },
     handle_UTORRENT_MSG_ut_metadata: function(msg) {
+        if (this.torrent.infodict_buffer) {
+            //console.log('ignoring it, we already received one.')
+            return
+        }
+
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
-        console.log(this.get('address'),'ut_metadata',extMessageBencodedData)
+        //console.log(this.get('address'),'ut_metadata',extMessageBencodedData)
         var infodictCode = extMessageBencodedData.msg_type
         var infodictMsgType = jstorrent.protocol.infodictExtensionMessageCodes[infodictCode]
 
@@ -742,7 +757,7 @@ PeerConnection.prototype = {
                 var ismissing = false // check if we received everything
                 for (var i=0; i<this.infodictResponses.length; i++) {
                     if (this.infodictResponses[i] === null) {
-                        console.log(this.get('address'),'infodict responses was missing chunk',i,'total',this.infodictResponses.length)
+                        //console.log(this.get('address'),'infodict responses was missing chunk',i,'total',this.infodictResponses.length)
                         ismissing = true
                         break
                     }
@@ -796,6 +811,7 @@ PeerConnection.prototype = {
         }
         console.assert(idx == this.peerExtensionHandshake.metadata_size)
 
+        // XXX -- not happening in background thread??
         var infodict = bdecode(ui82str(b))
         var digest = new Digest.SHA1()
         digest.update(b)
@@ -803,10 +819,6 @@ PeerConnection.prototype = {
 
         if (ui82str(receivedInfodictHash) == ui82str(this.torrent.hashbytes)) {
             console.log("%c Received valid infodict!", 'background:#3f3; color:#fff')
-            if (this.torrent.infodict_buffer) {
-                console.log('ignoring it, we already received one.')
-                return
-            }
             this.torrent.infodict_buffer = b
             this.torrent.infodict = infodict
             this.torrent.metadata.info = infodict

@@ -246,6 +246,9 @@ debugger
         }
     },
     checkChunkTimeouts: function(chunkNums) {
+        // XXX not removing from peerconn.pieceChunkRequests
+        // XXX not updating peerconn.outstandingPieceRequestCount
+
         // XXX BUG here when request was made to a peer that's no longer in our peer list... ?
         if (this.haveData || this.haveDataPersisted) { return }
         //console.log('piece',this.num,'checkChunkTimeouts',chunkNums)
@@ -275,13 +278,15 @@ debugger
                             responseData = responses[k]
                             if (requestData.peerconn == responseData.peerconn) {
                                 foundResponse = true
+                                break
                             }
                         }
                     }
 
                     if (! foundResponse) {
                         this.set('timeouts',this.get('timeouts')+1)
-                        requestData.peerconn.set('timeouts', requestData.peerconn.get('timeouts')+1)
+                        requestData.peerconn.registerPieceChunkTimeout(this.num, chunkNum)
+                        //requestData.peerconn.set('timeouts', requestData.peerconn.get('timeouts')+1)
                         delete this.chunkRequests[chunkNum] // XXX this is too greedy. it removes a request to another peer too.
                         // this code doesn't actually handle requests to multiple peers for the same piece... it just pretends to :-(
                     }
