@@ -21,7 +21,8 @@ function DiskIOJob(opts) {
 }
 jstorrent.DiskIOJob = DiskIOJob
 
-DiskIOJob.jobTimeoutInterval = 8000 // too low!
+DiskIOJob.randomFailure = 0 // test random failures with probability
+DiskIOJob.jobTimeoutInterval = 10000 // too low?
 
 DiskIOJob.prototype = {
     get_key: function() {
@@ -101,7 +102,7 @@ DiskIO.prototype = {
             return
         }
         job.set('state','idle')
-        console.log(job.opts.jobId,'jobDone')
+        //console.log(job.opts.jobId,'jobDone')
         this.diskActive = false
         this.remove(job)
         this.jobsLeftInGroup[job.opts.jobGroup]--
@@ -156,7 +157,7 @@ DiskIO.prototype = {
 
         entry.createWriter( function(writer) {
             writer.onwrite = function(evt) {
-                console.log(job.opts.jobId, 'offset',job.opts.fileOffset,'diskio wrote',evt.loaded)
+                //console.log(job.opts.jobId, 'offset',job.opts.fileOffset,'diskio wrote',evt.loaded)
                 _this.jobDone(job, evt)
             }
             writer.onerror = function(evt) {
@@ -181,7 +182,7 @@ DiskIO.prototype = {
             console.assert(entry)
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
-            console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
+            //console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
             console.assert(curZeroes > 0)
 
             var buf = new Uint8Array(curZeroes)
@@ -222,8 +223,14 @@ DiskIO.prototype = {
         var _this = this
         var job = this.get_at(0)
         setTimeout( _.bind(this.checkJobTimeout, this, job), DiskIOJob.jobTimeoutInterval )
-        console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
+        //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
         job.set('state','active')
+
+        if (Math.random() < DiskIOJob.randomFailure) {
+            this.jobError(job, 'random failure')
+            return
+        }
+
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 
         file.getEntry( function(entry){

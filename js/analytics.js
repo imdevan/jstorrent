@@ -52,7 +52,7 @@ function Analytics(opts) {
         console.error('analytics disabled')
     }
 
-    id = null
+    //id = null
 
     if (! id) {
         function FakeTracker() {}
@@ -86,6 +86,7 @@ Analytics.prototype = {
 //        } catch(e){console.warn("GA sendAppView fail")}
     },
     initAnalyticsConfig: function(evt) {
+        console.log('analytics initialized')
         //console.log('init analytics config',evt)
     }
 }

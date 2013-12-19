@@ -36,6 +36,7 @@ function PeerConnection(opts) {
     this.set('requests',0)
     this.set('responses',0)
     this.set('timeouts',0)
+    this.set('outstanding',0)
 
     this.set('complete',0)
 
@@ -49,7 +50,7 @@ function PeerConnection(opts) {
     // piece/chunk requests
     this.pieceChunkRequests = {} // XXX not being stored here? wtf. we need that data!!!
 
-    this.outstandingPieceChunkRequestCount = 0
+    this.outstandingPieceChunkRequestCount = 0// "outstanding"
     this.pieceChunkRequestPipelineLimit = 2 // TODO - make self adjusting
 
     // inefficient that we create this for everybody in the
@@ -83,8 +84,10 @@ PeerConnection.prototype = {
     },
     registerPieceChunkTimeout: function(pieceNum, chunkNum) {
         this.outstandingPieceChunkRequestCount--
+        this.set('outstanding',this.get('outstanding')-1)
         delete this.pieceChunkRequests[pieceNum + '/' + chunkNum]
         this.set('timeouts', this.get('timeouts')+1)
+        this.newStateThink() // make sure to do this! or we get stuck doin nothin'
     },
     cleanup: function() {
         this.readBuffer.clear()
@@ -359,13 +362,16 @@ PeerConnection.prototype = {
         }
     },
     couldRequestPieces: function() {
+        // XXX -- in endgame mode, make sure all the fastest effective players get everything
+
+
         //console.log('couldRequestPieces')
         if (this.outstandingPieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
             return
         }
 
         var lim = this.torrent.client.app.options.get('max_unflushed_piece_data') * Math.max(this.torrent.pieceLength,
-                                                                                             jstorrent.protocol.chunkSize * 64)
+                                                                                             jstorrent.protocol.chunkSize * 128)
 
 
 
@@ -393,6 +399,7 @@ PeerConnection.prototype = {
                         break
                     } else {
                         this.outstandingPieceChunkRequestCount += payloads.length
+                        this.set('outstanding',this.get('outstanding')+payloads.length)
                         allPayloads = allPayloads.concat(payloads)
                     }
                 }
@@ -616,6 +623,13 @@ PeerConnection.prototype = {
         this.newStateThink()
     },
     handle_REQUEST: function(msg) {
+        if (this.peerChoked) { 
+            console.log('wont handle request, peer is choked')
+            // silently dont handle PIECE requests from choked peers.
+            return 
+        }
+        
+
         // TODO -- if write buffer is pretty full, don't create diskio
         //job yet, since we want to do it more lazily, not too
         //eagerly.  :-) todo -- make this work better haha
@@ -644,11 +658,6 @@ PeerConnection.prototype = {
         }
     },
     handle_PIECE: function(msg) {
-        if (this.peerChoked) { 
-            // silently dont handle PIECE requests from choked peers.
-            return 
-        }
-        
         this.set('responses',this.get('responses')+1)
         var v = new DataView(msg.payload, 5, 12)
         var pieceNum = v.getUint32(0)
@@ -660,7 +669,7 @@ PeerConnection.prototype = {
         //console.log('++increment unflushedPieceDataSize', this.torrent.unflushedPieceDataSize)
         if (! this.torrent.pieces.containsKey(pieceNum)) {
             // we didn't ask for this piece
-            
+            //console.log('handle piece, but piece not extant') // happens after a timeout and the piece finishes from another peer
         } else {
             this.torrent.getPiece(pieceNum).registerChunkResponseFromPeer(this, chunkOffset, data)
         }
@@ -784,7 +793,7 @@ PeerConnection.prototype = {
             var slicebuf = new Uint8Array(this.torrent.infodict_buffer, slicea, slicelen)
             var newbuf = new Uint8Array(slicelen)
             newbuf.set( slicebuf )
-            console.log('sending metadata payload', code, d)
+            //console.log('sending metadata payload', code, d)
             this.sendMessage("UTORRENT_MSG",
                              [new Uint8Array([code]).buffer,
                               new Uint8Array(bencode(d)).buffer,

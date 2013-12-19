@@ -242,6 +242,8 @@ Torrent.prototype = {
             this.client = this.parent.parent
         }
 */
+
+        //this.set('complete',this.getPercentComplete()) // wont work unless metadata loaded
         if (this.get('url') && ! this.get('metadata')) {
             this.magnet_info = parse_magnet(this.get('url'))
             this.initializeTrackers()
@@ -356,7 +358,7 @@ Torrent.prototype = {
             storage.entry.getFile( filename, {create:true}, function(entry) {
                 entry.createWriter(function(writer) {
                     writer.onwrite = function(evt) {
-                        //console.log('wrote torrent metadata')
+                        console.log('wrote torrent metadata', evt.loaded)
                         if (callback){ callback({wrote:true}) }
                     }
                     writer.onerror = function(evt) {
@@ -364,6 +366,7 @@ Torrent.prototype = {
                         if (callback){ callback({error:true}) }
                     }
                     var data = new Uint8Array(bencode(_this.metadata))
+                    console.assert(data.length > 0)
                     writer.write(new Blob([data]))
                 })
             })
@@ -377,7 +380,8 @@ Torrent.prototype = {
         return count
     },
     getPercentComplete: function() {
-        return this.getDownloaded() / this.size
+        var pct = this.getDownloaded() / this.size
+        return pct
     },
     pieceDoneUpdateFileComplete: function(piece) {
         // a piece is finished, so recalculate "complete" on any files
@@ -457,7 +461,7 @@ Torrent.prototype = {
         }
         
         if (! foundmissing) {
-            console.log('%cTORRENT DONE?','color:#f0f')
+            console.log('%cTORRENT DONE!','color:#0f3')
             this.set('state','complete')
 
             // TODO -- turn this into progress notification type
@@ -472,9 +476,10 @@ Torrent.prototype = {
             app.analytics.sendEvent("Torrent", "Completed")
         }
 
-
-        this.set('downloaded', this.getDownloaded())
-        this.set('complete', this.get('downloaded') / this.size)
+        var dld = this.getDownloaded()
+        var pct = dld / this.size
+        this.set('downloaded', dld)
+        this.set('complete', pct)
         this.trigger('progress')
         this.save()
     },
@@ -484,8 +489,6 @@ Torrent.prototype = {
         if (this._attributes.bitfield[pieceNum]) { return }
         if (this.pieces.containsKey(pieceNum)) {
             this.getPiece(pieceNum).checkChunkTimeouts(chunkNums)
-        } else {
-            debugger
         }
     },
     persistPiece: function(piece) {
@@ -521,6 +524,7 @@ Torrent.prototype = {
         // resets torrent to 0% and, if unable to load metadata, clears that, too.
         //this.stop()
         this.bitfieldFirstMissing = 0
+        this.isEndgame = false
         var url = this.get('url')
         if (url) {
             this.unset('metadata')
@@ -653,19 +657,24 @@ Torrent.prototype = {
         return this.infodict ? true : false
     },
     error: function(msg, detail) {
+        this.stop()
         this.set('state','error')
         this.lasterror = msg
-        console.error('torrent error:',msg,detail)
+        console.error('torrent error:',[msg,detail])
 
         if (msg == 'read 0 bytes') {
-            this.client.app.onClientError(msg, "Torrent file invalid")
+            this.client.app.onClientError(msg, 'Torrent file invalid. Click "Reset state" from the "More Actions" toolbar.')
 /*
         } else if (msg == 'Disk Missing') {
             this.client.app.createNotification({details:'The disk this torrent was saving to cannot be found. Either "reset" this torrent (More Actions in the toolbar) or re-insert the disk'})
 */
         } else {
+            if (this.client.disks.items.length == 0) {
             // need a more generic error...
-            this.client.app.notifyNeedDownloadDirectory()
+                this.client.app.notifyNeedDownloadDirectory()
+            } else {
+                this.client.app.notifyStorageError()
+            }
         }
         this.started = false
         this.starting = false
@@ -762,6 +771,7 @@ Torrent.prototype = {
     },
     readyToStart: function() {
         this.set('state','started')
+        this.set('complete', this.getPercentComplete())
         this.started = true
         this.starting = false
         this.save()
@@ -893,6 +903,10 @@ Torrent.prototype = {
 
         if (! this.started) { return }
         //console.log('torrent frame!')
+        if (! this.isEndgame && this.get('complete') > 0.97) { 
+            this.isEndgame = true
+            console.log("ENDGAME ON")
+        }
 
         this.maybeDropShittyConnection()
 

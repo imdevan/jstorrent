@@ -70,7 +70,11 @@ App.prototype = {
             })
         })
     },
-
+    notifyStorageError: function() {
+        this.createNotification({details:'There seems to be a problem with the disk. Is it attached? You can reset the disk in the "More Actions" in the toolbar. This could just be the disk was slow, and you can try again.',
+                                 priority:2,
+                                 id:'storage-missing'})
+    },
     notifyNoDownloadsLeft: function() {
         function onclick(idx) {
             console.log('notification clicked',idx)
@@ -89,6 +93,15 @@ App.prototype = {
                                   priority:2,
                                   onButtonClick: _.bind(onclick,this),
                                   onClick: _.bind(onclick,this) })
+    },
+    handle_dblclick: function(type, collection, evt, info) {
+        console.log('dblclick',type,collection, evt, info)
+        var item = collection.items[info.row]
+        if (type == 'peers') {
+            if (item) {
+                item.close('user click')
+            }
+        }
     },
     notifyNeedDownloadDirectory: function() {
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
@@ -223,9 +236,7 @@ App.prototype = {
     },
     onClientError: function(evt, e) {
         // display a popup window with the error information
-        this.createNotification({details:e, onClick: function() {
-            console.log('onClientError notification onClick')
-        }})
+        this.createNotification({details:e, priority:1})
     },
     set_ui: function(UI) {
         this.UI = UI

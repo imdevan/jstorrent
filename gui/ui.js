@@ -29,17 +29,18 @@ function UI(opts) {
         'peers':[
             {name:"Address", id:"address", width:125},
             {name:"Client", id:'peerClientName', width:125},
-            {id:"state", name: "State", width:100},
+            {id:"state", name: "State", width:90},
             {id:"complete", name: "% Complete", formatVal: fracToPercent},
             {id:"bytes_sent", name: "Bytes Sent"},
             {id:"bytes_received", name: "Bytes Received"},
             {id:'requests', name:"Req", width:50},
             {id:'responses', name:"Resp", width:50},
+            {id:'outstanding', name:"Outstanding", width:50},
             {id:"last_message_sent", name: "Last Sent"},
-            {id:"last_message_received", name: "Last Received", width:150},
+            {id:"last_message_received", name: "Last Received", width:120},
+            {id:'timeouts'},
             {id:"amChoked"},
-            {id:"peerChoked"},
-            {id:'timeouts'}
+            {id:"peerChoked"}
         ],
         'swarm':[
             {attr:"host", width:110},
@@ -48,7 +49,7 @@ function UI(opts) {
             {id:'connectionResult'}
         ],
         'trackers':[
-            {attr:'url'},
+            {attr:'url', name:"URL", width:200},
             {id:'announces'},
             {id:'errors'},
             {id:'timeouts'},
@@ -66,11 +67,11 @@ function UI(opts) {
             {id:'jobGroup'}
         ],
         'files':[
-            {attr:'num'},
+            {attr:'num', name:"Number"},
             {attr:'name', width:400},
-            {attr:'size', formatVal:byteUnits},
-            {id:'downloaded', formatVal:byteUnits},
-            {id:'complete', formatVal: fracToPercent},
+            {attr:'size', name:"Size", formatVal:byteUnits, width:100},
+            {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
+            {id:'complete', name:"Complete", formatVal: fracToPercent},
             {name:"Action" , displayFunc: fileAction}
         ],
         'pieces':[
@@ -163,6 +164,8 @@ UI.prototype = {
                         // XXX TODO -- make torrent list refresh once metadata is completed...
                         this.detailtable.grid.setData([])
                     }
+                } else if (this.detailtype == 'peers') {
+                    this.detailtable.grid.onDblClick.subscribe( _.bind(app.handle_dblclick, app, 'peers', torrent[type]) )
                 }
             }
         }

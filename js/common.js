@@ -8,7 +8,8 @@ jstorrent.constants = {
     cws_url: "https://chrome.google.com/webstore/detail/",
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),
-    chunkRequestTimeoutInterval: 20000
+    chunkRequestTimeoutInterval: 20000,
+    endgameDuplicateRequests: 3
 }
 jstorrent.strings = {
     NOTIFY_NO_DOWNLOAD_FOLDER: 'No Download Folder selected. Click to select your Download Directory.',
@@ -133,7 +134,7 @@ function pad(s, padwith, len) {
 
     function byteUnits(val) {
         // TODO - this is dumb, dont divide, just do comparison. more efficient
-        if (val === undefined) { return '' }
+        if (val === undefined || val == 0) { return '' }
         var idx = 0
         while (val >= 1024 && idx < idxmax) {
             val = val/1024
@@ -159,7 +160,11 @@ window.onerror = function(message, url, line) {
 
         // if window.onerror has an error, then bad things happen.
         // make sure sendEvent cant have bad errors :-)
-        window.app.analytics.sendEvent("window.onerror", url + "(" + line + ")", message)
+        try {
+            window.app.analytics.sendEvent("window.onerror", url + "(" + line + ")", message)
+        } catch(e) {
+            console.error('error sending window.onerror analytics event')
+        }
 
     }
     console.log('window.onerror triggered',message,url,line)

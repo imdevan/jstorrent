@@ -14,6 +14,8 @@ function Tracker(opts) {
     this.connection = null;
 
     this.set('errors',0)
+    this.set('timeouts',0)
+    this.set('announces',0)
     this.responses = 0
     this.timeouts = 0
     this.announcing = false
@@ -52,6 +54,7 @@ Tracker.prototype = {
         this.announce_timeout_callback = null
         this.announcing = false
         this.timeouts++
+        this.set('timeouts',this.get('timeouts')+1)
         this.set_error('timeout')
     }
 }
@@ -80,6 +83,7 @@ HTTPTracker.prototype = {
         return res
     },
     announce: function() {
+        this.set('announces',this.get('announces')+1)
         var data = {
             event: 'started',
             downloaded: this.torrent.get('downloaded'),
@@ -170,6 +174,7 @@ UDPTracker.prototype = {
     },
     announce: function(callback) {
         if (this.announcing) { return }
+        this.set('announces',this.get('announces')+1)
         this.lasterror = null
         this.announce_callback = callback
         this.announce_timeout_callback = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )

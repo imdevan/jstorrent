@@ -129,6 +129,21 @@ if (chrome.runtime.setUninstallUrl) {
                                   )
 }
 
+chrome.runtime.onStartup.addListener(function() {
+    console.log('onStartup')
+})
+
+chrome.runtime.onInstalled.addListener(function(details) {
+    console.log('onInstalled',details.reason, details)
+    //details.reason // install, update, chrome_update
+    //details.previousVersion // only if update
+})
+
+chrome.runtime.onUpdateAvailable.addListener( function(details) {
+    // notify that there's a new version? click to restart? nah...
+    console.log('a new version is available:',details.version,details)
+})
+
 /*
 // detect if extension is installed... -- moved to js/app.js
 chrome.runtime.sendMessage(extensionId, {running:true}, function(response) {

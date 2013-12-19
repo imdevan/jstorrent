@@ -8,6 +8,8 @@ function Piece(opts) {
     this.set('responses', 0)
     this.set('timeouts', 0)
     this.timeoutIds = []
+    this.checkingHash = false
+    this.checkingChunkResponseHash = false
     this.firstInit = true
     this.resetData()
     this.wasReset = false
@@ -55,6 +57,7 @@ Piece.getSpanningFilesInfo = function(this_torrent, this_num, this_size, offset,
 
 Piece.prototype = {
     resetData: function() {
+        //console.assert(! this.checkingHash) // XXX put this assert back in!
         // this is dangerous to call, it can mean we get more responses than recorded requests...
         if (! this.firstInit) {
             // console.log(this.num,'resetData')
@@ -77,6 +80,10 @@ Piece.prototype = {
         this.chunkResponses = {}
         this.chunkResponsesChosen = null
         this.chunkResponsesChosenPlain = null
+
+        this.checkingChunkResponseHash = false
+        this.checkingHash = false
+
         this.data = null
         this.haveData = false
         this.haveValidData = false
@@ -89,7 +96,7 @@ Piece.prototype = {
     },
     registerChunkResponseFromPeer: function(peerconn, chunkOffset, data) {
         // at this point ,have not checked whether this piece was requested
-
+        console.assert(! this.haveDataPersisted)
         this.set('responses', this.get('responses')+1)
         var chunkNum = chunkOffset / jstorrent.protocol.chunkSize
         // received a chunk response from peer
@@ -109,6 +116,7 @@ Piece.prototype = {
 
         if (handled) {
             peerconn.outstandingPieceChunkRequestCount--
+            peerconn.set('outstanding',peerconn.get('outstanding')-1)
 
             // clearing these out creates lots of problems, because we keep making more requests to the same shit...
 /*
@@ -126,6 +134,7 @@ Piece.prototype = {
             var filled = this.checkChunkResponsesFilled();
 
             if (filled) {
+                this.checkingChunkResponseHash = true
                 this.checkChunkResponseHash( null, _.bind(function(valid) {
                     if (valid) {
                         if (this.torrent.get('state') != 'started') { return }
@@ -165,6 +174,9 @@ Piece.prototype = {
         // maybe do some other stuff, like send CANCEL message to any other peers
         // now destroy my data
         this.resetData()
+
+        this.checkingChunkResponseHash = false
+
         this.haveDataPersisted = true
         if (this.torrent.pieces.contains(this)) {
             // might not contain it if we stopped the torrent and the data still was persisted
@@ -180,15 +192,18 @@ Piece.prototype = {
         this.chunkResponsesChosenPlain = [] // without peer
         for (var i=0; i<this.numChunks; i++) {
             responses = this.chunkResponses[i]
+            if (responses.length > 1) {
+                console.log('made non canonical choice for chunk response',responses)
+            }
             curChoice = responses[0] // for now just grab the first response for this chunk received
             //digest.update(curChoice.data)
             this.chunkResponsesChosen.push( curChoice )
             this.chunkResponsesChosenPlain.push( curChoice.data )
         }
         var chunks = this.chunkResponsesChosenPlain
-        this.checkPieceHashMatch( chunks, callback )
+        this.checkHashMatch( chunks, callback )
     },
-    checkPieceHashMatch: function(chunks, callback) {
+    checkHashMatch: function(chunks, callback) {
         var worker = this.torrent.client.workerthread
         if (worker.busy) {
             console.warn('worker busy indicates we should have more than one thread')
@@ -203,9 +218,17 @@ Piece.prototype = {
             // only if the unflushed data pipeline limit is set rather
             // low.
         }
+        if ( this.checkingHash) {
+            // need to defer this to later...
+            console.warn('not checking hash match because a check is already in progress... callback lost')
+            return
+        }
+        console.assert(! this.checkingHash)
+        this.checkingHash = true
         worker.send( { chunks: chunks,
                        command: 'hashChunks' },
                      _.bind(function(result) {
+                         this.checkingHash = false // XXX why are we hashChunks in two places?
                          if (result && result.hash) {
                              var responseHash = ui82str(result.hash)
                              if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
@@ -284,11 +307,23 @@ debugger
                     }
 
                     if (! foundResponse) {
+                        //console.log('piece timed out...',this.num,chunkNum)
+
                         this.set('timeouts',this.get('timeouts')+1)
                         requestData.peerconn.registerPieceChunkTimeout(this.num, chunkNum)
-                        //requestData.peerconn.set('timeouts', requestData.peerconn.get('timeouts')+1)
-                        delete this.chunkRequests[chunkNum] // XXX this is too greedy. it removes a request to another peer too.
-                        // this code doesn't actually handle requests to multiple peers for the same piece... it just pretends to :-(
+                        if (this.torrent.isEndgame) {
+                            //console.log('endgame timeout before',this.chunkRequests[chunkNum])
+                        }
+                        for (var k=0; k<this.chunkRequests[chunkNum].length; k++) {
+                            if (this.chunkRequests[chunkNum][k].peerconn == requestData.peerconn) {
+                                this.chunkRequests[chunkNum].splice(k,1)
+                                break
+                            }
+                        }
+                        if (this.torrent.isEndgame) {
+                            //console.log('endgame timeout after',this.chunkRequests[chunkNum])
+                        }
+
                     }
                 }
             }
@@ -327,13 +362,43 @@ debugger
                 chunkSize = this.size - chunkNum * chunkSize
             }
 
-            if ((this.chunkRequests[chunkNum] && this.chunkRequests[chunkNum].length > 0) || 
-                (this.chunkResponses[chunkNum] && this.chunkResponses[chunkNum].length > 0)) {
-                // if ENDGAME, analyze further.
-                if (this.torrent.isEndGame) {
-                    debugger
+            var willRequestThisChunk = false
+            if (! this.chunkRequests[chunkNum] || this.chunkRequests[chunkNum].length == 0) {
+                willRequestThisChunk = true
+            } else if (this.chunkResponses[chunkNum] && this.chunkResponses[chunkNum].length > 0) {
+                // already have a response, continue
+            } else if (this.torrent.isEndgame) {
+                // only make the request if we arent the same peer
+                if (this.chunkRequests[chunkNum].length < jstorrent.constants.endgameDuplicateRequests) {
+
+                    // (and also, only if chunkRequests is "saturated"
+                    var isSaturated = true
+                    for (var i=0; i<this.numChunks; i++) {
+                        if (! this.chunkRequests[i] || this.chunkRequests[i].length == 0) {
+                            isSaturated = false
+                            break
+                        }
+                    }
+                    if (isSaturated) {
+                        var foundThisPeer = false
+                        for (var i=0; i<this.chunkRequests[chunkNum]; i++) {
+                            if (this.chunkRequests[chunkNum][i].peerconn = peerconn) {
+                                foundThisPeer = true
+                                break
+                            }
+                        }
+
+                        if (! foundThisPeer) {
+                            //console.log('making special endgame request!',this.num,chunkNum)
+                            willRequestThisChunk = true
+                        }
+                    }
                 }
-            } else {
+                //if (this.chunkResponses[chunkNum] && this.chunkResponses[chunkNum].length > 0) {
+                // if ENDGAME, analyze further.
+            }
+
+            if (willRequestThisChunk) {
                 obtained++
                 this.registerChunkRequestForPeer(peerconn, chunkNum, chunkOffset, chunkSize)
                 chunkNums.push(chunkNum)
@@ -349,12 +414,20 @@ debugger
         }
         if (payloads.length > 0) {
             // some kind of subtle bugs here with torrent start/stop. but let's just clear out everything on torrent stop.? no?
+            var timeoutInterval = jstorrent.constants.chunkRequestTimeoutInterval
+
+            if (this.torrent.isEndgame) {
+                // speed things up
+                timeoutInterval = timeoutInterval / 2
+            }
             var id = setTimeout( _.bind(this.torrent.checkPieceChunkTimeouts,
                                         this.torrent,
                                         this.num,
                                         chunkNums),
-                                 jstorrent.constants.chunkRequestTimeoutInterval )
+                                 timeoutInterval )
             //this.timeoutIds.push(id) // why are we putting these in a list?
+        } else {
+            //console.log('could not make requests :-( should we have endgame on?')
         }
         return payloads
     },
