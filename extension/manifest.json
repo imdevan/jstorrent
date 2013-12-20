@@ -1,8 +1,8 @@
 {
     "key":"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC86AHTjKpKcEelQF50ifTV9H5uOE3fPnvIw1QeStr3aTHbknE5XmvwJY2zjw+iILOvqyaC5iLXFgiOh2guRvFLWpDq/YGIGH+ZRwEr4Vs0ulN95crCvbQHr5jNuXFcnLix5ehBQ6lTkmyILdnHtCB1UOfGYFv6DDTvUXa+vUG3pwIDAQAB",
-    "name": "JSTorrent contextmenu extension",
-    "description": "Javascript Torrent Client helper extension",
-    "version": "0.0.6",
+    "name": "JSTorrent Helper extension",
+    "description": "Used alongside the JSTorrent BitTorrent Chrome app, adds extra functionality",
+    "version": "0.0.7",
     "manifest_version": 2,
     "minimum_chrome_version": "31",
     "permissions": [

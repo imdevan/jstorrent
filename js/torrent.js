@@ -729,7 +729,9 @@ Torrent.prototype = {
                     tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
                 }
                 announce_list.push( url )
-                this.trackers.add( tracker )
+                if (! this.trackers.contains(tracker)) {
+                    this.trackers.add( tracker )
+                }
             }
             // trackers are stored in "tiers", whatever. magnet links
             // dont support that. put all in first tier.
