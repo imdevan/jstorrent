@@ -101,7 +101,7 @@ function showInstallAppNotification() {
                                 { title:"Install JSTorrent",
                                   type:"basic",
                                   priority:2,
-                                  iconUrl: "icon48.png",
+                                  iconUrl: "js-48.png",
                                   message:"This extension requires you to install the JSTorrent application from the Chrome Web Store",
                                   buttons:[
                                       {title:"Get JSTorrent Lite - Free Trial", iconUrl:"cws_32.png"},

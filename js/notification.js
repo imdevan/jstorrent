@@ -19,7 +19,7 @@ function Notification(opts) {
         title: message,
         priority: opts.priority || 0,
         message: opts.details,
-        iconUrl: "/icon48.png"
+        iconUrl: "/js-48.png"
     }
 
     if (opts.buttons) {
