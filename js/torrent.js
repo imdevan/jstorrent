@@ -144,6 +144,16 @@ Torrent.prototype = {
     initializeFromWeb: function(url, callback) {
         console.log('torrent initialize from web')
 
+        if (url.length == 40) {
+            // initialize from info infohash!
+            url = 'magnet:?xt=urn:btih:' + url + '&dn=' + url
+
+            for (var i=0; i<jstorrent.constants.publicTrackers.length; i++) {
+                url = url + '&tr=' + encodeURIComponent(jstorrent.constants.publicTrackers[i])
+            }
+        }
+
+
         if (url.toLowerCase().match('^magnet:')) {
             // initialize torrent from a URL...
             // parse trackers

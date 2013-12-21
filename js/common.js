@@ -9,7 +9,9 @@ jstorrent.constants = {
     keyPresentInPreRewrite: 'blah',
     manifest: chrome.runtime.getManifest(),
     chunkRequestTimeoutInterval: 20000,
-    endgameDuplicateRequests: 3
+    endgameDuplicateRequests: 3,
+    publicTrackers: ["udp://tracker.openbittorrent.com:80/announce",
+                     "udp://tracker.publicbt.com:80/announce"]
 }
 jstorrent.strings = {
     NOTIFY_NO_DOWNLOAD_FOLDER: 'No Download Folder selected. Click to select your Download Directory.',
