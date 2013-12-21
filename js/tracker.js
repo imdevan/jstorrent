@@ -101,12 +101,13 @@ HTTPTracker.prototype = {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
 
-        //console.log('http tracker request url',url)
+        console.log('http tracker request url',url)
+        // TODO -- add timeout
 
         xhr.responseType = 'arraybuffer'
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
-            //console.log('http tracker response',data)
+            console.log('http tracker response',data)
             this.response = data
             if (data.peers) {
                 this.torrent.addCompactPeerBuffer(data.peers)
@@ -114,6 +115,7 @@ HTTPTracker.prototype = {
 
         },this)
         xhr.onerror = _.bind(function(evt) {
+            console.log('http tracker error',evt)
             this.set_error('xhr error', evt)
         },this)
         xhr.open("GET", url, true)

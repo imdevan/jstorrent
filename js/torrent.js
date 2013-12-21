@@ -167,6 +167,10 @@ Torrent.prototype = {
                 this.set('name', this.magnet_info.dn[0])
             }
 
+            if (! this.magnet_info.tr) {
+                this.magnet_info.tr = jstorrent.constants.publicTrackers
+            }
+
             if (this.magnet_info.tr) {
                 // initialize my trackers
                 this.initializeTrackers()
