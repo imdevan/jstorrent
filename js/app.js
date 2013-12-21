@@ -71,7 +71,7 @@ App.prototype = {
         })
     },
     notifyStorageError: function() {
-        this.createNotification({details:'There seems to be a problem with the disk. Is it attached? You can reset the disk in the "More Actions" in the toolbar. This could just be the disk was slow, and you can try again.',
+        this.createNotification({details:'There seems to be a problem with the disk for this torrent. Is it attached? You can reset the disk for this torrent in the "More Actions" in the toolbar. This could just be the disk was too slow, and you can try again.',
                                  priority:2,
                                  id:'storage-missing'})
     },

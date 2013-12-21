@@ -75,20 +75,22 @@ Options.prototype = {
         callback()
     },
     on_choose_download_directory: function(entry) {
-        var retain_string = chrome.fileSystem.retainEntry(entry);
-        console.log('user choose download directory',entry, 'retain string:',retain_string)
-/*
-        this.set('default_download_location',
-                        {retainEntryId: retain_string,
-                         name: entry.name,
-                         fullPath: entry.fullPath}
-                       )
-*/
-        if (this.app) {
+        if (entry) {
+            //var retain_string = chrome.fileSystem.retainEntry(entry);
+            //console.log('user choose download directory',entry, 'retain string:',retain_string)
+            /*
+              this.set('default_download_location',
+              {retainEntryId: retain_string,
+              name: entry.name,
+              fullPath: entry.fullPath}
+              )
+            */
+            if (this.app) {
 
-        } else {
-            //mainAppWindow.app.download_location = entry
-            mainAppWindow.app.set_default_download_location(entry);
+            } else {
+                //mainAppWindow.app.download_location = entry
+                mainAppWindow.app.set_default_download_location(entry);
+            }
         }
     }
 }
