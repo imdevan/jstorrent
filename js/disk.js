@@ -7,6 +7,10 @@ function Disk(opts) {
     if (opts.id) {
         // being restored, need to call restoreEntry
         this.key = opts.id
+
+        if (! this.key) {
+            this.error = true
+        }
         //console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
             // remove this.

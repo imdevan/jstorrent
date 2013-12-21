@@ -185,8 +185,10 @@ Collection.prototype = {
 
                 for (var i=0; i<result[collectionKey].items.length; i++) {
                     var itemKey = result[collectionKey].items[i]
-                    itemKeys.push(itemKey)
-                    fullItemKeys.push(collectionKey + '/' + itemKey)
+                    if (itemKey) {
+                        itemKeys.push(itemKey)
+                        fullItemKeys.push(collectionKey + '/' + itemKey)
+                    }
                 }
 
                 // have a list of all the items we need to now fetch from storage
