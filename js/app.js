@@ -432,7 +432,7 @@ App.prototype = {
     },
     set_default_download_location: function(entry) {
         if (! entry) {
-            this.createNotification({details:jstorrent.strings.NOTIFY_HOW_TO_CHANGE_DOWNLOAD_DIR})
+            this.createNotification({details:"No download folder was selected. Note you CANNOT save torrents to a Google Drive folder."})
             return
         }
         //console.log("Set default download location to",entry)

@@ -118,7 +118,8 @@ function bind_events() {
 
     $('#download-remain-click').click( function(evt) {
         //window.open("upsell.html", '_blank')
-        window.open(jstorrent.constants.cws_url + jstorrent.constants.cws_jstorrent,'_blank')
+        app.open_upsell_page()
+        //window.open(jstorrent.constants.cws_url + jstorrent.constants.cws_jstorrent,'_blank')
     })
     $('#re-check').click( function(evt) {
         app.toolbar_recheck()
