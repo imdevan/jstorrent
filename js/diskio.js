@@ -206,6 +206,13 @@ DiskIO.prototype = {
             this.get_at(0) == job &&
             job.get('state') == 'active') {
             console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId, job.opts)
+
+            job.opts.piece.torrent.checkBroken(function(isBroken) {
+                if (isBroken) {
+                    job.opts.piece.torrent.client.error('Fatal disk error (Chrome FileSystem bug). Please restart the Application')
+                }
+            })
+
             this.jobError(job,'timeout')
 
             // jobDone may still get triggered! hmm...

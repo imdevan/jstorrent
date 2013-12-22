@@ -47,6 +47,28 @@ function Disk(opts) {
 }
 jstorrent.Disk = Disk
 Disk.prototype = {
+    checkBroken: function() {
+        var _this = this
+        if (this.checkingBroken) { return }
+        this.checkingBroken = true
+        this.checkBrokenTimeout = setTimeout( function(){
+            if (this.checkingBroken) {
+                console.error('disk is definitely broken. app needs restart')
+                if (callback) { callback(true) }
+            } else {
+                if (callback) { callback(false) }
+            }
+        },1000)
+        this.entry.getMetadata(function(info) {
+            _this.checkingBroken = false
+            console.log('disk getMetadata',info)
+        },
+                               function(err) {
+                                   _this.checkingBroken = false
+                                   console.log('disk getMetadata err',err)
+                               }
+                              )
+    },
     cancelTorrentJobs: function(torrent) {
         this.diskio.cancelTorrentJobs(torrent)
     },
