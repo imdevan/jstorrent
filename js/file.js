@@ -70,6 +70,8 @@ File.prototype = {
         return this.num
     },
     getEntry: function(callback) {
+        // XXX this is not calling callback in some cases!
+
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
         var path = this.path.slice()
@@ -83,6 +85,7 @@ File.prototype = {
                 }
             } else if (e.isDirectory) {
                 if (path.length > 1) {
+                    // this is not calling error callback, simply timing out!!!
                     e.getDirectory(path.shift(), {create:true}, recurse, recurse)
                 } else {
                     e.getFile(path.shift(), {create:true}, recurse, recurse)

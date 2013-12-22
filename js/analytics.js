@@ -52,7 +52,7 @@ function Analytics(opts) {
         console.error('analytics disabled')
     }
 
-    id = null
+    //id = null
 
     if (! id) {
         function FakeTracker() {}

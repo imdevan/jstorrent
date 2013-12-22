@@ -205,7 +205,7 @@ DiskIO.prototype = {
         if (this.items.length > 0 &&
             this.get_at(0) == job &&
             job.get('state') == 'active') {
-            console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId)
+            console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId, job.opts)
             this.jobError(job,'timeout')
 
             // jobDone may still get triggered! hmm...
