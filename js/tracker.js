@@ -96,7 +96,14 @@ HTTPTracker.prototype = {
         //console.log('http tracker announce data',data)
         var xhr = new XMLHttpRequest;
 
-        var url = this.url + '?info_hash=' + this.paramEncode(ui82str(this.torrent.hashbytes))
+        var url
+        if (this.url.indexOf('?') == -1) {
+            url = this.url + '?'
+        } else {
+            url = this.url + '&'
+        }
+
+        url = url + 'info_hash=' + this.paramEncode(ui82str(this.torrent.hashbytes))
         for (var key in data) {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
@@ -111,6 +118,8 @@ HTTPTracker.prototype = {
             this.response = data
             if (data.peers) {
                 this.torrent.addCompactPeerBuffer(data.peers)
+            } else {
+                this.set_error('no peers in response',data,evt)
             }
 
         },this)
