@@ -337,6 +337,7 @@ Torrent.prototype = {
         return this.get('name') + '.torrent'
     },
     loadMetadata: function(callback) {
+        // xxx this is failing when disk is not attached!
         var _this = this
         if (this.get('metadata')) {
             if (this.infodict) {
@@ -350,6 +351,8 @@ Torrent.prototype = {
                         } else {
                             callback({error:'file missing'})
                         }
+                    }, function(err) {
+                        callback({error:"Cannot load torrent - " + err.message})
                     })
                 } else {
                     callback({error:'disk missing'})
@@ -384,7 +387,12 @@ Torrent.prototype = {
                     console.assert(data.length > 0)
                     writer.write(new Blob([data]))
                 })
-            })
+            },
+                                   function(err) {
+                                       console.log('saveMetadata fail -- ',err)
+                                       if (callback){callback({error:err.message})}
+                                   }
+                                 )
         }
     },
     getDownloaded: function() {

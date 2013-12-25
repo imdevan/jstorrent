@@ -47,7 +47,7 @@ function Disk(opts) {
 }
 jstorrent.Disk = Disk
 Disk.prototype = {
-    checkBroken: function() {
+    checkBroken: function(callback) {
         var _this = this
         if (this.checkingBroken) { return }
         this.checkingBroken = true

@@ -1,6 +1,7 @@
 jstorrent.protocol = {
     protocolName: 'BitTorrent protocol',
     reportedClientName: 'JSTorrent 2.0.0',
+    handshakeClientName: 'JS',
     pieceSize: 16384,
     chunkSize: 16384,
     socketReadBufferMax: 4096, // doesn't really belong in this file, but whatever
@@ -76,6 +77,7 @@ jstorrent.protocol.parseHandshake = function(buf) {
             toret.infohash = new Uint8Array(buf,sofar,20) // infohash
             sofar += 20
             toret.peerid = new Uint8Array(buf,sofar,20) // peer id
+            //console.log('parse peerid', ui82str(toret.peerid))
 
             return toret
         }

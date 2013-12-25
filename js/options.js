@@ -6,6 +6,11 @@ var app_options = {
         'description': 'your list of torrents will be synchronized across your devices'
     },
 
+    'spoof_utorrent': {
+        'default':true,
+        'type':'bool'
+    },
+
     'show_notifications': {
         'default':true,
         'type':'bool'

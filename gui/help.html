@@ -12,18 +12,17 @@ Thank you for using JSTorrent, a torrent client for Google ChromeOS.
 Having difficulty understanding how to use JSTorrent?
 
 <ul>
+
   <li>
     <span class="question">
-      How does this work?
+      Why do I have to select a Download Folder?
     </span>
     <span class="answer">
-      <p>
-      Find a torrent file on the web, right click in your browser and
-      select "<em>Copy link address</em>", now come back to JSTorrent,
-      paste it into the address bar on top, and click
-      "<em>Add</em>". Then your torrent download will begin!</p>
-
-      <p>To make it easier, there is a <a href="https://chrome.google.com/webstore/detail/jstorrent-contextmenu-ext/bnceafpojmnimbnhamaeedgomdcgnbjk?hl=en" target="_blank">chrome extension</a> that adds a right click menu that will do this automatically!</p>
+      <p>JSTorrent actually starts out with NO ACCESS to any files on your
+      computer. You have to actually tell it which folder(s) it has
+      access to. This is a security feature! Most desktop software
+      actually has full access to your computer. But Chrome has better
+      security! Cool, huh?</p>
     </span>
   </li>
 
@@ -35,6 +34,41 @@ Having difficulty understanding how to use JSTorrent?
       The first time you add a torrent, you'll be asked to select a <em>Default Download Folder</em>. The files will go there. Creating a "JSTorrent" folder to put everything in is the recommended setup.
     </span>
   </li>
+
+
+
+  <li>
+    <span class="question">
+      How does this work?
+    </span>
+    <span class="answer">
+      <p>
+      Find a torrent file on the web, right click in your browser and
+      select "<em>Copy link address</em>", now come back to JSTorrent,
+      paste it into the address bar on top, and click
+      "<em>Add</em>". Then your torrent download will begin!</p>
+
+      <p>Or, simply download a ".torrent" file, and then either drag
+      it into the window or just click on it in the "Files" app.</p>
+
+      <p>To make it easier, there is a <a href="https://chrome.google.com/webstore/detail/jstorrent-contextmenu-ext/bnceafpojmnimbnhamaeedgomdcgnbjk?hl=en" target="_blank">chrome extension</a> that adds a right click menu that will do this automatically!</p>
+    </span>
+  </li>
+
+  <li>
+    <span class="question">
+      My torrent isn't downloading! It says started, but isn't doing anything!
+    </span>
+    <span class="answer">
+      <p>First off, did you select your download directory?</p>
+
+      <p>Check the "Trackers" tab and make sure there are no numbers in
+      the "errors" or "timeouts" columns, and that there are numbers
+      in the "seeders" column. Then check out the "Peers" tab and make
+      sure you're connecting to peers.</p>
+    </span>
+  </li>
+
 
   <li>
     <span class="question">
@@ -53,6 +87,19 @@ Having difficulty understanding how to use JSTorrent?
       The easiest way is to find the "<em>magnet</em>" link on a website and right click and select <em>Copy link address</em>. You can also download the torrent file to your ChromeOS Downloads folder, and then drag it into the JSTorrent window.
     </span>
   </li>
+
+  <li>
+    <span class="question">
+      Does this work with private trackers?
+    </span>
+    <span class="answer">
+      <p>With a private tracker, you'll need to download the ".torrent" file from the web browser first, and then load it into JSTorrent. This is because you need to be signed in, and JSTorrent doesn't know about your login credentials.
+      </p>
+
+      <p>That being said, there seem to be some issues with some private trackers. If you have a problem with a specific private tracker, please let me know about it and I can attempt to figure out what the problem is.</p>
+    </span>
+  </li>
+
 
   <li>
 

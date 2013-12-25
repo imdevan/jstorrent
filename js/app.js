@@ -277,6 +277,10 @@ App.prototype = {
                 }
             }
         }
+        var url = evt.dataTransfer.getData('text/uri-list')
+        if (url) {
+            this.client.app.add_from_url(url)
+        }
     },
     suspend: function() {
         this.client.stop()

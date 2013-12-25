@@ -1,1 +1,6 @@
+- endgame mode needs to happen only when there are no incomplete pieces with chunk requests
+- need to disconnect from peers when no message received in n seconds (i.e. if computer goes to sleep...)
+- fix the NaN%
+- add "delete torrent and files" to more actions
+- fix file getting to > 100% (downloaded being incremented twice somehow)
 - better handling when disconnecting external storage (display better error)

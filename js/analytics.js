@@ -76,17 +76,17 @@ jstorrent.Analytics = Analytics
 
 Analytics.prototype = {
     sendEvent: function(a,b,c,d) {
-//        try {
+        try {
             this.tracker.sendEvent(a,b,c,d)
-//        } catch(e){console.warn('GA sendEvent fail')}
+        } catch(e){console.warn('GA sendEvent fail')}
     },
     sendAppView: function(s) {
-//        try {
+        try {
             this.tracker.sendAppView(s)
-//        } catch(e){console.warn("GA sendAppView fail")}
+        } catch(e){console.warn("GA sendAppView fail")}
     },
     initAnalyticsConfig: function(evt) {
         console.log('analytics initialized')
-        //console.log('init analytics config',evt)
+        console.log('init analytics config',evt)
     }
 }

@@ -45,7 +45,21 @@ function Client(opts) {
     this.workerthread = new jstorrent.WorkerThread({client:this});
 
     this.peeridbytes = []
-    for (var i=0; i<20; i++) {
+
+    if (this.app.options.get('spoof_utorrent')) {
+        this.peeridbytes = _.map('-UT3320-'.split(''), function(v){return v.charCodeAt(0)})
+    } else {
+        var verstr = chrome.runtime.getManifest().version.split('.').join('')
+        if (verstr.length < 4) {
+            verstr = verstr + '0'
+        }
+        console.assert(verstr.length == 4)
+        var beginstr = '-JS' + verstr + '-'
+        this.peeridbytes = _.map(beginstr.split(''), function(v){return v.charCodeAt(0)})
+    }
+
+    
+    for (var i=this.peeridbytes.length; i<20; i++) {
         this.peeridbytes.push( 
             Math.floor( Math.random() * 256 )
         )
