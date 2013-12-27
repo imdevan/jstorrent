@@ -34,6 +34,15 @@ function Notification(opts) {
 jstorrent.Notification = Notification
 
 Notification.prototype = {
+    updateTimestamp: function() {
+        // hopefully causes it to come to the foreground
+        // again. Nope. :-( doesn't. there doesn't seem to be any way
+        // to actually bring an existing notification back to the
+        // foreground
+        chrome.notifications.update(this.id, {eventTime: new Date().getTime()}, _.bind(function(wasUpdated) {
+            //console.log('notification.wasupdated',this.id)
+        },this))
+    },
     defaultOnClick: function() {
         //this._collection each blah.remove(this) // onClosed event gets triggered, which does this
         chrome.notifications.clear(this.id, function(id) {

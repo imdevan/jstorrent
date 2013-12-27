@@ -694,6 +694,7 @@ Torrent.prototype = {
     },
     error: function(msg, detail) {
         this.stop()
+        this.trigger('error',msg,detail)
         this.set('state','error')
         this.lasterror = msg
         console.error('torrent error:',[msg,detail])

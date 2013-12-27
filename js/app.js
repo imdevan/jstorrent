@@ -48,6 +48,7 @@ App.prototype = {
     initialize_client: function() {
         console.log('app:initialize_client')
         this.client = new jstorrent.Client({app:this, id:'client01'});
+        this.client.torrents.on('error', _.bind(this.onTorrentError, this))
         this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
         this.client.torrents.on('havemetadata', _.bind(this.onTorrentHaveMetadata, this))
         this.client.torrents.on('stop', _.bind(this.onTorrentStop, this))
@@ -104,9 +105,10 @@ App.prototype = {
         }
     },
     notifyNeedDownloadDirectory: function() {
+        // need to change this to also bring the notification back to the foreground (because users find a way to have it stay hidden)
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
                                  priority:2,
-                                 id: 'notifyneeddownload',
+                                 id: 'notifyneeddownload', // this means if it was already shown or dismissed, it wont show again..
                                  onClick: _.bind(function() {
                                      chrome.fileSystem.chooseEntry({type:'openDirectory'},
                                                                    _.bind(this.set_default_download_location,this)
@@ -152,10 +154,14 @@ App.prototype = {
     },
     createNotification: function(opts) {
         opts.id = opts.id || ('notification' + this.notificationCounter++)
+        console.log('createNotification', opts.id)
         opts.parent = this
         if (! this.notifications.containsKey(opts.id)) {
             var notification = new jstorrent.Notification(opts)
             this.notifications.add(notification)
+        } else {
+            var notification = this.notifications.get(opts.id)
+            notification.updateTimestamp()
         }
     },
     showPopupWindowDialog: function(details) {
@@ -220,6 +226,16 @@ App.prototype = {
         if (this.notifications.get(id)) {
             chrome.notifications.clear(id, function(){})
         }
+    },
+    onTorrentError: function(torrent, err) {
+        if (err == 'Disk Missing') {
+            err = 'Disk Missing. Choose a download directory in the options.'
+        }
+        this.createNotification({
+            details: "Error with torrent: " + err,
+            priority: 1
+        })
+        console.log('torrent->error event->app',err)
     },
     onTorrentStart: function(torrent) {
         if (torrent.get('complete') == 1) { return }

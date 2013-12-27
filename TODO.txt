@@ -4,3 +4,5 @@
 - add "delete torrent and files" to more actions
 - fix file getting to > 100% (downloaded being incremented twice somehow)
 - better handling when disconnecting external storage (display better error)
+- fix tracker announce to say 'completed' event
+- pNaCL sha1 hashing of pieces
