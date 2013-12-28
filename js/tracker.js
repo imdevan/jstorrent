@@ -5,6 +5,7 @@ function Tracker(opts) {
     jstorrent.Item.apply(this, arguments)
     this.torrent = opts.torrent
     this.url = opts.url
+    console.assert(this.url)
     var parts = this.url.split('/')[2].split(':');
     this.scheme = this.url.split('/')[0].split(':')[0].toLowerCase();
     this.host = parts[0];

@@ -193,7 +193,7 @@ Torrent.prototype = {
                 console.error('unable to load torrent url',evt)
                 app.notify("Unable to load Torrent. Was the URL valid? If the site requires authentication, you must download it and drag it in.")
             }
-            xhr.send()
+            xhr.send() // can throw exception "A network error has occured" NetworkError
         }
     },
     initializeFromBuffer: function(buffer, callback) {

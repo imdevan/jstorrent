@@ -52,7 +52,7 @@ Disk.prototype = {
         if (this.checkingBroken) { return }
         this.checkingBroken = true
         this.checkBrokenTimeout = setTimeout( function(){
-            if (this.checkingBroken) {
+            if (_this.checkingBroken) {
                 console.error('disk is definitely broken. app needs restart')
                 if (callback) { callback(true) }
             } else {

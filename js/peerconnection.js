@@ -176,8 +176,11 @@ PeerConnection.prototype = {
         // triggered... make sure we look for sockInfo being gone
         this.cleanupRequests()
         this.cleanup()
-        chrome.socket.disconnect(this.sockInfo.socketId)
-        chrome.socket.destroy(this.sockInfo.socketId)
+        if (this.sockInfo) {
+            // if no this.sockInfo, perhaps we were not yet connected
+            chrome.socket.disconnect(this.sockInfo.socketId)
+            chrome.socket.destroy(this.sockInfo.socketId)
+        }
         this.sockInfo = null
         // need to clean up registerd requests
         this.trigger('disconnect')
