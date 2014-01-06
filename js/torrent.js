@@ -178,7 +178,7 @@ Torrent.prototype = {
             this.set('url',url)
             this.hashhexlower = this.magnet_info.hashhexlower
             this.save()
-            if (callback) { callback(this) }
+            if (callback) { callback({torrent:this}) }
         } else {
             var xhr = new XMLHttpRequest;
             xhr.open("GET", url, true)
