@@ -449,6 +449,26 @@ Torrent.prototype = {
             }
         }
     },
+    getFirstUnrequestedPiece: function() {
+	// returns the first piece which has no pending requests
+        // if every piece has requests pending, then we return null
+
+        var piece
+
+        for (var pieceNum=this.bitfieldFirstMissing; pieceNum<this.numPieces; pieceNum++) {
+            if (this._attributes.bitfield[pieceNum]) {
+            } else if (this.pieces.containsKey(pieceNum)) {
+                // piece has been initialized...
+                piece = this.pieces.get(pieceNum)
+                if (piece.get('requests') == 0) {
+                    return pieceNum
+                }
+            } else {
+                return pieceNum
+            }
+        }
+        return null
+    },
     persistPieceResult: function(result) {
         var foundmissing = true
         if (result.error) {
@@ -942,7 +962,9 @@ Torrent.prototype = {
 
         if (! this.started) { return }
         //console.log('torrent frame!')
-        if (! this.isEndgame && this.get('complete') > 0.97) { 
+
+        //if (! this.isEndgame && this.get('complete') > 0.97) {  // this works really crappy for large torrents
+        if (this.getFirstUnrequestedPiece() === null) {
             this.isEndgame = true
             console.log("ENDGAME ON")
         }
