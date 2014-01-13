@@ -30,7 +30,11 @@ var createProps = {
 
 
     },
-    targetUrlPatterns: ["magnet:*","*://*/*.torrent"]
+    targetUrlPatterns: ["magnet:*",
+                        "*://*/*.torrent",
+                        "*://*/*.torrent?*",
+                        "*://*/*.torrent#*"
+                       ]
     
 }
 chrome.contextMenus.create(createProps, function() {
