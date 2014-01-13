@@ -21,7 +21,7 @@ function DiskIOJob(opts) {
 jstorrent.DiskIOJob = DiskIOJob
 
 DiskIOJob.randomFailure = 0 // test random failures with probability
-DiskIOJob.jobTimeoutInterval = 10000 // too low?
+DiskIOJob.jobTimeoutInterval = 15000 // too low?
 
 DiskIOJob.prototype = {
     get_key: function() {
@@ -206,9 +206,14 @@ DiskIO.prototype = {
             this.get_at(0) == job &&
             job.get('state') == 'active') {
             console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId, job.opts)
+            app.analytics.sendEvent("DiskIO", "timeout")
+
+            // TODO - perhaps retry once?
+
             this.jobError(job,'timeout')
             job.opts.piece.torrent.getStorage().checkBroken(function(isBroken) {
                 if (isBroken) {
+                    app.analytics.sendEvent("DiskIO", "broken")
                     job.opts.piece.torrent.client.error('Fatal disk error (Chrome FileSystem bug). Please restart the Application')
                 }
             })

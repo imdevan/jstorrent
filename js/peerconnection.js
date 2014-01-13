@@ -686,6 +686,9 @@ PeerConnection.prototype = {
         this.set('amChoked',false)
         this.amChoked = false
     },
+    handle_CANCEL: function() {
+        // ignore this message
+    },
     handle_CHOKE: function() {
         this.set('amChoked',true)
         this.amChoked = true
