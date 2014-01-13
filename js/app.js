@@ -4,6 +4,7 @@
 
 function App() {
     //console.log('creating app')
+    this.id = 'app01' // device ID...
     chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
     chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
 

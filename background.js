@@ -152,7 +152,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
             resp.sk.splice(0,1)
         }
 
-        chrome.storage.set(resp, function(){console.log('persisted onInstalled info')})
+        chrome.storage.sync.set(resp, function(){console.log('persisted onInstalled info')})
     })
     
     console.log('onInstalled',details.reason, details)

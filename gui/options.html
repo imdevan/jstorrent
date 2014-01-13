@@ -7,7 +7,6 @@
   <script src="../js/deps/underscore.js"></script>
 
   <script src="../js/common.js"></script>
-  <script src="../js/common_override.js"></script>
 
   <script src="../js/collection.js"></script>
   <script src="../js/item.js"></script>
@@ -41,19 +40,20 @@
   </div>
 </nav>
 
-<form role="form">
+<!--form role="form"-->
 
 
   <div class="form-group">
     <label for="exampleInputFile">File Download Location</label>
     <!--input type="button" id="exampleInputFile" value="Choose"-->
 
-    <input type="button" id="button-choose-download" class="btn btn-default" value="Choose" />
+    <input type="button" disabled="disabled" id="button-choose-download" class="btn btn-default" value="Choose" />
 
     <p class="help-block">New Torrents will be downloaded to this folder.</p>
   </div>
 
-
+<div id="auto_options">
+</div>
 
 <!--input type="button" id="request-identity" value="Request Identity" /-->
   <!--div class="checkbox">
@@ -68,7 +68,7 @@
     </label>
   </div-->
 
-</form>
+<!--/form-->
 
 <div id="full_version_upsell" style="display:none; position:absolute; bottom: 5px">Sorry, there are not very many options yet. Please purchase <a href="https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghaligalgb" target="_blank">JSTorrent full version</a> to show your support of continued development of this program.</div>
 
