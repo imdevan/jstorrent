@@ -30,6 +30,11 @@ function bind_events() {
 
 function onready() {
     console.log("This is Options window")
+
+    if (chrome.runtime.id == jstorrent.constants.jstorrent_lite) {
+        $("#full_version_upsell").show()
+    }
+
     bind_events()
     options.load( function() {} );
 }
