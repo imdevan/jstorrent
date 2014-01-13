@@ -964,7 +964,7 @@ Torrent.prototype = {
         //console.log('torrent frame!')
 
         //if (! this.isEndgame && this.get('complete') > 0.97) {  // this works really crappy for large torrents
-        if (this.getFirstUnrequestedPiece() === null) {
+        if (! this.isEndgame && this.getFirstUnrequestedPiece() === null) {
             this.isEndgame = true
             console.log("ENDGAME ON")
         }
