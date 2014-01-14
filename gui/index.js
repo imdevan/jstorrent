@@ -151,6 +151,10 @@ function bind_events() {
         app.focus_or_open_help()
     })
 
+    $('#button-sponsor').click( function(evt) {
+        app.focus_or_open('sponsor')
+    })
+
     // apparently for drop to work everywhere, you have to prevent default for enter/over/leave
     // but we lose the cool icon hmm -- tried dropEffect "copy" everywhere, seems to work
     // http://www.quirksmode.org/blog/archives/2009/09/the_html5_drag.html

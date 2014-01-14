@@ -29,10 +29,13 @@ function App() {
     this.freeTrialFreeDownloads = 20
     this.totalDownloads = 0
 
+    this.popup_windows = {}
+
     if (this.isLite()) {
         this.updateRemainingDownloadsDisplay()
         $('#download-remain-container').show()
         $('#title-lite').show()
+        $('#button-sponsor').hide()
     } else {
 
     }
@@ -426,6 +429,26 @@ App.prototype = {
     },
     upsell_window_closed: function() {
         this.upsell_window = null
+    },
+    focus_or_open: function(type) {
+        if (this.popup_windows[type]) {
+            this.popup_windows[type].focus()
+        } else {
+            chrome.app.window.create( 'gui/'+type+'.html', 
+                                      { width: 520,
+                                        id:"help",
+                                        height: 480 },
+                                      _.bind(this.window_opened, this, type)
+                                    );
+        }
+    },
+    window_opened: function(type, win) {
+        this.popup_windows[type] = win
+        win.contentWindow.mainAppWindow = window;
+        win.onClosed.addListener( _.bind(this.window_closed, this, type) )
+    },
+    window_closed: function(type) {
+        delete this.popup_windows[type]
     },
     focus_or_open_help: function() {
         if (this.help_window) { 

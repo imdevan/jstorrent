@@ -33,13 +33,13 @@
         "clipboardWrite",
         "system.storage",
         "idle",
+        "power",
         "notifications",
         "http://*/",
         "https://*/"
     ],
     "optional_permissions": [
-        "identity",
-        "power"
+        "identity"
     ],
     "oauth2": {
         "client_id": "432934632994-20rclui1m8od0p2g09vfbrdnk93gbraa.apps.googleusercontent.com",

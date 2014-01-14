@@ -283,6 +283,9 @@ Torrent.prototype = {
         }
         return file
     },
+    setFilePriority: function(fileNum, priority) {
+        console.log('set file priority',fileNum,priority)
+    },
     getPieceSize: function(num) {
         if (num == this.numPieces - 1) {
             return this.size - this.pieceLength * num
@@ -346,6 +349,7 @@ Torrent.prototype = {
                 var storage = this.getStorage()
                 if (storage) {
                     storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
+                        // XXX XXX XXX sometimes this does NOT return!!! need to restart the app cuz its BROKEN as FUK
                         if (entry) {
                             _this.initializeFromEntry(entry, callback)
                         } else {
@@ -442,9 +446,25 @@ Torrent.prototype = {
 
                     if (chokers.length > 0) {
                         chokers.sort( function(a,b) { return a.connectedWhen < b.connectedWhen } )
-                        //console.log('closing shittiest',chokers[0])
-                        chokers[0].close('shittiest connection')
+                        console.log('closing choker',chokers[0])
+                        chokers[0].close('oldest choked connection')
                     }
+
+
+                    var timeOuters = _.filter( connected, function(p) { 
+                        return (p.get('timeouts') >= p.pieceChunkRequestPipelineLimit * 2 &&
+                                p.get('timeouts') / p.get('requests') > 0.6)
+                    } )
+
+                    if (timeOuters.length > 0) {
+                        //console.log('had timeouty conns',timeOuters)
+                        timeOuters.sort( function(a,b) { return 
+                                                         a.get('timeouts') / a.get('requests') <
+                                                         b.get('timeouts') / b.get('requests') } )
+                        console.log('closing timeouter',timeOuters[0], timeOuters[0].get('timeouts'))
+                        timeOuters[0].close('timeouty connection')
+                    }
+
                 }
             }
         }
@@ -715,6 +735,7 @@ Torrent.prototype = {
     error: function(msg, detail) {
         this.stop()
         this.trigger('error',msg,detail)
+        this.starting = false
         this.set('state','error')
         this.lasterror = msg
         console.error('torrent error:',[msg,detail])
@@ -806,7 +827,7 @@ Torrent.prototype = {
         }
     },
     start: function() {
-        if (this.started || this.starting) { return }
+        if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         app.analytics.sendEvent("Torrent", "Starting")
 
         this.starting = true
@@ -878,9 +899,10 @@ Torrent.prototype = {
         })
     },
     stop: function() {
+        this.starting = false
+        this.isEndgame = false
         if (this.get('state') == 'stopped') { return }
         app.analytics.sendEvent("Torrent", "Stopping")
-        this.starting = false
         this.set('state','stopped')
         this.started = false
 
@@ -964,7 +986,7 @@ Torrent.prototype = {
         //console.log('torrent frame!')
 
         //if (! this.isEndgame && this.get('complete') > 0.97) {  // this works really crappy for large torrents
-        if (! this.isEndgame && this.getFirstUnrequestedPiece() === null) {
+        if (! this.isEndgame && this.numPieces !== null && this.getFirstUnrequestedPiece() === null) {
             this.isEndgame = true
             console.log("ENDGAME ON")
         }

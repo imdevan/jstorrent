@@ -29,6 +29,11 @@ function Options(opts) {
             'type': 'bool',
         },
 
+        'prevent_sleep': {
+            'default': true,
+            'type': 'bool'
+        },
+
 /*
 // this is set as an attribute of the disks collection instead
         'default_download_location': {

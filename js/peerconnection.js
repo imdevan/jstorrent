@@ -912,6 +912,10 @@ PeerConnection.prototype = {
             this.doAfterInfodict(msg)
         } else {
             var idx = new DataView(msg.payload,5,4).getUint32(0)
+            if (! this.peerBitfield) {
+                // not sure why clients would do this...
+                this.peerBitfield = new Uint8Array(this.torrent.numPieces)
+            }
             this.peerBitfield[idx] = 1
         }
         this.updatePercentComplete()

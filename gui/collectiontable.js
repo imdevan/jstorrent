@@ -32,7 +32,10 @@ function SlickCollectionTable(opts) {
         enableCellNavigation: true,
         enableColumnReorder: false,
         formatterFactory: makeFormatter,
-        rowHeight: 22
+        rowHeight: 22,
+
+        editable: true,
+        autoEdit: true
         
     };
 
@@ -60,6 +63,20 @@ function SlickCollectionTable(opts) {
 
     grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
+
+    grid.onCellChange.subscribe( _.bind(function(evt, data) {
+        var item = data.item
+        if (item instanceof jstorrent.File) {
+            // editing a file "skipped"
+            //var selected = $(data.grid.getCellNode(data.row, data.cell)).hasClass('selected')
+            var elt = data.grid.getCellNode(data.row, data.cell)
+            if (elt.innerText == 'Skip') {
+                item.torrent.setFilePriority(file.num, 0)
+            } else {
+                item.torrent.setFilePriority(file.num, 1)
+            }
+        }
+    },this))
 
     grid.onDblClick.subscribe( _.bind(function(evt, data) {
         //this.handleDoubleClick(evt.row, evt.cell)

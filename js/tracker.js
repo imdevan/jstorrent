@@ -109,10 +109,31 @@ HTTPTracker.prototype = {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
 
+/*
+  here's what the request looks like when made with utorrent
+
+GET /219e625946fcd55f4dd2e9f5cd21f281/announce?info_hash=%23~n%dc%1cDVT9u%23%c2%3d%1a%08%8bJ%e3f%08&peer_id=-UT330B-%1bv%07A%c4%f0%b2%1a%f1%60%c94&port=6881&uploaded=0&downloaded=0&left=1317199372&corrupt=0&key=4A4E5341&event=started&numwant=200&compact=1&no_peer_id=1 HTTP/1.1
+Host: 127.0.0.1:8877
+User-Agent: uTorrent/330B(30235)(server)(30235)
+Accept-Encoding: gzip
+Connection: Close
+
+here's what chrome is sending
+
+GET /219e625946fcd55f4dd2e9f5cd21f281/announce?info_hash=%23~n%dc%1cDVT9u%23%c2%3d%1a%08%8bJ%e3f%08&event=started&downloaded=0&uploaded=0&compact=1&peer_id=-JS2019-%9dU%0f%87%9b%2fw%baQ%c5%3d%dd&port=0&left=1323490828 HTTP/1.1
+Host: 127.0.0.1:8877
+Connection: keep-alive
+User-Agent: Mozilla/5.0 (X11; CrOS x86_64 4731.101.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.67 Safari/537.36
+Accept: ****fuxed*
+        Accept-Encoding: gzip,deflate,sdch
+        Accept-Language: en-US,en;q=0.8
+
+*/
         console.log('http tracker request url',url)
         // TODO -- add timeout
 
         xhr.responseType = 'arraybuffer'
+
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
             console.log('http tracker response',data)
@@ -133,6 +154,7 @@ HTTPTracker.prototype = {
             this.set_error('xhr error', evt)
         },this)
         xhr.open("GET", url, true)
+        xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)')
         xhr.send()
     }
 }

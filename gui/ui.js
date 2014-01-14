@@ -72,6 +72,13 @@ function UI(opts) {
             {attr:'size', name:"Size", formatVal:byteUnits, width:100},
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
             {id:'complete', name:"Complete", formatVal: fracToPercent},
+            {name:"Skip?", 
+//             editor: Slick.Editors.YesNoSelect,
+//             formatter: Slick.Formatters.YesNo
+             editor: Slick.Editors.Checkbox,
+//             formatter: Slick.Formatters.Checkmark
+             formatter: function(row,cell,val) { return (val ? 'Skip' : '') }
+            },
             {name:"Action" , displayFunc: fileAction}
         ],
         'pieces':[
