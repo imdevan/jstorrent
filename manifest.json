@@ -35,15 +35,17 @@
         "idle",
         "power",
         "notifications",
+        "pushMessaging",
         "http://*/",
-        "https://*/"
+        "https://*/",
+        "identity"
     ],
     "optional_permissions": [
-        "identity"
+
     ],
     "oauth2": {
         "client_id": "432934632994-20rclui1m8od0p2g09vfbrdnk93gbraa.apps.googleusercontent.com",
-        "scopes": ["https://www.googleapis.com/auth/drive.file"]
+        "scopes": ["openid"]
     },
     "app": {
         "background": {

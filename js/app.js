@@ -178,6 +178,7 @@ App.prototype = {
         }
     },
     onTorrentComplete: function(torrent) {
+        console.log('onTorrentComplete')
         var id = torrent.hashhexlower
         if (this.notifications.get(id)) {
             chrome.notifications.update(id,
@@ -210,7 +211,7 @@ App.prototype = {
     incrementTotalDownloads: function(callback) {
         chrome.storage.sync.get('totalDownloads', _.bind(function(resp) {
             var obj = {}
-            obj['totalDownloads'] = resp['totalDownloads'] + 1
+            obj['totalDownloads'] = (resp['totalDownloads'] || 0) + 1
             chrome.storage.sync.set( obj, callback)
         },this))
     },

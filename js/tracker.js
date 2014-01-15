@@ -95,7 +95,7 @@ HTTPTracker.prototype = {
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
         //console.log('http tracker announce data',data)
-        var xhr = new XMLHttpRequest;
+        var xhr = new ChromeSocketXMLHttpRequest;
 
         var url
         if (this.url.indexOf('?') == -1) {
@@ -133,7 +133,7 @@ Accept: ****fuxed*
         // TODO -- add timeout
 
         xhr.responseType = 'arraybuffer'
-
+        xhr.timeout = 8000
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
             console.log('http tracker response',data)

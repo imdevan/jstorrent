@@ -222,7 +222,7 @@ Torrent.prototype = {
         this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
         var chunkData = this.infodict_buffer
         this.client.workerthread.send( { command: 'hashChunks',
-                                         chunks: [chunkData] }, onHashResult )
+                                         chunks: [new Uint8Array(chunkData)] }, onHashResult )
     },
     initializeFromEntry: function(entry, callback) {
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
@@ -612,7 +612,10 @@ Torrent.prototype = {
 
         } else {
             // unsupported...
-            debugger
+            this.error('Missing Disk')
+            app.createNotification({details:"Disk missing where .torrent file was stored. Please remove the torrent and add it again",
+                                    priority:2})
+
         }
 
     },

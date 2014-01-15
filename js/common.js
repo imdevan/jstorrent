@@ -28,6 +28,7 @@ jstorrent.getLocaleString = function(s) {
     return s
 }
 jstorrent.options = {
+    transferable_objects: false,
     load_options_on_start: false,
     add_torrents_on_start: false,
     run_unit_tests: false,
@@ -43,8 +44,38 @@ jstorrent.options = {
 bind = Function.prototype.bind
 
 
+function tryauth() {
+    var args = { client_id: "432934632994-20rclui1m8od0p2g09vfbrdnk93gbraa.apps.googleusercontent.com",
+                 redirect_uri: "https://anhdpjpojoipgpmfanmedjghaligalgb.chromiumapp.org/google",
+                 response_type: "token",
+                 scope:"openid",
+                 "openid.realm": "https://anhdpjpojoipgpmfanmedjghaligalgb.chromiumapp.org"}
+
+    var qs = []
+    for (var key in args) {
+        qs.push( key + '=' + encodeURIComponent(args[key]) )
+    }
+    //var url = "https://www.google.com/accounts/o8/id"
+    //var url = "http://jstorrent.com"
+    var url = "https://accounts.google.com/o/oauth2/auth"
+    url = url + '?' + qs.join('&')
+    console.log(url)
+    chrome.identity.launchWebAuthFlow({
+        url: url,
+        interactive:false
+    },
+                                      function(d){console.log('launchflow',d)})
+}
+
+    
+
+
 function reload() {
     chrome.runtime.reload()
+}
+
+function str2ab(str) {
+    return new TextEncoder('utf-8').encode(str).buffer;
 }
 
 function ui82str(arr, startOffset) {

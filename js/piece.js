@@ -166,6 +166,7 @@ Piece.prototype = {
                         }
                         this.data = this.data.buffer
                         this.haveData = true
+                        this.checkDataSanity()
                         this.torrent.persistPiece(this)
                     } else {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
@@ -199,6 +200,9 @@ Piece.prototype = {
             this.torrent.pieces.remove(this)
         }
     },
+    checkDataSanity: function() {
+        // make sure transferable objects or whatever worked ok
+    },
     checkChunkResponseHash: function(preferredPeer, callback) {
         // TODO - allow this to prefer assembling from a specific peer
         // the actual digest happens in the thread
@@ -217,6 +221,9 @@ Piece.prototype = {
             this.chunkResponsesChosenPlain.push( curChoice.data )
         }
         var chunks = this.chunkResponsesChosenPlain
+
+        // TODO -- support transferable objects...
+
         this.checkHashMatch( chunks, callback )
     },
     checkHashMatch: function(chunks, callback) {
@@ -241,14 +248,18 @@ Piece.prototype = {
         }
         console.assert(! this.checkingHash)
         this.checkingHash = true
+        var desiredHash = this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )
         worker.send( { chunks: chunks,
+                       desiredHash: desiredHash,
                        command: 'hashChunks' },
                      _.bind(function(result) {
+
+                         // transferable objects need to be put back into place...
                          this.checkingHash = false // XXX why are we hashChunks in two places?
                          if (result && result.hash) {
                              var responseHash = ui82str(result.hash)
-                             if (responseHash == this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )) {
-                                 //console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
+                             if (responseHash == desiredHash) {
+                                 console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
                                  callback(true)
                              } else {
                                  this.chunkResponsesChosenPlain = null

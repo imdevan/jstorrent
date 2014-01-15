@@ -1,10 +1,10 @@
-function Buffer() {
+function Buffer(opts) {
     /*
       FIFO queue type that lets you check when able to consume the
       right amount of data.
 
      */
-
+    this.opts = opts
     this.max_buffer_size = 104857600
     this._size = 0
     this.deque = []
