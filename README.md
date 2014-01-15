@@ -12,9 +12,16 @@ torrents. It stands for "JavaScript Torrent." It is perfect for cheap
 ARM chromebooks when you need to torrent some stuff, but also very
 convenient for high end Chromebooks as well.
 
+My goal is to get it nearly as fast as the other clients. The main
+bottleneck at this point seems to be SHA1 hashing as well as
+suboptimal peer selection. And I can move sha1 hashing to pNaCl or
+look into finding a speedier emscripten'ified SHA1.
+
 This software was totally rewritten from scratch (Dec 2013). This is
 about the third time I've written a torrent client, so it should be
 the least buggy of them all :-)
+
+I'm currently charging $2 for the install on the chrome web store. But you can also run it from source here. I think you have to enter developer mode if you're on ChromeOS. Feel free to add instructions for how to do this and submit a pull request. I want to do some kind of donate/freemium model, once I can figure out this: http://stackoverflow.com/questions/21147236/get-user-openid-url-without-user-interaction (I want to be able to detect users who already paid $2)
 
 Websites:
 ----
@@ -40,17 +47,17 @@ Special New Features
 
 Options page
 =======
-TODO - implement options :-)
 Option - global upload rate limiting etc
 Option - whether to download while machine is idle (screen locked)
 Option - show system notifications when torrents complete etc
-... more options ...
+... etc (this readme is not being kept up to date :-()
 
 Todo
 =======
 - lots of things...
 - figure out why getting so many disk write timeout events
 - implement i8n
+- pNaCL sha1 hashing
 - use chrome.identity and GCM for remote control (pushMessaging)
 - use chrome.socket.getInfo to get host info when connected by host name
 - use chrome.system.power to add option to prevent standby mode
