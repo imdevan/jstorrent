@@ -1,13 +1,11 @@
-var re = {
-    starts_with_slashes: /^\/+/,
-    ends_with_slashes: /\/+$/,
-    pluses: /\+/g,
-    query_separator: /[&;]/,
-    uri_parser: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
-};
+/*
+useful parseUri regexp credit https://github.com/derek-watson/jsUri
+*/
+
+var parseUriRE = {uri_parser: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/}
 
 function parseUri(str) {
-    var parser = re.uri_parser;
+    var parser = parseUriRE;
     var parserKeys = ["source", "protocol", "authority", "userInfo", "user", "password", "host", "port", "relative", "path", "directory", "file", "query", "anchor"];
     var m = parser.exec(str || '');
     var parts = {};
