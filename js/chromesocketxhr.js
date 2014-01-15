@@ -70,7 +70,7 @@ ChromeSocketXMLHttpRequest.prototype = {
             this.error('unsupported method')
         }
 
-        lines.push(this.opts.method + ' ' + this.uri.relative)
+        lines.push(this.opts.method + ' ' + this.uri.relative + ' HTTP/1.1')
         for (var key in headers) {
             lines.push( key + ': ' + headers[key] )
         }
@@ -99,6 +99,7 @@ ChromeSocketXMLHttpRequest.prototype = {
             var headers = this.createRequestHeaders()
             this.writeBuffer.add( str2ab(headers) )
             this.writeFromBuffer()
+            this.doRead()
         }
     },
     getHost: function() {
@@ -111,10 +112,29 @@ ChromeSocketXMLHttpRequest.prototype = {
         console.assert(! this.writing)
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
+debugger
+        console.log('writing data',ui82str(data))
         chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(result) {
+        this.writing = false
         console.log('write to socket',result)
+    },
+    doRead: function() {
+        console.assert(! this.reading)
+        chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
+    },
+    onRead: function(result) {
+        this.reading = false
+        if (result.data.byteLength == 0) {
+            console.warn('remote closed connection!')
+            // remote closed connection
+        } else {
+            console.log('chromexhr onread',new Uint8Array(result.data))
+            this.readBuffer.add( result.data )
+debugger
+        }
+
     }
 }
 
