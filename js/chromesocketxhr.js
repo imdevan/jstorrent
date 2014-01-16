@@ -2,10 +2,12 @@
 useful parseUri regexp credit https://github.com/derek-watson/jsUri
 */
 
-var parseUriRE = {uri_parser: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/}
+var parseUriRE = {
+    uri: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+}
 
 function parseUri(str) {
-    var parser = parseUriRE;
+    var parser = parseUriRE.uri;
     var parserKeys = ["source", "protocol", "authority", "userInfo", "user", "password", "host", "port", "relative", "path", "directory", "file", "query", "anchor"];
     var m = parser.exec(str || '');
     var parts = {};
@@ -36,6 +38,8 @@ function ChromeSocketXMLHttpRequest() {
     this.writing = false
 
     this.extraHeaders = {}
+
+    this.headersReceived = false
 }
 
 ChromeSocketXMLHttpRequest.prototype = {
@@ -110,7 +114,6 @@ ChromeSocketXMLHttpRequest.prototype = {
         console.assert(! this.writing)
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
-debugger
         console.log('writing data',ui82str(data))
         chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
@@ -119,20 +122,57 @@ debugger
         console.log('write to socket',result)
     },
     doRead: function() {
+        console.log('doRead')
         console.assert(! this.reading)
         chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
+    },
+    close: function() {
+        chrome.socket.disconnect(this.sockInfo.socketId)
+        chrome.socket.destroy(this.sockInfo.socketId)
+        this.sockInfo = null
     },
     onRead: function(result) {
         this.reading = false
         if (result.data.byteLength == 0) {
-            console.warn('remote closed connection!')
+            console.warn('remote closed connection! readbuf',buf)
+            this.close()
             // remote closed connection
         } else {
-            console.log('chromexhr onread',new Uint8Array(result.data))
             this.readBuffer.add( result.data )
-debugger
+            this.tryParseResponse()
         }
-
+    },
+    tryParseResponse: function() {
+        if (! this.headersReceived) {
+            var data = this.readBuffer.flatten()
+            var idx = ui8IndexOf(new Uint8Array(data),_.map('\r\n\r\n', function(c){return c.charCodeAt(0)}))
+            if (idx != -1) {
+                // not sure what encoding for headers is exactly, latin1 or something? whatever.
+                var headers = ui82str(new Uint8Array(data, 0, idx + 4))
+                console.log('found http tracker response headers', headers)
+                this.headersReceived = true
+                this.responseHeaders = headers
+                this.readBuffer.consume(idx+4)
+                this.tryParseBody()
+            } else {
+                this.doRead()
+            }
+        } else {
+            this.tryParseBody()
+        }
+    },
+    tryParseBody: function() {
+        var data = this.readBuffer.flatten()
+        try {
+            var s = ui82str(new Uint8Array(data))
+            var decoded = bdecode(s)
+            this.responseBody = s
+            var evt = {target:{response:data}}
+            this.onload(evt)
+        } catch(e) {
+            console.log('unable to bdecode body. trying to read more')
+            this.doRead()
+        }
     }
 }
 

@@ -15,6 +15,22 @@ Buffer.prototype = {
         this.deque = []
         this._size = 0
     },
+    flatten: function() {
+        if (this.deque.length == 1) { return this.deque[0] }
+        // flattens the buffer deque to one element
+        var totalSz = 0
+        for (var i=0; i<this.deque.length; i++) {
+            totalSz += this.deque[i].byteLength
+        }
+        var arr = new Uint8Array(totalSz)
+        var idx = 0
+        for (var i=0; i<this.deque.length; i++) {
+            arr.set(new Uint8Array(this.deque[i]), idx)
+            idx += this.deque[i].byteLength
+        }
+        this.deque = [arr.buffer]
+        return arr.buffer
+    },
     add: function(data) {
         console.assert(data instanceof ArrayBuffer)
         this._size = this._size + data.byteLength

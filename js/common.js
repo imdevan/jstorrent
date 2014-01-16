@@ -74,6 +74,27 @@ function reload() {
     chrome.runtime.reload()
 }
 
+function ui8IndexOf(arr, s, startIndex) {
+    // searches a ui8array for subarray s starting at startIndex
+    startIndex = startIndex || 0
+    var match = false
+    for (var i=startIndex; i<arr.length - s.length + 1; i++) {
+        if (arr[i] == s[0]) {
+            match = true
+            for (var j=1; j<s.length; j++) {
+                if (arr[i+j] != s[j]) {
+                    match = false
+                    break
+                }
+            }
+            if (match) {
+                return i
+            }
+        }
+    }
+    return -1
+}
+
 function str2ab(str) {
     return new TextEncoder('utf-8').encode(str).buffer;
 }
