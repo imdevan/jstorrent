@@ -13,6 +13,7 @@ function Piece(opts) {
     this.firstInit = true
     this.resetData()
     this.wasReset = false
+    this.roundTripChunks = null // if passed to worker and back, put them here
 }
 jstorrent.Piece = Piece
 
@@ -156,13 +157,23 @@ Piece.prototype = {
 
                         //console.log('hashchecked valid piece',this.num)
                         // perhaps also place in disk cache?
+
                         this.data = new Uint8Array(this.size)
                         var curData, curOffset=0
 
-                        for (var i=0; i<this.chunkResponsesChosen.length; i++) {
-                            curData = this.chunkResponsesChosen[i].data
-                            this.data.set(curData, curOffset)
-                            curOffset += curData.length
+                        if (jstorrent.options.transferable_objects && this.roundTripChunks) {
+                            // chunkResponsesChosen were nulled out when they were transfered to the worker thread
+                            for (var i=0; i<this.roundTripChunks.length; i++) {
+                                curData = this.roundTripChunks[i]
+                                this.data.set(curData, curOffset)
+                                curOffset += curData.length
+                            }
+                        } else {
+                            for (var i=0; i<this.chunkResponsesChosen.length; i++) {
+                                curData = this.chunkResponsesChosen[i].data
+                                this.data.set(curData, curOffset)
+                                curOffset += curData.length
+                            }
                         }
                         this.data = this.data.buffer
                         this.haveData = true
@@ -253,7 +264,7 @@ Piece.prototype = {
                        desiredHash: desiredHash,
                        command: 'hashChunks' },
                      _.bind(function(result) {
-
+                         this.roundTripChunks = result.chunks
                          // transferable objects need to be put back into place...
                          this.checkingHash = false // XXX why are we hashChunks in two places?
                          if (result && result.hash) {

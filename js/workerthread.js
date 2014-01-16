@@ -18,9 +18,9 @@ if (self.jstorrent) {
             debugger
         },
         onMessage: function(evt) {
-            //console.log('receive message back from worker',evt)
             this.busy = false
             var msg = evt.data
+            //console.log('receive message back from worker',msg)
             var id = msg._id
             delete msg._id
             var callback = this.callbacks[id]
@@ -46,6 +46,7 @@ if (self.jstorrent) {
             this.callbacks[id] = callback
 
             if (transfers.length > 0) {
+                //console.log('sending with transfers',transfers)
                 this.worker.postMessage(msg, transfers)
             } else {
                 this.worker.postMessage(msg)
@@ -60,19 +61,23 @@ if (self.jstorrent) {
     self.addEventListener('message', function(evt) {
         var msg = evt.data
         var id = msg._id
+        var transferable = msg.transferable
         var returnchunks = []
 
         if (msg.command == 'hashChunks') {
             var digest = new Digest.SHA1()
             for (var i=0; i<msg.chunks.length; i++) {
                 digest.update( msg.chunks[i] )
-                returnchunks.push( new Uint8Array(msg.chunks[i]).buffer )
+                if (transferable) {
+                    // this seems to have helped, creating a new uint8array on it...?
+                    returnchunks.push( new Uint8Array(msg.chunks[i]).buffer )
+                }
             }
             var responseHash = new Uint8Array(digest.finalize())
-            if (msg.transferable) {
-                self.postMessage({hash:responseHash, _id:id})
+            if (transferable) {
+                self.postMessage({hash:responseHash, _id:id, chunks:msg.chunks}, returnchunks)
             } else {
-                self.postMessage({hash:responseHash, _id:id, chunks:returnchunks}, returnchunks)
+                self.postMessage({hash:responseHash, _id:id})
             }
         } else {
             self.postMessage({error:'unhandled command', _id:id})
