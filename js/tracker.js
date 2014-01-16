@@ -6,10 +6,9 @@ function Tracker(opts) {
     this.torrent = opts.torrent
     this.url = opts.url
     console.assert(this.url)
-    var parts = this.url.split('/')[2].split(':');
-    this.scheme = this.url.split('/')[0].split(':')[0].toLowerCase();
-    this.host = parts[0];
-    this.port = parseInt(parts[1]);
+    this.parsedUrl = parseUri(this.url)
+    this.host = this.parsedUrl.host
+    this.port = parseInt(this.parsedUrl.port) || 80
     this.state = null;
     this.lasterror = null;
     this.connection = null;

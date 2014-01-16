@@ -1,24 +1,3 @@
-/*
-useful parseUri regexp credit https://github.com/derek-watson/jsUri
-*/
-
-var parseUriRE = {
-    uri: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
-}
-
-function parseUri(str) {
-    var parser = parseUriRE.uri;
-    var parserKeys = ["source", "protocol", "authority", "userInfo", "user", "password", "host", "port", "relative", "path", "directory", "file", "query", "anchor"];
-    var m = parser.exec(str || '');
-    var parts = {};
-
-    parserKeys.forEach(function(key, i) {
-        parts[key] = m[i] || '';
-    });
-
-    return parts;
-}
-
 // we need to emulate XHR object because it doesn't let us set "unsafe" User-Agent header
 
 function ChromeSocketXMLHttpRequest() {

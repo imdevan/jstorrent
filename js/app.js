@@ -194,6 +194,9 @@ App.prototype = {
         },this))
     },
     updateRemainingDownloadsDisplay: function() {
+
+        // bother the user every N downloads with a link to the chrome web store and let them write a review...
+
         this.getTotalDownloads( _.bind(function(val) {
             this.totalDownloads = val
             $('#download-remain').text(this.freeTrialFreeDownloads - val)

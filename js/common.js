@@ -200,6 +200,27 @@ function pad(s, padwith, len) {
     window.byteUnits = byteUnits
 })()
 
+/*
+useful parseUri regexp credit https://github.com/derek-watson/jsUri
+*/
+
+var parseUriRE = {
+    uri: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/)?((?:(([^:@]*)(?::([^:@]*))?)?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/
+}
+
+function parseUri(str) {
+    var parser = parseUriRE.uri;
+    var parserKeys = ["source", "protocol", "authority", "userInfo", "user", "password", "host", "port", "relative", "path", "directory", "file", "query", "anchor"];
+    var m = parser.exec(str || '');
+    var parts = {};
+
+    parserKeys.forEach(function(key, i) {
+        parts[key] = m[i] || '';
+    });
+
+    return parts;
+}
+
 window.onerror = function(message, url, line) {
     // TODO -- report this to google analytics or something
     if (window.app) {
