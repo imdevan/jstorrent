@@ -18,7 +18,7 @@ if (self.jstorrent) {
             debugger
         },
         onMessage: function(evt) {
-            console.log('receive message back from worker',evt)
+            //console.log('receive message back from worker',evt)
             this.busy = false
             var msg = evt.data
             var id = msg._id

@@ -24,6 +24,10 @@ function Tracker(opts) {
     this.announce_timeout = 10000;
     this.announce_timeout_hit = false
     this.announce_timeout_callback = null
+
+    // tracker supplies us with these
+    this.announceInterval = null
+    this.announceMinInterval = null
 }
 jstorrent.Tracker = Tracker;
 
@@ -83,10 +87,11 @@ HTTPTracker.prototype = {
         }
         return res
     },
-    announce: function() {
+    announce: function(event, callback) {
+        event = event || 'started'
         this.set('announces',this.get('announces')+1)
         var data = {
-            event: 'started',
+            event: event,
             downloaded: this.torrent.get('downloaded'),
             uploaded: this.torrent.get('uploaded'),
             compact: 1,
@@ -94,7 +99,7 @@ HTTPTracker.prototype = {
             port: 0,
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
-        //console.log('http tracker announce data',data)
+        console.log('http tracker announce data',data)
         var xhr = new ChromeSocketXMLHttpRequest;
 
         var url
@@ -108,32 +113,9 @@ HTTPTracker.prototype = {
         for (var key in data) {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
-
-/*
-  here's what the request looks like when made with utorrent
-
-GET /219e625946fcd55f4dd2e9f5cd21f281/announce?info_hash=%23~n%dc%1cDVT9u%23%c2%3d%1a%08%8bJ%e3f%08&peer_id=-UT330B-%1bv%07A%c4%f0%b2%1a%f1%60%c94&port=6881&uploaded=0&downloaded=0&left=1317199372&corrupt=0&key=4A4E5341&event=started&numwant=200&compact=1&no_peer_id=1 HTTP/1.1
-Host: 127.0.0.1:8877
-User-Agent: uTorrent/330B(30235)(server)(30235)
-Accept-Encoding: gzip
-Connection: Close
-
-here's what chrome is sending
-
-GET /219e625946fcd55f4dd2e9f5cd21f281/announce?info_hash=%23~n%dc%1cDVT9u%23%c2%3d%1a%08%8bJ%e3f%08&event=started&downloaded=0&uploaded=0&compact=1&peer_id=-JS2019-%9dU%0f%87%9b%2fw%baQ%c5%3d%dd&port=0&left=1323490828 HTTP/1.1
-Host: 127.0.0.1:8877
-Connection: keep-alive
-User-Agent: Mozilla/5.0 (X11; CrOS x86_64 4731.101.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.67 Safari/537.36
-Accept: ****fuxed*
-        Accept-Encoding: gzip,deflate,sdch
-        Accept-Language: en-US,en;q=0.8
-
-*/
         console.log('http tracker request url',url)
-        // TODO -- add timeout
-
         xhr.responseType = 'arraybuffer'
-        xhr.timeout = 8000
+        xhr.timeout = 10000
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
             console.log('http tracker response',data)
@@ -210,8 +192,9 @@ UDPTracker.prototype = {
 
         if (callback) { callback(countPeers) }
     },
-    announce: function(callback) {
+    announce: function(event, callback) {
         if (this.announcing) { return }
+        event = event || 'started'
         this.set('announces',this.get('announces')+1)
         this.lasterror = null
         this.announce_callback = callback
@@ -226,23 +209,19 @@ UDPTracker.prototype = {
                 this.connection = connectionInfo
                 //console.log('tracker got connection',connectionInfo.connectionId)
 
-                var announceRequest = this.get_announce_payload( connectionInfo.connectionId );
+                var announceRequest = this.get_announce_payload( connectionInfo.connectionId, event );
                 this.set_state('write_announce')
                 chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
-
                     this.set_state('read_announce')
                     // check error condition?
                     chrome.socket.read( connectionInfo.socketId, null, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
                 }, this))
-
-
-
 	    },this) );
 	} else {
             this.set_error('re-using tracker udp connection not yet supported')
         }
     },
-    get_announce_payload: function(connectionId) {
+    get_announce_payload: function(connectionId, event) {
         var transactionId = Math.floor(Math.random() * Math.pow(2,32))
         var payload = new Uint8Array([
             0,0,0,0, 0,0,0,0, /* connection id */
@@ -269,11 +248,20 @@ UDPTracker.prototype = {
             v.setInt8(16+i, this.torrent.hashbytes[i])
         }
         for (var i=0; i<20; i++) {
-            v.setInt8(16+i, this.torrent.hashbytes[i])
-        }
-        for (var i=0; i<20; i++) {
             v.setInt8(36+i, this.torrent.client.peeridbytes[i])
         }
+
+        v.setUint32(56, this.torrent.get('downloaded'))
+        v.setUint32(56+4, this.torrent.get('size') - this.torrent.get('downloaded'))
+        v.setUint32(56+4*2, this.torrent.get('uploaded'))
+        var eventmap = { 'started': 2,
+                         'completed': 1,
+                         'stopped': 3,
+                         'none': 0 }
+        if (eventmap[event]) {
+            v.setUint32(56+4*3, eventmap[event])
+        }
+
         return {payload: payload.buffer, transactionId: transactionId};
     },
     get_connection_data: function() {

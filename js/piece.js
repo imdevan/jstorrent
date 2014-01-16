@@ -259,7 +259,7 @@ Piece.prototype = {
                          if (result && result.hash) {
                              var responseHash = ui82str(result.hash)
                              if (responseHash == desiredHash) {
-                                 console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
+                                 //console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
                                  callback(true)
                              } else {
                                  this.chunkResponsesChosenPlain = null

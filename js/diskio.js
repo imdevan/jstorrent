@@ -151,11 +151,11 @@ DiskIO.prototype = {
         //console.log(job.opts.jobId, 'doJobReadyToWrite')
         var _this = this
 
-        console.log('createWriter')
+        //console.log('createWriter')
         entry.createWriter( function(writer) {
-            console.log('gotWriter')
+            //console.log('gotWriter')
             writer.onwrite = function(evt) {
-                console.log('onwrite')
+                //console.log('onwrite')
                 //console.log(job.opts.jobId, 'offset',job.opts.fileOffset,'diskio wrote',evt.loaded)
                 _this.jobDone(job, evt)
             }
@@ -163,7 +163,7 @@ DiskIO.prototype = {
                 _this.jobError(job, evt)
             }
             writer.seek(job.opts.fileOffset)
-            console.log('writer.Write')
+            //console.log('writer.Write')
             writer.write(new Blob([job.opts.data]))
         })
     },
@@ -232,7 +232,7 @@ DiskIO.prototype = {
         var job = this.get_at(0)
         console.assert(job.opts.jobGroup !== undefined)
         setTimeout( _.bind(this.checkJobTimeout, this, job), DiskIOJob.jobTimeoutInterval )
-        console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
+        //console.log(job.opts.jobId, 'doJob, group',job.opts.jobGroup, 'filenum',job.opts.fileNum,'fileoffset',job.opts.fileOffset)
         job.set('state','active')
 
         if (Math.random() < DiskIOJob.randomFailure) {
@@ -242,14 +242,15 @@ DiskIO.prototype = {
 
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 
-        console.log('getEntry')
+        //console.log('getEntry')
         file.getEntry( function(entry){
-            console.log('gotEntry')
+            // NOT GETTING HERE with the weird disk timeout bug!!!!
+            //console.log('gotEntry')
             if (entry.isFile) {
                 if (job.opts.type == 'write') {
-                    console.log('getMetadata')
+                    //console.log('getMetadata')
                     entry.getMetadata( function(metaData) {
-                        console.log('gotMetadata')
+                        //console.log('gotMetadata')
                         //if (job.opts.size == 4096) { debugger }
                         //console.log(job.opts.jobId, 'doJob.getMetadata')
                         if (job.opts.fileOffset <= metaData.size) {
@@ -292,7 +293,7 @@ DiskIO.prototype = {
                 buftowrite.set(bufslice, 0)
             }
 
-            debugger // XXX entering debugger here causes the dreaded disk io timeout bug. why?
+             // XXX entering debugger here, then allowing one job to be created, then remaining in debugger causes the dreaded disk io timeout bug. why?
 
             job = new jstorrent.DiskIOJob( {type: 'write',
                                             data: buftowrite.buffer,

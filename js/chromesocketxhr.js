@@ -36,10 +36,16 @@ function ChromeSocketXMLHttpRequest() {
     this.connecting = false
     this.reading = false
     this.writing = false
+    this.haderror = false
+    this.closed = false
+
+    this.sockInfo = null
 
     this.extraHeaders = {}
 
     this.headersReceived = false
+    this.responseHeaders = null
+    this.responseBody = null
 }
 
 ChromeSocketXMLHttpRequest.prototype = {
@@ -79,18 +85,27 @@ ChromeSocketXMLHttpRequest.prototype = {
         return lines.join('\r\n') + '\r\n\r\n'
     },
     checkTimeout: function() {
+        if (! this.responseBody) {
+            this.error({error:'timeout'})
+        }
     },
     error: function(data) {
+        this.haderror = true
+        if (! this.closed) {
+            this.close()
+        }
         if (this.onerror) {
             this.onerror(data)
         }
     },
     onCreate: function(sockInfo) {
+        if (this.closed) { return }
         this.sockInfo = sockInfo
         this.connecting = true
         chrome.socket.connect( sockInfo.socketId, this.getHost(), this.getPort(), _.bind(this.onConnect, this) )
     },
     onConnect: function(result) {
+        if (this.closed) { return }
         this.connecting = false
         if (this.timedOut) {
             return
@@ -111,6 +126,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         return parseInt(this.uri.port) || 80
     },
     writeFromBuffer: function() {
+        if (this.closed) { return }
         console.assert(! this.writing)
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
@@ -119,19 +135,23 @@ ChromeSocketXMLHttpRequest.prototype = {
     },
     onWrite: function(result) {
         this.writing = false
-        console.log('write to socket',result)
+        //console.log('write to socket',result)
     },
     doRead: function() {
-        console.log('doRead')
+        if (this.closed) { return }
         console.assert(! this.reading)
         chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
     },
     close: function() {
-        chrome.socket.disconnect(this.sockInfo.socketId)
-        chrome.socket.destroy(this.sockInfo.socketId)
-        this.sockInfo = null
+        this.closed = true
+        if (this.sockInfo) {
+            chrome.socket.disconnect(this.sockInfo.socketId)
+            chrome.socket.destroy(this.sockInfo.socketId)
+            this.sockInfo = null
+        }
     },
     onRead: function(result) {
+        if (this.closed) { return }
         this.reading = false
         if (result.data.byteLength == 0) {
             console.warn('remote closed connection! readbuf',buf)

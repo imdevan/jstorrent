@@ -52,15 +52,13 @@ Disk.prototype = {
         if (this.checkingBroken) { return }
         this.checkingBroken = true
         this.checkBrokenTimeout = setTimeout( function(){
-            if (_this.checkingBroken) {
-                console.error('disk is definitely broken. app needs restart')
-                if (callback) { callback(true) }
-            } else {
-                if (callback) { callback(false) }
-            }
+            _this.checkingBroken = false
+            console.error('disk is definitely broken. app needs restart')
+            if (callback) { callback(true) }
         },1000)
         this.entry.getMetadata(function(info) {
             _this.checkingBroken = false
+            clearTimeout(_this.checkBrokenTimeout)
             console.log('disk getMetadata',info)
         },
                                function(err) {

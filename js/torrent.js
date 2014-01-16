@@ -58,6 +58,9 @@ function Torrent(opts) {
     this.peers.on('error', _.bind(this.on_peer_error,this))
     this.peers.on('disconnect', _.bind(this.on_peer_disconnect,this))
 
+    this.on('complete', _.bind(this.onComplete,this))
+    this.on('stopped', _.bind(this.onStopped,this))
+
     this.think_interval = null
 
     if (opts.url) {
@@ -567,6 +570,9 @@ Torrent.prototype = {
             this.getPiece(pieceNum).checkChunkTimeouts(chunkNums)
         }
     },
+    isPrivate: function() {
+        return this.infodict && this.infodict.private
+    },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
@@ -722,15 +728,18 @@ Torrent.prototype = {
         // first off, can this torrent even handle doing more disk i/o right now?
         // if so...
         var piece = this.getPiece(pieceNum)
-        piece.getData(offset, size, function(result) {
+        piece.getData(offset, size, _.bind(function(result) {
             // what if peer disconnects before we even get around to starting this disk i/o job?
             // dont want to waste cycles reading...
             var header = new Uint8Array(8)
             var v = new DataView(header.buffer)
             v.setUint32(0, pieceNum)
             v.setUint32(4, offset)
+
+            this.set('uploaded', this.get('uploaded') + size) // cheating? what is "uploaded" supposed to be, anyway
+
             peerconn.sendMessage('PIECE', [header.buffer].concat(result))
-        })
+        },this))
     },
     has_infodict: function() {
         return this.infodict ? true : false
@@ -875,7 +884,7 @@ Torrent.prototype = {
             // HACK delay this a little so manual peers kick in first, before frame
             if (! jstorrent.options.disable_trackers) {
                 for (var i=0; i<this.trackers.length; i++) {
-                    this.trackers.get_at(i).announce()
+                    this.trackers.get_at(i).announce('started')
                 }
             }
         },this), 1000)
@@ -892,6 +901,16 @@ Torrent.prototype = {
         this.trigger('start')
         this.newStateThink()
     },
+    onComplete: function() {
+        for (var i=0; i<this.trackers.length; i++) {
+            this.trackers.get_at(i).announce('complete')
+        }
+    },
+    onStopped: function() {
+        for (var i=0; i<this.trackers.length; i++) {
+            this.trackers.get_at(i).announce('stopped')
+        }
+    },
     maybePropagatePEX: function(data) {
         return
         this.peers.each( function(peer) {
@@ -902,6 +921,7 @@ Torrent.prototype = {
         })
     },
     stop: function() {
+        this.trigger('stopped')
         this.starting = false
         this.isEndgame = false
         if (this.get('state') == 'stopped') { return }

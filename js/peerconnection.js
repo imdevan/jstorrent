@@ -359,6 +359,7 @@ PeerConnection.prototype = {
         } else {
             this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
             this.torrent.set('bytes_sent', this.torrent.get('bytes_sent') + this.writing_length)
+            this.torrent.set('uploaded', this.torrent.get('uploaded') + this.writing_length) // cheating? what is "uploaded" supposed to be, anyway
             this.writing = false
             this.writing_length = 0
             // continue writing out write buffer
@@ -695,7 +696,9 @@ PeerConnection.prototype = {
     },
     handle_INTERESTED: function() {
         this.peerInterested = true
-        // this.sendMessage('UNCHOKE') // TODO - under what conditions?
+        if (this.torrent.isPrivate()) {
+            this.sendMessage('UNCHOKE') // TODO - under what conditions?
+        }
     },
     handle_NOT_INTERESTED: function() {
         this.peerInterested = false
