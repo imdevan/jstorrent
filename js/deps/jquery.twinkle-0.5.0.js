@@ -382,6 +382,7 @@ MIT License
 
 				var settings = $.extend({}, splashDefaults, options),
 					css = {
+                                            'pointer-events': 'none',
 						position: 'absolute',
 						zIndex: 1000,
 						display: 'block',
@@ -414,6 +415,7 @@ MIT License
 
 				var settings = $.extend({}, dropsDefaults, options),
 					css = {
+                                            'pointer-events': 'none',
 						position: 'absolute',
 						zIndex: 1000,
 						display: 'block',
