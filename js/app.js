@@ -108,6 +108,11 @@ App.prototype = {
             }
         }
     },
+    highlightTorrent: function(hashhexlower) {
+        var row = this.client.torrents.keyeditems[hashhexlower]
+        this.UI.torrenttable.grid.scrollRowIntoView(row);
+        this.UI.torrenttable.grid.flashCell(row, 0, 400);
+    },
     notifyNeedDownloadDirectory: function() {
         // need to change this to also bring the notification back to the foreground (because users find a way to have it stay hidden)
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
@@ -158,7 +163,7 @@ App.prototype = {
     },
     createNotification: function(opts) {
         opts.id = opts.id || ('notification' + this.notificationCounter++)
-        console.log('createNotification', opts.id)
+        //console.log('createNotification', opts.id)
         opts.parent = this
         if (! this.notifications.containsKey(opts.id)) {
             var notification = new jstorrent.Notification(opts)

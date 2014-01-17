@@ -13,6 +13,7 @@
         "Integer": IntegerEditor,
         "Date": DateEditor,
         "YesNoSelect": YesNoSelectEditor,
+        "SelectCellEditor": SelectCellEditor,
         "Checkbox": CheckboxEditor,
         "PercentComplete": PercentCompleteEditor,
         "LongText": LongTextEditor
@@ -406,6 +407,80 @@
 
     this.init();
   }
+
+
+function SelectCellEditor(args) {
+        var $select;
+        var defaultValue;
+        var scope = this;
+
+        this.init = function() {
+            if(args.column.options){
+              opt_values = args.column.options.split(',');
+            }else{
+              opt_values ="yes,no".split(',');
+            }
+            option_str = ""
+            for( i in opt_values ){
+              v = opt_values[i];
+              option_str += "<OPTION value='"+v+"'>"+v+"</OPTION>";
+            }
+            $select = $("<SELECT tabIndex='0' class='editor-select'>"+ option_str +"</SELECT>");
+            $select.appendTo(args.container);
+            $select.focus();
+            $select.attr('size',opt_values.length);
+            $select.on('change',_.bind(function(evt) {
+                var state = opt_values[evt.target.selectedIndex];
+                var rows = args.grid.getSelectedRows();
+                for (var i=0; i<rows.length; i++) {
+                    this.applyValue(args.grid.getDataItem(rows[i]), state);
+                }
+                args.grid.invalidateRows(rows);
+                args.grid.render();
+            },this));
+        };
+
+        this.destroy = function() {
+            $select.remove();
+        };
+
+        this.focus = function() {
+            $select.focus();
+        };
+
+        this.loadValue = function(item) {
+            defaultValue = item[args.column.id];
+            $select.val(defaultValue);
+        };
+
+        this.serializeValue = function() {
+            if(args.column.options){
+              return $select.val();
+            }else{
+              return ($select.val() == "yes");
+                _.map(_.range(100), function(v){return 1})            }
+        };
+
+        this.applyValue = function(item,state) {
+            if (state) {
+                item.set(args.column.id,state);
+            }
+            $select.remove();
+        };
+
+        this.isValueChanged = function() {
+            return ($select.val() != defaultValue);
+        };
+
+        this.validate = function() {
+            return {
+                valid: true,
+                msg: null
+            };
+        };
+
+        this.init();
+    }
 
   /*
    * An example of a "detached" editor.

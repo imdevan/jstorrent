@@ -30,10 +30,29 @@ function File(opts) {
 
     this.set('downloaded',this.getDownloaded()) // not zero! need to get our spanning pieces and add up the components...
     this.set('complete',this.get('downloaded')/this.size)
-
+    this.set('priority',this.getPriority())
+    this.on('change', _.bind(this.priorityChanged,this))
+}
+File.getStoragePath = function(torrent) {
+    if (torrent.multifile) {
+        return torrent.get('name')
+    } else {
+        return torrent.infodict.name
+    }
 }
 jstorrent.File = File
 File.prototype = {
+    priorityChanged: function(file,newVal,oldVal,attrName) {
+        if (oldVal === undefined) { oldVal = 1 } // default value is "1" - Normal priority
+        if (attrName != 'priority') { return }
+        var priority
+        if (newVal == 'Skip') {
+            priority = 0
+        } else {
+            priority = 1
+        }
+        this.torrent.setFilePriority(this.num,priority,oldVal)
+    },
     getSpanningPiecesInfo: function() { // similar to piece.getSpanningFilesInfo
         var leftPiece = Math.floor(this.startByte / this.torrent.pieceLength)
         var rightPiece = Math.ceil(this.endByte / this.torrent.pieceLength)
@@ -54,6 +73,14 @@ File.prototype = {
         }
         return allInfos
     },
+    getPriority: function() {
+        var arr = this.torrent.get('filePriority')
+        if (! arr) {
+            return 1
+        } else {
+            return arr[this.num]
+        }
+    },
     getDownloaded: function() {
         var pieceSpans = this.getSpanningPiecesInfo()
         var pieceSpan
@@ -71,32 +98,34 @@ File.prototype = {
     },
     getEntry: function(callback) {
         // XXX this is not calling callback in some cases!
-
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
         var path = this.path.slice()
-
-        function recurse(e) {
-            if (path.length == 0) {
-                if (e.isFile) {
-                    callback(e)
-                } else {
-                    callback({error:'file exists'})
-                }
-            } else if (e.isDirectory) {
-                if (path.length > 1) {
-                    // this is not calling error callback, simply timing out!!!
-                    e.getDirectory(path.shift(), {create:true}, recurse, recurse)
-                } else {
-                    e.getFile(path.shift(), {create:true}, recurse, recurse)
-                }
-            } else {
-                callback({error:'file exists'})
-            }
-        }
-        recurse(filesystem)
+        recursiveGetEntry(filesystem, path, callback)
     }
 }
 for (var method in jstorrent.Item.prototype) {
     jstorrent.File.prototype[method] = jstorrent.Item.prototype[method]
+}
+
+function recursiveGetEntry(filesystem, path, callback) {
+    function recurse(e) {
+        if (path.length == 0) {
+            if (e.isFile) {
+                callback(e)
+            } else {
+                callback({error:'file exists'})
+            }
+        } else if (e.isDirectory) {
+            if (path.length > 1) {
+                // this is not calling error callback, simply timing out!!!
+                e.getDirectory(path.shift(), {create:true}, recurse, recurse)
+            } else {
+                e.getFile(path.shift(), {create:true}, recurse, recurse)
+            }
+        } else {
+            callback({error:'file exists'})
+        }
+    }
+    recurse(filesystem)
 }

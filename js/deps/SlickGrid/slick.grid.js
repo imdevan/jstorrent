@@ -2472,7 +2472,14 @@ if (typeof Slick === "undefined") {
       }
 
       if (activeCellChanged) {
-        trigger(self.onActiveCellChanged, getActiveCell());
+          if (isCellPotentiallyEditable(activeRow, activeCell) && 
+              options.editDontDeselect && 
+              self.getSelectedRows().length > 1 &&
+              _.contains(self.getSelectedRows(), activeRow)){
+              // tweaked so that can edit multiple rows with a dropdown
+          } else {
+              trigger(self.onActiveCellChanged, getActiveCell());
+          }
       }
     }
 

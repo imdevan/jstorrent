@@ -63,6 +63,7 @@ function Torrent(opts) {
     this.on('stopped', _.bind(this.onStopped,this))
 
     this.think_interval = null
+    this.pieceBlacklist = {}
 
     if (opts.url) {
         this.initializeFromWeb(opts.url, opts.callback)
@@ -119,6 +120,53 @@ Torrent.attributeSerializers = {
 }
 
 Torrent.prototype = {
+    resetState: function() {
+        var url = this.get('url')
+        var client = this.client
+        if (url) {
+            this.remove( function() {
+                client.add_from_url(url)
+            })
+        } else {
+            console.error('not yet supported')
+        }
+    },
+    resetStateOld: function() {
+        console.log('reset torrent state')
+        if (this.started) { return }
+        // resets torrent to 0% and, if unable to load metadata, clears that, too.
+        //this.stop()
+        this.bitfieldFirstMissing = 0
+        this.isEndgame = false
+        var url = this.get('url')
+        if (url) {
+            // this is messy. perhaps reset state should actually just
+            // fucking delete this torrent and create a new one from
+            // scratch with brand new attributes...
+            this.numPieces = null
+            this.numFiles = null
+            this.metadata = null
+            this.infodict = null
+            this.infodict_buffer = null
+            this.bitfieldFirstMissing = null
+            this.unset('metadata')
+            this.unset('bitfield')
+            this.unset('disk')
+            this.unset('complete')
+            this.unset('filePriority')
+            this.save( _.bind( function() {
+                this.initializeFromWeb(url)
+            },this))
+            //this.initializeTrackers() // trackers are missing now :-(
+
+        } else {
+            // unsupported...
+            this.error('Missing Disk')
+            app.createNotification({details:"Disk missing where .torrent file was stored. Please remove the torrent and add it again",
+                                    priority:2})
+
+        }
+    },
     bytesToHashhex: function(arr) {
         console.assert(arr.length == 20)
         var s = ''
@@ -287,8 +335,91 @@ Torrent.prototype = {
         }
         return file
     },
-    setFilePriority: function(fileNum, priority) {
+    notifySecretPiecePersisted: function(pieceNum) {
+        var d
+        if (! this._attributes['rawPieceStore']) {
+            d = {}
+            this.set('rawPieceStore', d)
+        } else {
+            d = this.get('rawPieceStore')
+        }
+        d[pieceNum] = 1
+        this.set('rawPieceStore', d)
+        this.save()
+    },
+    setFilePriority: function(fileNum, priority, oldPriority) {
+        // 0 - skip, 1 - normal
         console.log('set file priority',fileNum,priority)
+        var d
+        // would be really nice to do a compact encoding, but lets just use an array for now
+        if (! this._attributes['filePriority']) {
+            //var arr = _.map(_.range(100), function(v){return 1})
+            d = {}
+            this.set('filePriority', d)
+        } else {
+            d = this.get('filePriority')
+        }
+        d[fileNum] = priority
+        this.set('filePriority', d)
+        this.getFile(fileNum).set('priority',priority,false)
+
+        if (oldPriority == jstorrent.constants.PRIO_SKIP) {
+
+            // we're changing a file from skipped to not skipped
+
+            // there's a chance we had to persist some of those tricky
+            // little stupid hidden pieces because the file was
+            // skipped
+            
+            var file = this.getFile(fileNum)
+            var info = file.getSpanningPiecesInfo()
+            var toMakeIncomplete = []
+            // mark beginning and end of our span as incomplete
+            if (info.length == 1) {
+                toMakeIncomplete.push(info[0])
+            } else {
+                toMakeIncomplete.push(info[0])
+                toMakeIncomplete.push( info[ info.length-1 ] )
+            }
+
+            for (var i=0; i<toMakeIncomplete.length; i++) {
+                this.getPiece(toMakeIncomplete[i].pieceNum).markAsIncomplete()
+            }
+        }
+
+
+        this.recalculatePieceBlacklist()
+        this.save()
+    },
+    recalculatePieceBlacklist: function() {
+        console.log('recalculatePieceBlacklist')
+        // when we set "skip"/"unskip" on files, need to update a
+        // table for speedy incomplete piece lookup
+        var fp = this.get('filePriority')
+        if (! fp) { 
+            this.pieceBlacklist = {}
+            return
+        }
+        var needPiece
+
+        for (var i=0; i<this.numPieces; i++) {
+            needPiece = false
+            var info = Piece.getSpanningFilesInfo(this, i, this.getPieceSize(i))
+            for (var j=0; j<info.length; j++) {
+                if (fp[info[j].fileNum] != jstorrent.constants.PRIO_SKIP) {
+                    // priority is not "0", so need this piece!
+                    needPiece = true
+                }
+            }
+
+            if (needPiece) {
+                if (this.pieceBlacklist[i]) {
+                    delete this.pieceBlacklist[i]
+                }
+            } else {
+                this.pieceBlacklist[i] = true
+            }
+        }
     },
     getPieceSize: function(num) {
         if (num == this.numPieces - 1) {
@@ -308,7 +439,7 @@ Torrent.prototype = {
         } else {
             console.assert( this._attributes.bitfield.length == this.numPieces )
         }
-        this.bitfieldFirstMissing = 0 // should fix this/set this correctly, but itll fix itself
+        this.bitfieldFirstMissing = 0 // should fix this/set this correctly, but itll fix itself (when a piece is saved)
         this.pieceLength = this.infodict['piece length']
 
         if (this.infodict.files) {
@@ -337,6 +468,7 @@ Torrent.prototype = {
         this.set('complete', this.getPercentComplete())
         this.save()
         this.saveMetadata() // trackers maybe not initialized so they arent being saved...
+        this.recalculatePieceBlacklist()
         this.trigger('havemetadata')
         //this.recheckData() // only do this under what conditions?
     },
@@ -404,7 +536,8 @@ Torrent.prototype = {
         }
     },
     getDownloaded: function() {
-        if (! this.has_infodict() ) { return 0 }
+        //if (! this.has_infodict() ) { return 0 } // error condition with reset
+        if (! this.get('metadata')) { return 0 }
         var count = 0
         for (var i=0; i<this.numPieces; i++) {
             count += this._attributes.bitfield[i] * this.getPieceSize(i)
@@ -450,7 +583,7 @@ Torrent.prototype = {
 
                     if (chokers.length > 0) {
                         chokers.sort( function(a,b) { return a.connectedWhen < b.connectedWhen } )
-                        console.log('closing choker',chokers[0])
+                        //console.log('closing choker',chokers[0])
                         chokers[0].close('oldest choked connection')
                     }
 
@@ -461,11 +594,10 @@ Torrent.prototype = {
                     } )
 
                     if (timeOuters.length > 0) {
-                        //console.log('had timeouty conns',timeOuters)
                         timeOuters.sort( function(a,b) { return 
                                                          a.get('timeouts') / a.get('requests') <
                                                          b.get('timeouts') / b.get('requests') } )
-                        console.log('closing timeouter',timeOuters[0], timeOuters[0].get('timeouts'))
+                        //console.log('closing timeouter',timeOuters[0], timeOuters[0].get('timeouts'))
                         timeOuters[0].close('timeouty connection')
                     }
 
@@ -564,6 +696,8 @@ Torrent.prototype = {
         })
     },
     checkPieceChunkTimeouts: function(pieceNum, chunkNums) {
+        if (! this._attributes.bitfield) { return } // torrent was "reset" manually by user
+
         // XXX this timeout will get called even if this torrent was removed and its data .reset()'d
         //console.log('checkPieceChunkTimeouts',pieceNum,chunkNums)
         if (this._attributes.bitfield[pieceNum]) { return }
@@ -600,31 +734,6 @@ Torrent.prototype = {
     },
     printComplete: function() {
         return this._attributes.bitfield.join('')
-    },
-    resetState: function() {
-        console.log('reset torrent state')
-        if (this.started) { return }
-        // resets torrent to 0% and, if unable to load metadata, clears that, too.
-        //this.stop()
-        this.bitfieldFirstMissing = 0
-        this.isEndgame = false
-        var url = this.get('url')
-        if (url) {
-            this.unset('metadata')
-            this.unset('bitfield')
-            this.unset('disk')
-            this.unset('complete')
-            this.initializeFromWeb(url)
-            //this.initializeTrackers() // trackers are missing now :-(
-
-        } else {
-            // unsupported...
-            this.error('Missing Disk')
-            app.createNotification({details:"Disk missing where .torrent file was stored. Please remove the torrent and add it again",
-                                    priority:2})
-
-        }
-
     },
     recheckData: function() {
         // checks registered or default torrent download location for
@@ -865,6 +974,7 @@ Torrent.prototype = {
     readyToStart: function() {
         this.set('state','started')
         this.set('complete', this.getPercentComplete())
+        this.recalculatePieceBlacklist()
         this.started = true
         this.starting = false
         this.save()
@@ -961,15 +1071,21 @@ Torrent.prototype = {
         this.trigger('stop')
         this.save()
     },
-    remove: function() {
+    remove: function(callback) {
+        var _this = this
         this.stop()
         this.set('state','removing')
 
         // maybe do some other async stuff? clean socket shutdown? what?
         setTimeout( _.bind(function(){
             this.set('state','stopped')
-            this.save() // TODO -- clear the entry from storage? nah, just put it in a trash bin
-            this.client.torrents.remove(this)
+            // TODO -- clear the entry from storage? nah, just put it in a trash bin
+            this.save( function() {
+                _this.client.torrents.remove(_this)
+                setTimeout( function() {
+                    if (callback) { callback() }
+                }, 200)
+            })
         },this), 200)
     },
     newStateThink: function() {
@@ -1013,7 +1129,7 @@ Torrent.prototype = {
         //console.log('torrent frame!')
 
         //if (! this.isEndgame && this.get('complete') > 0.97) {  // this works really crappy for large torrents
-        if (! this.isEndgame && this.numPieces !== null && this.getFirstUnrequestedPiece() === null) {
+        if (! this.isEndgame && this.infodict && this.getFirstUnrequestedPiece() === null) {
             this.isEndgame = true
             console.log("ENDGAME ON")
         }

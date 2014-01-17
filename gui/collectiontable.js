@@ -33,9 +33,9 @@ function SlickCollectionTable(opts) {
         enableColumnReorder: false,
         formatterFactory: makeFormatter,
         rowHeight: 22,
-
+        editDontDeselect: true,
         editable: true,
-        autoEdit: true
+//        autoEdit: true
         
     };
 
@@ -65,6 +65,8 @@ function SlickCollectionTable(opts) {
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
     grid.onCellChange.subscribe( _.bind(function(evt, data) {
+debugger // using CellSelectEditor now
+/*
         var item = data.item
         if (item instanceof jstorrent.File) {
             // editing a file "skipped"
@@ -76,6 +78,7 @@ function SlickCollectionTable(opts) {
                 item.torrent.setFilePriority(file.num, 1)
             }
         }
+*/
     },this))
 
     grid.onDblClick.subscribe( _.bind(function(evt, data) {
@@ -133,7 +136,7 @@ SlickCollectionTable.prototype = {
 
 
     },
-    on_change: function(item, attr, p1,p2,p3) {
+    on_change: function(item, newval, oldval, attr) {
         //console.log('collection item change',item,attr,p1,p2,p3)
         var idx = this.collection.indexOf( item.get_key() )
         //console.log('change at row',idx)

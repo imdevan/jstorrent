@@ -474,7 +474,66 @@ debugger
             callback(result.data)
         })
     },
+    getEntry: function(callback) {
+        if (! this.torrent.multifile) {
+            // this function only useful for skipping pieces and shit,
+            // which isnt even relevant for single file torrents.
+            callback({error:true})
+            return
+        }
+
+        var filesystem = this.torrent.getStorage().entry
+        var path = [jstorrent.File.getStoragePath(this.torrent)].concat( this.getSecretStoragePlace() )
+        recursiveGetEntry(filesystem, path, callback)
+    },
+    getSecretStoragePlace: function() {
+        return '.piece.' + this.num + '.hidden'
+    },
+    markAsIncomplete: function() {
+        // to simplify things, when changing from skipped to
+        // non-skipped, we simply call this function on any boundary
+        // piece that touches other files, redundantly downloading
+        // again. it makes things simpler.
+
+        this.haveDataPersisted = false
+        this.haveValidData = false
+        this.haveData = false
+        this.torrent
+        this.torrent._attributes.bitfield[this.num] = 0
+        this.torrent.bitfieldFirstMissing = 0
+        this.torrent.save()
+    },
+    persistDataDueToFileSkip: function(callback) {
+        // do we store state somewhere that this was done?
+        // or, maybe when "unskipping" a file, just mark pieces that were complete as no longer complete (easier)
+
+        // when this piece intersects a skipped file, we dont want to
+        // write data the skipped file.
+        var _this = this
+        this.getEntry( function(entry) {
+            console.log('got raw piece entry',entry)
+            if (entry.error) {
+                callback(entry)
+                return
+            }
+            entry.createWriter( function(writer) {
+                writer.onwrite = function(evt) {
+                    console.log('wrote raw piece to disk')
+                    _this.torrent.notifySecretPiecePersisted(_this.num)
+                    callback({written:true})
+                }
+                writer.onerror = function(evt) {
+                    callback({error:"writer error",evt:evt})
+                }
+
+                // XXX - an exception here (such as referenceerror doesn't go up to window.onerror, why?
+                console.log('writing raw piece to disk')
+                writer.write( new Blob([_this.data]) )
+            })
+        })
+    },
     getSpanningFilesInfo: function(offset, size) {
+        // if offset, size arguments ommitted, they have defaults
         return Piece.getSpanningFilesInfo(this.torrent, this.num, this.size, offset, size)
     }
 }

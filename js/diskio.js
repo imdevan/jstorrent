@@ -242,6 +242,19 @@ DiskIO.prototype = {
 
         var file = job.opts.piece.torrent.getFile(job.opts.fileNum)
 
+        if (file.getPriority() == jstorrent.constants.PRIO_SKIP) {
+            // this file is "Skipped", just save the entire piece data
+            // somewhere
+            job.opts.piece.persistDataDueToFileSkip(function(evt) {
+                if (evt.error) {
+                    _this.jobError(job, evt.error)
+                } else {
+                    _this.jobDone(job, evt)
+                }
+            })
+            return
+        }
+
         //console.log('getEntry')
         file.getEntry( function(entry){
             // NOT GETTING HERE with the weird disk timeout bug!!!!

@@ -127,10 +127,12 @@ Client.prototype = {
                                                      if (result.torrent) {
                                                          if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
                                                              this.torrents.add(result.torrent)
+                                                             this.app.highlightTorrent(result.torrent.hashhexlower)
                                                              result.torrent.save()
                                                              this.torrents.save()
                                                          } else {
-                                                             this.trigger('error','already had this torrent')
+                                                             this.app.highlightTorrent(result.torrent.hashhexlower)
+                                                             this.trigger('error','already had this torrent',result.torrent.hashhexlower)
                                                          }
                                                      } else {
                                                          console.error('error initializing torrent from entry', result)
@@ -156,19 +158,19 @@ Client.prototype = {
     set_ui: function(ui) {
         this.ui = ui
     },
-    add_from_url_response: function(data) {
+    add_from_url_response: function(callback, data) {
         if (data.torrent) {
             if (! this.torrents.containsKey(data.torrent.hashhexlower)) {
                 this.torrents.add( data.torrent )
+                this.app.highlightTorrent(data.torrent.hashhexlower)
                 this.torrents.save()
-
-
+                if (callback) { callback(data) }
             }
         } else {
             console.error('add url response',data)
         }
     },
-    add_from_url: function(url) {
+    add_from_url: function(url, cb) {
         // adds a torrent from a text input url
         app.analytics.sendEvent("Torrent", "Add", "URL")
         // parse url
@@ -178,17 +180,21 @@ Client.prototype = {
         var torrent = new jstorrent.Torrent({url:url,
                                              itemClass: jstorrent.Torrent,
                                              attributes:{added:new Date()},
-                                             callback: _.bind(this.add_from_url_response,this),
+                                             callback: _.bind(this.add_from_url_response,this,cb),
                                              parent:this.torrents})
 
         if (torrent.invalid) {
             app.notify('torrent url invalid');
+            if (cb) { cb({error:'torrent url invalid'}) }
         } else if (! torrent.magnet_info) {
             //app.notify("Downloading Torrent...")
+            // this is the async thingie, downloading the torrent
         } else if (this.torrents.contains(torrent)) {
             console.warn('already have this torrent!')
+            this.app.highlightTorrent(torrent.hashhexlower)
             // we already had this torrent, maybe add the trackers to it...
         } else {
+            debugger
             this.torrents.add( torrent )
             this.torrents.save()
             //torrent.save()

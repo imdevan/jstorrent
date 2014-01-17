@@ -31,6 +31,7 @@ Collection.prototype = {
     },
     setAttribute: function(k,v) {
         var oldval = this._attributes[k]
+        if (oldval === v) { return }
         this._attributes[k] = v
         this.trigger('change',k,v,oldval)
     },
@@ -51,10 +52,10 @@ Collection.prototype = {
         // quick lookup of item
         return this.keyeditems[key]
     },
-    trigger: function(event_type, param1, param2, param3) {
+    trigger: function(event_type, item, newval, oldval, attrName) {
         if (this.event_listeners[event_type]) {
             for (var i=0; i<this.event_listeners[event_type].length; i++) {
-                this.event_listeners[event_type][i](param1, param2, param3)
+                this.event_listeners[event_type][i](item, newval, oldval, attrName)
             }
         }
     },

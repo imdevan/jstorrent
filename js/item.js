@@ -49,7 +49,7 @@ Item.prototype = {
         console.assert(this._collections.length == 1)
         return this._collections[0]
     },
-    trigger: function(k,newval,oldval) {
+    trigger: function(k,attrName,newval,oldval) {
         //console.log('item trigger',k,newval,oldval)
         if (this._event_listeners[k]) {
             if (k == 'change') {
@@ -57,7 +57,7 @@ Item.prototype = {
 
                 } else {
                     for (var i=0; i<this._event_listeners[k].length; i++) {
-                        this._event_listeners[k][i](this, newval, oldval)
+                        this._event_listeners[k][i](this, newval, oldval, attrName)
                     }
                 }
             } else {
@@ -68,7 +68,7 @@ Item.prototype = {
         }
         if (this._collections.length > 0) {
             for (var i=0; i<this._collections.length; i++) {
-                this._collections[i].trigger(k, this, newval, oldval)
+                this._collections[i].trigger(k, this, newval, oldval, attrName)
             }
         }
     },
@@ -122,10 +122,14 @@ Item.prototype = {
         delete this._attributes[k]
         this.trigger('change',k,undefined,oldval)
     },
-    set: function(k,v) {
+    set: function(k,v, shouldTrigger) {
+        if (shouldTrigger === undefined) { shouldTrigger = true }
         var oldval = this._attributes[k]
+        if (oldval === v) { return }
         this._attributes[k] = v
-        this.trigger('change',k,v,oldval)
+        if (shouldTrigger) {
+            this.trigger('change',k,v,oldval)
+        }
     },
     get: function(k) {
         return this._attributes[k]

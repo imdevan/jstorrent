@@ -359,7 +359,7 @@ PeerConnection.prototype = {
         } else {
             this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
             this.torrent.set('bytes_sent', this.torrent.get('bytes_sent') + this.writing_length)
-            this.torrent.set('uploaded', this.torrent.get('uploaded') + this.writing_length) // cheating? what is "uploaded" supposed to be, anyway
+            //this.torrent.set('uploaded', this.torrent.get('uploaded') + this.writing_length) // cheating? what is "uploaded" supposed to be, anyway
             this.writing = false
             this.writing_length = 0
             // continue writing out write buffer
@@ -396,6 +396,7 @@ PeerConnection.prototype = {
 
         for (var pieceNum=this.torrent.bitfieldFirstMissing; pieceNum<this.torrent.numPieces; pieceNum++) {
             if (this.peerBitfield[pieceNum] && ! this.torrent._attributes.bitfield[pieceNum]) {
+                if (this.torrent.pieceBlacklist[pieceNum]) { continue }
                 curPiece = this.torrent.getPiece(pieceNum)
                 if (curPiece.haveData) { continue } // we have the data for this piece, we just havent hashed and persisted it yet
 
@@ -488,11 +489,10 @@ PeerConnection.prototype = {
     },
     requestInfodict: function() {
         // TODO -- add timeout handling
-        console.log('requestinfodict')
         var infodictBytes = this.peerExtensionHandshake.metadata_size
         var d
         var numChunks = Math.ceil( infodictBytes / jstorrent.protocol.pieceSize )
-        console.log('requestinfodict determines # chunks',numChunks)
+        //console.log('requestinfodict determines # chunks',numChunks)
 
         this.infodictResponses = []
         for (var i=0; i<numChunks; i++) {

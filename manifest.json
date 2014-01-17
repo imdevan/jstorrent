@@ -4,7 +4,7 @@
     "short_name": "JSTorrent",
     "description": "A Torrent Client for Google Chrome, runs everywhere in pure JavaScript",
     "author": "Kyle Graehl",
-    "version": "2.0.19",
+    "version": "2.1.0",
     "manifest_version": 2,
     "offline_enabled": true,
     "minimum_chrome_version": "31",
@@ -41,7 +41,6 @@
         "identity"
     ],
     "optional_permissions": [
-
     ],
     "oauth2": {
         "client_id": "432934632994-20rclui1m8od0p2g09vfbrdnk93gbraa.apps.googleusercontent.com",
