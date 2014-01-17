@@ -426,7 +426,7 @@ debugger
                         }
 
                         if (! foundThisPeer) {
-                            console.log('making special endgame request!',this.num,chunkNum)
+                            //console.log('making special endgame request!',this.num,chunkNum)
                             willRequestThisChunk = true
                         }
                     }

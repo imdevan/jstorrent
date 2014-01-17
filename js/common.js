@@ -4,6 +4,7 @@ jstorrent.constants = {
     cws_jstorrent: "anhdpjpojoipgpmfanmedjghaligalgb",
     cws_jstorrent_lite: "abmohcnlldaiaodkpacnldcdnjjgldfh",
     cws_jstorrent_extension: "bnceafpojmnimbnhamaeedgomdcgnbjk",
+    cws_base_url: "https://chrome.google.com/webstore/detail/",
     cws_jstorrent_extension_url: "https://chrome.google.com/webstore/detail/bnceafpojmnimbnhamaeedgomdcgnbjk",
     PRIO_SKIP: 0, // file priority
     PRIO_NORM: 1,

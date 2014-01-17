@@ -8,7 +8,13 @@ function bind_events() {
         var opts = {'type':'openDirectory'}
 
         chrome.fileSystem.chooseEntry(opts,
-                                      _.bind(options.on_choose_download_directory, options)
+                                      function(entry){
+                                          options.on_choose_download_directory(entry)
+                                          updateLocation()
+                                          if (pulsateInterval) {
+                                              clearInterval(pulsateInterval)
+                                          }
+                                      }
                                      )
         evt.preventDefault()
         evt.stopPropagation()
@@ -99,6 +105,8 @@ function OptionsView(opts) {
     }
 }
 
+var pulsateInterval = null
+
 function onready() {
     console.log("This is Options window")
 
@@ -106,18 +114,37 @@ function onready() {
         $("#full_version_upsell").show()
     }
 
-
+    function pulse() {
+        $('#button-choose-download').twinkle(
+            { effect:'drop-css', 
+              effectOptions: {radius:150},
+              callback: function(){}
+            }
+        )
+    }
 
     chrome.runtime.getBackgroundPage( function(bg) {
         window.app = bg.windowManager.mainWindow.contentWindow.app
         window.options = app.options
+
+        if (app.client.disks.items.length == 0) {
+            pulsateInterval = setInterval( pulse, 2000)
+            pulse()
+        } else {
+            updateLocation()
+        }
+
         window.optionsDisplay = new OptionsView({el: $('#auto_options'),
                                                  options: window.app.options,
                                                  app: window.app})
                                                  
         bind_events()
     })
+}
 
-
-
+function updateLocation() {
+    var defaultLocation = app.client.disks.getAttribute('default')
+    var parts = defaultLocation.split(':')
+    parts.shift()
+    $("#current-location").text('Current Location: ' + parts.join(':'))
 }

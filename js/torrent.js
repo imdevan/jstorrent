@@ -973,6 +973,7 @@ Torrent.prototype = {
     },
     readyToStart: function() {
         this.set('state','started')
+        this.trigger('started')
         this.set('complete', this.getPercentComplete())
         this.recalculatePieceBlacklist()
         this.started = true
@@ -993,7 +994,7 @@ Torrent.prototype = {
 
         setTimeout( _.bind(function(){
             // HACK delay this a little so manual peers kick in first, before frame
-            this.trigger('started')
+            //this.trigger('started')
         },this), 1000)
         if (jstorrent.options.manual_peer_connect_on_start) {
             var hosts = jstorrent.options.manual_peer_connect_on_start[this.hashhexlower]
@@ -1005,10 +1006,15 @@ Torrent.prototype = {
                 }
             }
         }
-        this.trigger('start')
         this.newStateThink()
     },
     onStarted: function() {
+        console.log('torrent.onStarted')
+        var a = this.client.get('activeTorrents')
+        a[this.hashhexlower] = true
+        this.client.set('activeTorrents', a)
+        this.client.trigger('activeTorrentsChange')
+
         if (! jstorrent.options.disable_trackers) {
             for (var i=0; i<this.trackers.length; i++) {
                 this.trackers.get_at(i).announce('started')
@@ -1016,11 +1022,23 @@ Torrent.prototype = {
         }
     },
     onComplete: function() {
+        console.log('torrent.onComplete')
+        var a = this.client.get('activeTorrents')
+        delete a[this.hashhexlower]
+        this.client.set('activeTorrents', a)
+        this.client.trigger('activeTorrentsChange')
+
         for (var i=0; i<this.trackers.length; i++) {
             this.trackers.get_at(i).announce('complete')
         }
     },
     onStopped: function() {
+        console.log('torrent.onStopped')
+        var a = this.client.get('activeTorrents')
+        delete a[this.hashhexlower]
+        this.client.set('activeTorrents', a)
+        this.client.trigger('activeTorrentsChange')
+
         for (var i=0; i<this.trackers.length; i++) {
             this.trackers.get_at(i).announce('stopped')
         }
@@ -1068,7 +1086,6 @@ Torrent.prototype = {
 
         this.pieces.clear()
         this.unflushedPieceDataSize = 0
-        this.trigger('stop')
         this.save()
     },
     remove: function(callback) {

@@ -8,6 +8,8 @@ function App() {
     chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
     chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
 
+    this.sessionState = {} // session state that only exists for the lifetime of this app run
+
     this.options_window = null
     this.help_window = null
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
@@ -31,8 +33,16 @@ function App() {
 
     this.popup_windows = {}
 
+    // store random shit in sync app attributes. like if user clicked on my stupid "please rate me"
+    this.syncAppAttributes = null
+    chrome.storage.sync.get(this.id + '/syncAppAttributes', _.bind(function(d) {
+        this.syncAppAttributes = d['syncAppAttributes'] || {} // place to store random stuff
+        console.log('received sync app attributes', this.syncAppAttributes)
+    },this))
+
+    this.updateRemainingDownloadsDisplay()
+
     if (this.isLite()) {
-        this.updateRemainingDownloadsDisplay()
         $('#download-remain-container').show()
         $('#title-lite').show()
         $('#button-sponsor').hide()
@@ -44,6 +54,16 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    setSyncAttribute: function(k,v, callback) {
+        if (this.syncAppAttributes) {
+            this.syncAppAttributes[k] = v
+            var obj = {}
+            obj[this.id + '/syncAppAttributes'] = this.syncAppAttributes
+            chrome.storage.sync.set(obj,callback)
+        } else {
+            console.warn('had not yet fetched sync app attributes... perhaps network is down. this will fail.')
+        }
+    },
     closeNotifications: function() {
         this.notifications.each( function(n) {
             n.close()
@@ -53,9 +73,9 @@ App.prototype = {
         console.log('app:initialize_client')
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('error', _.bind(this.onTorrentError, this))
-        this.client.torrents.on('start', _.bind(this.onTorrentStart, this))
+        this.client.torrents.on('started', _.bind(this.onTorrentStart, this))
         this.client.torrents.on('havemetadata', _.bind(this.onTorrentHaveMetadata, this))
-        this.client.torrents.on('stop', _.bind(this.onTorrentStop, this))
+        this.client.torrents.on('stopped', _.bind(this.onTorrentStop, this))
         this.client.torrents.on('progress', _.bind(this.onTorrentProgress, this))
         this.client.torrents.on('complete', _.bind(this.onTorrentComplete, this))
         this.client.on('error', _.bind(this.onClientError, this))
@@ -113,12 +133,33 @@ App.prototype = {
         this.UI.torrenttable.grid.scrollRowIntoView(row);
         this.UI.torrenttable.grid.flashCell(row, 0, 400);
     },
+    pulsate: function() {
+        $('#button-options').twinkle(
+            { effect:'drop-css', 
+              effectOptions: {radius:150},
+              callback: function(){}
+            }
+        )
+    },
+    pulsateOptions: function() {
+        this.pulsating = setInterval( this.pulsate, 2000 )
+        this.pulsate()
+    },
+    stopPulsateOptions: function() {
+        if (this.pulsating) {
+            clearInterval(this.pulsating)
+        }
+    },
     notifyNeedDownloadDirectory: function() {
+        // pulsate the options button?
+        this.pulsateOptions()
+
         // need to change this to also bring the notification back to the foreground (because users find a way to have it stay hidden)
         this.createNotification({details:jstorrent.strings.NOTIFY_NO_DOWNLOAD_FOLDER,
                                  priority:2,
                                  id: 'notifyneeddownload', // this means if it was already shown or dismissed, it wont show again..
                                  onClick: _.bind(function() {
+                                     this.stopPulsateOptions()
                                      chrome.fileSystem.chooseEntry({type:'openDirectory'},
                                                                    _.bind(this.set_default_download_location,this)
                                                                   )
@@ -185,13 +226,19 @@ App.prototype = {
     onTorrentComplete: function(torrent) {
         console.log('onTorrentComplete')
         var id = torrent.hashhexlower
+
+        // no way to cause the progress notification to come to
+        // foreground, so delete it and create a new one
+
         if (this.notifications.get(id)) {
-            chrome.notifications.update(id,
-                                        {progress: Math.floor(100 * torrent.get('complete')),
-                                         message: torrent.get('name') + " finished downloading!"},
-                                        function(){})
+            // remove the progress notification
+            chrome.notifications.clear(id, function(){})
         }
 
+        this.createNotification({details:torrent.get('name') + " finished downloading!",
+                                 message:"Download Complete!",
+                                 id:id+'/complete',
+                                 priority:1})
         // increment total downloads ...
 
         this.incrementTotalDownloads( _.bind(function() {
@@ -199,7 +246,6 @@ App.prototype = {
         },this))
     },
     updateRemainingDownloadsDisplay: function() {
-
         // bother the user every N downloads with a link to the chrome web store and let them write a review...
 
         this.getTotalDownloads( _.bind(function(val) {
@@ -232,6 +278,13 @@ App.prototype = {
             chrome.notifications.update(id,
                                         {progress: Math.floor(100 * torrent.get('complete'))},
                                         function(){})
+        }
+
+        // maybe best time to pop up a "please review me" notification
+        // is when the torrent is nearly but not yet complete
+        if (this.totalDownloads > 1 && ! this.sessionState['pleaseReview']) {
+            this.sessionState['pleaseReview'] = 1
+            this.createPleaseReviewMeNotification()
         }
     },
     onTorrentStop: function(torrent) {
@@ -361,13 +414,48 @@ App.prototype = {
             torrents[i].remove()
         }
     },
+    openReviewPage: function() {
+        this.setSyncAttribute('clicked_review',true)
+        window.open(jstorrent.constants.cws_base_url +
+                    chrome.runtime.id + '/reviews'
+                    ,'_blank')
+    },
+    createPleaseReviewMeNotification: function() {
+        if (this.syncAppAttributes) {
+            if (this.syncAppAttributes['clicked_review'] ||
+                this.syncAppAttributes['dont_show_review']) {
+                return
+            }
+        }
+
+        this.createNotification({id:"pleaseReviewMe",
+                                 buttons: [ 
+                                     {title:"Leave a Review", iconUrl:"/cws_32.png"},
+                                     {title:"Don't show this message again"}
+                                 ],
+                                 onClick: _.bind(this.openReviewPage,this),
+                                 onButtonClick: _.bind(function(idx) {
+                                     console.log('button clicked',idx)
+                                     if (idx == 0) {
+                                         this.openReviewPage()
+                                     } else {
+                                         this.setSyncAttribute('dont_show_review',true)
+                                     }
+                                 },this),
+                                 details:"Let other users know about your experience with JSTorrent!"})
+    },
     add_from_url: function(url) {
         if (! this.canDownload()) {
             this.notifyNoDownloadsLeft()
             return
         }
-        // show notification
 
+        if (this.syncAppAttributes) {
+            if (this.syncAppAttributes['dont_show_extension_help']) {
+                return
+            }
+        }
+        // show notification for extension
         this.checkIsExtensionInstalled( _.bind(function(isInstalled) {
             if (! isInstalled) {
                 this.createNotification({id:"extension",
@@ -380,7 +468,7 @@ App.prototype = {
                                              if (idx == 0) {
                                                  window.open(jstorrent.constants.cws_jstorrent_extension_url,'_blank')
                                              } else {
-                                                 this.options.set('dont_show_extension_help',true)
+                                                 this.setSyncAttribute('dont_show_extension_help',true)
                                              }
                                          },this),
                                          details:"Did you know there is a browser extension that adds a Right Click (context) Menu to make adding torrents from the Web easier?"})
@@ -410,6 +498,7 @@ App.prototype = {
                                 );
     },
     options_window_opened: function(optionsWindow) {
+        this.stopPulsateOptions()
         app.analytics.sendAppView("OptionsView")
         this.options_window_opening = false
         this.options_window = optionsWindow

@@ -126,7 +126,7 @@ Options.prototype = {
     },
     options_loaded: function(callback, data) {
         console.log('options loaded',data);
-        this.data = data[this.getStorageKey()]
+        this.data = data[this.getStorageKey()] || {}
         callback()
     },
     on_choose_download_directory: function(entry) {

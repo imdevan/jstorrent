@@ -180,7 +180,6 @@ Collection.prototype = {
                 console.warn('could not restore collection, no data stored with key',collectionKey)
                 if (callback){callback()}
             } else {
-
                 var fullItemKeys = []
                 var itemKeys = []
 

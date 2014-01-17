@@ -183,6 +183,7 @@ DiskIO.prototype = {
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
             //console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
+            console.log('.seek() emulation; wrote zeros',curZeroes)
             console.assert(curZeroes > 0)
 
             var buf = new Uint8Array(curZeroes)
@@ -244,7 +245,11 @@ DiskIO.prototype = {
 
         if (file.getPriority() == jstorrent.constants.PRIO_SKIP) {
             // this file is "Skipped", just save the entire piece data
-            // somewhere
+            
+            // actually, we're not going to use it, so just trash it...
+            _this.jobDone(job, {skipped:true})
+            return
+
             job.opts.piece.persistDataDueToFileSkip(function(evt) {
                 if (evt.error) {
                     _this.jobError(job, evt.error)

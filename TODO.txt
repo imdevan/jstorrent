@@ -1,4 +1,8 @@
-- endgame mode needs to happen only when there are no incomplete pieces with chunk requests
+before release of 1.1 need to:
+- cleanup options text
+- prevent standby when active torrents
+- check on "lite" first make sure changed permissions does not prevent update
+
 - need to disconnect from peers when no message received in n seconds (i.e. if computer goes to sleep...)
 - fix the NaN%
 - add "delete torrent and files" to more actions

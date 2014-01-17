@@ -3,6 +3,7 @@
   <link rel="stylesheet" href="../js/deps/bootstrap-dist/css/bootstrap.min.css" type="text/css"/>
 
   <script src="../js/deps/jquery-1.7.2.js"></script> <!-- modified to remove IE9 try/catch exception handling/detection -->
+  <script src="../js/deps/jquery.twinkle-0.5.0.js"></script>
   <script src="../js/deps/bootstrap-dist/js/bootstrap.min.js"></script>
   <script src="../js/deps/underscore.js"></script>
 
@@ -47,9 +48,11 @@
     <label for="exampleInputFile">File Download Location</label>
     <!--input type="button" id="exampleInputFile" value="Choose"-->
 
+
     <input type="button" disabled="disabled" id="button-choose-download" class="btn btn-default" value="Choose" />
 
-    <p class="help-block">New Torrents will be downloaded to this folder.</p>
+    <p class="help-block">New Torrents will be downloaded to this folder.<br />
+    <span id="current-location"></span></p>
   </div>
 
 <div id="auto_options">

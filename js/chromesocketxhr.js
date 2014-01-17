@@ -109,7 +109,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         console.assert(! this.writing)
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
-        console.log('writing data',ui82str(data))
+        //console.log('writing data',ui82str(data))
         chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(result) {
@@ -148,7 +148,7 @@ ChromeSocketXMLHttpRequest.prototype = {
             if (idx != -1) {
                 // not sure what encoding for headers is exactly, latin1 or something? whatever.
                 var headers = ui82str(new Uint8Array(data, 0, idx + 4))
-                console.log('found http tracker response headers', headers)
+                //console.log('found http tracker response headers', headers)
                 this.headersReceived = true
                 this.responseHeaders = headers
                 this.readBuffer.consume(idx+4)
@@ -169,7 +169,7 @@ ChromeSocketXMLHttpRequest.prototype = {
             var evt = {target:{response:data}}
             this.onload(evt)
         } catch(e) {
-            console.log('unable to bdecode body. trying to read more')
+            //console.log('unable to bdecode body. trying to read more')
             this.doRead()
         }
     }

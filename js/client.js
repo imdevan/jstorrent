@@ -26,6 +26,13 @@ function Client(opts) {
                                            client:this, 
                                            shouldPersist: true,
                                            itemClass: jstorrent.Disk})
+    this.set('activeTorrents',{})
+    this.set('numActiveTorrents',0)
+    this.on('change', _.bind(this.onChange, this))
+    this.on('activeTorrentsChange', _.bind(function(){
+        this.set('numActiveTorrents', _.keys(this.get('activeTorrents')).length)
+    },this))
+
     this.disks.fetch(_.bind(function() {
         if (this.disks.items.length == 0) {
             console.log('disks length == 0')
@@ -71,6 +78,12 @@ function Client(opts) {
 }
 
 Client.prototype = {
+    onChange: function(item,newval,oldval,attr) { 
+        if (attr == 'numActiveTorrents') {
+            console.log('number of active torrents now', newval)
+        }
+        // console.log('client change',newval,attr) 
+    },
     onBatchTimeout: function(keys) {
         // TODO -- implement
         console.log('onBatchTimeout',keys)

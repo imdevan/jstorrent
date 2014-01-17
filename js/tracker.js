@@ -98,7 +98,7 @@ HTTPTracker.prototype = {
             port: 0,
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
-        console.log('http tracker announce data',data)
+        //console.log('http tracker announce data',data)
         var xhr = new ChromeSocketXMLHttpRequest;
 
         var url
@@ -112,12 +112,11 @@ HTTPTracker.prototype = {
         for (var key in data) {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
-        console.log('http tracker request url',url)
         xhr.responseType = 'arraybuffer'
         xhr.timeout = 10000
         xhr.onload = _.bind(function(evt) {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
-            console.log('http tracker response',data)
+            //console.log('http tracker response',data)
             this.response = data
             if (data.peers) {
                 this.torrent.addCompactPeerBuffer(data.peers)
