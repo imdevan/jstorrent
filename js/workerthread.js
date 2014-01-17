@@ -36,6 +36,11 @@ if (self.jstorrent) {
                     // offset, but with a standard 13 bytes extra at
                     // the beginning, so the sha1 hasher needs to know
                     // this
+                    if (msg.chunks[i].buffer.byteLength == 0) {
+                        console.warn('tried to send data to be hashed that had byteLength 0, likely already sent this piece to worker')
+                        callback({error:"data already transfered"})
+                        return
+                    }
                     transfers.push( msg.chunks[i].buffer )
                 }
             }

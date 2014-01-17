@@ -3,10 +3,13 @@ before release of 1.1 need to:
 - prevent standby when active torrents
 - check on "lite" first make sure changed permissions does not prevent update
 
+ideas for fixing disk/io bug
+- due to padding with seek zeros? speed up by storing 1M of zeros in memory and re-use that
+- store which jobs had to pad zeros and log % of disk i/o errors caused by that
+
 - need to disconnect from peers when no message received in n seconds (i.e. if computer goes to sleep...)
 - fix the NaN%
 - add "delete torrent and files" to more actions
 - fix file getting to > 100% (downloaded being incremented twice somehow)
 - better handling when disconnecting external storage (display better error)
-- fix tracker announce to say 'completed' event
 - pNaCL sha1 hashing of pieces

@@ -13,12 +13,14 @@ function Options(opts) {
         },
 
         'spoof_utorrent': {
+            'editable':false,
             'default':true,
             'type':'bool'
         },
 
-        'show_notifications': {
+        'show_progress_notifications': {
             'default':true,
+            'name':'Show notifications for download progress',
             'type':'bool'
         },
 
@@ -31,7 +33,8 @@ function Options(opts) {
 
         'prevent_sleep': {
             'default': true,
-            'type': 'bool'
+            'type': 'bool',
+            'name': 'Prevent system standby when downloading'
         },
 
 /*
@@ -49,12 +52,22 @@ function Options(opts) {
             'description':'whether to show a dialog when adding a new torrent'
         },
 
+        'exit_on_download_complete': {
+            'default': false,
+            'enabled': false,
+            'type':'bool',
+            'description':'whether to exit when downloads have completed'
+        },
+
         'maxconns': {
-            'default': 12,
+            'name': 'Connections Per Torrent',
+            'help': 'The maximum number of peers to download from. Higher numbers can potentially result in faster downloads, but use more system resources',
+            'default': 15,
             'type':'int'
         },
 
         'new_torrents_auto_start': {
+            'name': 'Automatically start downloading new torrents',
             'default': true,
             'type': 'bool'
         },
@@ -120,6 +133,10 @@ Options.prototype = {
 
         console.log('persisted option',k,v)
         chrome.storage.local.set(gobj)
+
+        if (k == 'prevent_sleep' && v == false) {
+            chrome.power.releaseKeepAwake()
+        }
     },
     load: function(callback) {
         chrome.storage.local.get(this.getStorageKey(), _.bind(this.options_loaded, this, callback))

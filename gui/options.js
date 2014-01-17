@@ -48,17 +48,25 @@ OptionDisplay.prototype = {
                 '</label>' + 
                 '</div>';
         } else if (this.opts.meta.type == 'int') {
-            s = '<div class="input"><label><input type="text" value="'+this.opts.val+'"></input>' + this.getName() + '</label></div>'
+            s = '<div class="input"><label><input style="width:30px" type="text" value="'+this.opts.val+'"></input> ' + this.getName() + '</label></div>'
         } else {
             debugger
         }
+
+        if (this.opts.meta.help) {
+            //s+='<style="display:none" div class="tooltip"><div class="tooltip-inner">'+escape(this.opts.meta.help)+'</div><div class="tooltip-arrow"></div></div>'
+            //s+='<div style="display:none" class="mytooltip">'+this.opts.meta.help+'</div>'
+            // fix this later...
+        }
+
         var el = $(s)
         this.el = el
         $('input', el).change( _.bind(this.inputChanged, this) )
+
         return el
     },
     getName: function() {
-        return this.opts.key
+        return this.opts.meta.name || this.opts.key
     },
     inputChanged: function(evt) {
         if (this.opts.meta.type == 'bool') {
@@ -101,6 +109,14 @@ function OptionsView(opts) {
         var curdom = cur.getDOM()
         if (curdom) {
             this.opts.el.append( curdom )
+            curdom.hover( function(h) {
+                // fix this later
+                if (h.type == 'mouseenter') {
+                    $('.mytooltip',curdom).show()
+                } else {
+                    $('.mytooltip',curdom).hide()
+                }
+            })
         }
     }
 }

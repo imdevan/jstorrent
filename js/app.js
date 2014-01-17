@@ -36,7 +36,7 @@ function App() {
     // store random shit in sync app attributes. like if user clicked on my stupid "please rate me"
     this.syncAppAttributes = null
     chrome.storage.sync.get(this.id + '/syncAppAttributes', _.bind(function(d) {
-        this.syncAppAttributes = d['syncAppAttributes'] || {} // place to store random stuff
+        this.syncAppAttributes = d[this.id + '/syncAppAttributes'] || {} // place to store random stuff
         console.log('received sync app attributes', this.syncAppAttributes)
     },this))
 
@@ -235,10 +235,12 @@ App.prototype = {
             chrome.notifications.clear(id, function(){})
         }
 
-        this.createNotification({details:torrent.get('name') + " finished downloading!",
-                                 message:"Download Complete!",
-                                 id:id+'/complete',
-                                 priority:1})
+        if (this.options.get('show_progress_notifications')) {
+            this.createNotification({details:torrent.get('name') + " finished downloading!",
+                                     message:"Download Complete!",
+                                     id:id+'/complete',
+                                     priority:1})
+        }
         // increment total downloads ...
 
         this.incrementTotalDownloads( _.bind(function() {
@@ -274,6 +276,7 @@ App.prototype = {
     },
     onTorrentProgress: function(torrent) {
         var id = torrent.hashhexlower
+
         if (this.notifications.get(id)) {
             chrome.notifications.update(id,
                                         {progress: Math.floor(100 * torrent.get('complete'))},
@@ -294,9 +297,12 @@ App.prototype = {
         }
     },
     onTorrentError: function(torrent, err) {
+        this.sessionState['haderror'] = true
+
         if (err == 'Disk Missing') {
             err = 'Disk Missing. Choose a download directory in the options.'
         }
+        if (err === undefined) { debugger }
         this.createNotification({
             details: "Error with torrent: " + err,
             priority: 1
@@ -309,14 +315,17 @@ App.prototype = {
         if (this.notifications.get(id)) {
             // already had this notification... hrmmm
         } else {
-            var opts = {type: 'progress',
-                        progress: Math.floor(100*torrent.get('complete')),
-                        details: 'Downloading ' + torrent.get('name'),
-                        id: id}
-            this.createNotification(opts)
+            if (this.options.get('show_progress_notifications')) {
+                var opts = {type: 'progress',
+                            progress: Math.floor(100*torrent.get('complete')),
+                            details: 'Downloading ' + torrent.get('name'),
+                            id: id}
+                this.createNotification(opts)
+            }
         }
     },
     onClientError: function(evt, e) {
+        this.sessionState['haderror'] = true
         // display a popup window with the error information
         this.createNotification({details:e, priority:1})
     },
@@ -421,6 +430,10 @@ App.prototype = {
                     ,'_blank')
     },
     createPleaseReviewMeNotification: function() {
+        if (this.sessionState['haderror']) {
+            // dont want to encourage a review at this point in time :-)
+            return
+        }
         if (this.syncAppAttributes) {
             if (this.syncAppAttributes['clicked_review'] ||
                 this.syncAppAttributes['dont_show_review']) {
@@ -429,6 +442,7 @@ App.prototype = {
         }
 
         this.createNotification({id:"pleaseReviewMe",
+                                 priority:1,
                                  buttons: [ 
                                      {title:"Leave a Review", iconUrl:"/cws_32.png"},
                                      {title:"Don't show this message again"}

@@ -4,6 +4,7 @@
 
 
 function DiskIOJob(opts) {
+    this.zeroCache = {} // TODO maybe store a cache of "zero" arrays, see if it improves speed
     this.jobId = opts.jobId
     this.opts = opts
 

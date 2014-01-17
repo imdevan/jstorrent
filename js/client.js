@@ -80,7 +80,15 @@ function Client(opts) {
 Client.prototype = {
     onChange: function(item,newval,oldval,attr) { 
         if (attr == 'numActiveTorrents') {
-            console.log('number of active torrents now', newval)
+
+            if (this.app.options.get('prevent_sleep')) {
+                console.log('number of active torrents now', newval)
+                if (newval == 0) {
+                    console.log('POWER:release keep awake',chrome.power.releaseKeepAwake())
+                } else if (newval > 0 && oldval == 0) {
+                    console.log('POWER:requesting system keep awake', chrome.power.requestKeepAwake('system'))
+                }
+            }
         }
         // console.log('client change',newval,attr) 
     },
