@@ -285,7 +285,7 @@ App.prototype = {
 
         // maybe best time to pop up a "please review me" notification
         // is when the torrent is nearly but not yet complete
-        if (this.totalDownloads > 1 && ! this.sessionState['pleaseReview']) {
+        if (this.totalDownloads > 2 && ! this.sessionState['pleaseReview']) {
             this.sessionState['pleaseReview'] = 1
             this.createPleaseReviewMeNotification()
         }
@@ -317,8 +317,9 @@ App.prototype = {
         } else {
             if (this.options.get('show_progress_notifications')) {
                 var opts = {type: 'progress',
+                            message: "Download in Progress",
                             progress: Math.floor(100*torrent.get('complete')),
-                            details: 'Downloading ' + torrent.get('name'),
+                            details: torrent.get('name'),
                             id: id}
                 this.createNotification(opts)
             }

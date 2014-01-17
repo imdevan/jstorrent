@@ -86,7 +86,7 @@ Analytics.prototype = {
         } catch(e){console.warn("GA sendAppView fail")}
     },
     initAnalyticsConfig: function(evt) {
-        console.log('analytics initialized')
-        console.log('init analytics config',evt)
+        //console.log('analytics initialized')
+        //console.log('init analytics config',evt)
     }
 }

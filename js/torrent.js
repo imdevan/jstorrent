@@ -392,7 +392,6 @@ Torrent.prototype = {
         this.save()
     },
     recalculatePieceBlacklist: function() {
-        console.log('recalculatePieceBlacklist')
         // when we set "skip"/"unskip" on files, need to update a
         // table for speedy incomplete piece lookup
         var fp = this.get('filePriority')
@@ -400,6 +399,7 @@ Torrent.prototype = {
             this.pieceBlacklist = {}
             return
         }
+        console.log('recalculatePieceBlacklist')
         var needPiece
 
         for (var i=0; i<this.numPieces; i++) {

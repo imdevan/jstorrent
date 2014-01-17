@@ -4,11 +4,11 @@
 
 
 function DiskIOJob(opts) {
-    this.zeroCache = {} // TODO maybe store a cache of "zero" arrays, see if it improves speed
     this.jobId = opts.jobId
     this.opts = opts
 
     jstorrent.Item.apply(this, arguments)
+    this.neededPad = false
 
     this.set('type',opts.type)
     this.set('torrent',opts.torrent)
@@ -42,6 +42,11 @@ function DiskIO(opts) {
     this.jobsLeftInGroup = {}
 
     this.diskActive = false
+
+    this.zeroCache = {} // store a cache of "zero" arrays, see if it improves speed
+    for (var i=14; i<=20; i++) {
+        this.zeroCache[ Math.pow(2,i) ] = new Uint8Array(Math.pow(2,i))
+    }
 
     jstorrent.Collection.apply(this, arguments)
 }
@@ -175,6 +180,7 @@ DiskIO.prototype = {
         var _this = this
         var writtenSoFar = 0
         var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
+        // Math.pow(2,20)
 
         function next() {
             console.assert(numZeroes)
@@ -184,10 +190,17 @@ DiskIO.prototype = {
 
             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
             //console.log(job.opts.jobId,'needToPad.next',curZeroes,numZeroes)
-            console.log('.seek() emulation; wrote zeros',curZeroes)
+            //console.log('.seek() emulation; wrote zeros',curZeroes)
+            job.neededPad = true
             console.assert(curZeroes > 0)
 
-            var buf = new Uint8Array(curZeroes)
+            var buf
+            if (_this.zeroCache[curZeroes]) {
+                buf = _this.zeroCache[curZeroes]
+            } else {
+                buf = new Uint8Array(curZeroes)
+            }
+
             entry.createWriter( function(writer) {
                 writer.onwrite = function(evt) {
                     //console.log('%cZERO PAD - diskio wrote','background:#0ff;color:#fff',evt.loaded,'/',evt.total)
@@ -212,7 +225,11 @@ DiskIO.prototype = {
             this.get_at(0) == job &&
             job.get('state') == 'active') {
             console.error("DISKIO JOB DIDNT FINISH -- TIMEOUT. WTF", job.opts.jobId, job.opts)
-            app.analytics.sendEvent("DiskIO", "timeout")
+            if (job.neededPad) {
+                app.analytics.sendEvent("DiskIO", "timeout.neededPad")
+            } else {
+                app.analytics.sendEvent("DiskIO", "timeout")
+            }
 
             // TODO - perhaps retry once?
 
