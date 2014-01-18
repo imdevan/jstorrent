@@ -22,7 +22,7 @@ function DiskIOJob(opts) {
 jstorrent.DiskIOJob = DiskIOJob
 
 DiskIOJob.randomFailure = 0 // test random failures with probability
-DiskIOJob.jobTimeoutInterval = 15000 // too low?
+DiskIOJob.jobTimeoutInterval = 30000 // too low? -- 30 seconds
 
 DiskIOJob.prototype = {
     get_key: function() {

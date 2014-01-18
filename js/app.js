@@ -26,7 +26,6 @@ function App() {
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
     // maybe use notifications instead... ( or in addition ... )
     this.UI = null
-    //this.checkIsExtensionInstalled()
 
     this.freeTrialFreeDownloads = 20
     this.totalDownloads = 0
@@ -464,7 +463,6 @@ App.prototype = {
             this.notifyNoDownloadsLeft()
             return
         }
-
         if (this.syncAppAttributes) {
             if (this.syncAppAttributes['dont_show_extension_help']) {
                 return
@@ -592,9 +590,21 @@ App.prototype = {
             this.createNotification({details:"No download folder was selected. Note you CANNOT save torrents to a Google Drive folder."})
             return
         }
+
+        // clear the other notifications
+        var id = 'notifyneeddownload'
+        if (this.notifications.get(id)) {
+            chrome.notifications.clear(id,function(){})
+        }
+
         //console.log("Set default download location to",entry)
         var s = jstorrent.getLocaleString(jstorrent.strings.NOTIFY_SET_DOWNLOAD_DIR, entry.name)
-        this.createNotification({details:s, priority:0})
+        this.createNotification({details:s, id:"notifyselected", priority:0})
+        setTimeout(_.bind(function(){
+            if (this.notifications.get("notifyselected")) {
+                chrome.notifications.clear("notifyselected",function(){})
+            }
+        },this),2000)
         var disk = new jstorrent.Disk({entry:entry, parent: this.client.disks})
         this.client.disks.add(disk)
         this.client.disks.setAttribute('default',disk.get_key())
