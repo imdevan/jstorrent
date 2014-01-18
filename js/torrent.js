@@ -968,7 +968,10 @@ Torrent.prototype = {
                 }
             },this))
         } else {
-            this.readyToStart()
+            // dont do this immediately, because .start() could be called before the constructor had a chance to finish
+            _.defer(_.bind(function(){
+                this.readyToStart()
+            },this))
         }
     },
     readyToStart: function() {

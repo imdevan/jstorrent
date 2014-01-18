@@ -129,8 +129,10 @@ App.prototype = {
     },
     highlightTorrent: function(hashhexlower) {
         var row = this.client.torrents.keyeditems[hashhexlower]
-        this.UI.torrenttable.grid.scrollRowIntoView(row);
-        this.UI.torrenttable.grid.flashCell(row, 0, 400);
+        if (this.UI) {
+            this.UI.torrenttable.grid.scrollRowIntoView(row);
+            this.UI.torrenttable.grid.flashCell(row, 0, 400);
+        }
     },
     pulsate: function() {
         $('#button-options').twinkle(

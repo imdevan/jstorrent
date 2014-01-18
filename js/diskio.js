@@ -3,6 +3,16 @@
 // some kind of error, or possibly some bug with chrome implementation
 
 
+/*
+think about how to rearchitect this
+
+writing a piece can causes multiple fileWriter events.  Perhaps
+determine exactly all these beforehand, before we actually begin to do
+anything. This way we can show more detail about which events are
+happening and when errors occur.
+
+*/
+
 function DiskIOJob(opts) {
     this.jobId = opts.jobId
     this.opts = opts
@@ -126,10 +136,15 @@ DiskIO.prototype = {
         this.diskActive = false
         this.remove(job)
         this.opts.disk.client.error('fatal disk job error')
-        var callback = this.jobGroupCallbacks[job.opts.jobGroup].callback
-        var data = this.jobGroupCallbacks[job.opts.jobGroup].data
-        delete this.jobGroupCallbacks[job.opts.jobGroup]
-        callback({error:evt, data:data})
+        var cbdata = this.jobGroupCallbacks[job.opts.jobGroup]
+        if (cbdata) {
+            var callback = cbdata.callback
+            var data = cbdata.data
+            delete this.jobGroupCallbacks[job.opts.jobGroup]
+            callback({error:evt, data:data})
+        } else {
+            console.warn('double jobError?')
+        }
         this.thinkNewState()
     },
     doJobReadyToRead: function(entry, job) {
@@ -141,8 +156,13 @@ DiskIO.prototype = {
                 var reader = new FileReader
                 reader.onload = function(evt) {
                     // XXX is data.push sufficient to keep things in order?
-                    _this.jobGroupCallbacks[job.opts.jobGroup].data.push(evt.target.result)
-                    _this.jobDone(job, evt)
+                    var cbdata = _this.jobGroupCallbacks[job.opts.jobGroup]
+                    if (cbdata) {
+                        cbdata.data.push(evt.target.result)
+                        _this.jobDone(job, evt)
+                    } else {
+                        console.warn('read data but callback missing')
+                    }
                 }
                 reader.onerror = function(evt) {
                     _this.jobError(job, 'error reading file')

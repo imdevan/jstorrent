@@ -103,6 +103,7 @@ function str2ab(str) {
 }
 
 function ui82str(arr, startOffset) {
+    console.assert(arr)
     if (! startOffset) { startOffset = 0 }
     var length = arr.length - startOffset
     var str = ""

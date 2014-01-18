@@ -1,5 +1,7 @@
-before release of 1.1 need to:
-- check on "lite" first make sure changed permissions does not prevent update
+2.1 fixes
+- recalculateblacklist serially, bad
+- onupdated background page reload error?
+
 
 
 - need to disconnect from peers when no message received in n seconds (i.e. if computer goes to sleep...)
