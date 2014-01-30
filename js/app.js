@@ -5,8 +5,10 @@
 function App() {
     //console.log('creating app')
     this.id = 'app01' // device ID...
-    chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
-    chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
+    if (chrome.system && chrome.system.storage) {
+        chrome.system.storage.onAttached.addListener( _.bind(this.external_storage_attached, this) )
+        chrome.system.storage.onDetached.addListener( _.bind(this.external_storage_detached, this) )
+    }
 
     this.sessionState = {} // session state that only exists for the lifetime of this app run
 
@@ -40,6 +42,13 @@ function App() {
     },this))
 
     this.updateRemainingDownloadsDisplay()
+
+    $('#url-btn').click( function(evt) {
+        var url = $('#url').val()
+        if (! url) {
+            console.log('add button clicked with no URL entered, popup select file dialog')
+        }
+    })
 
     if (this.isLite()) {
         $('#download-remain-container').show()
@@ -623,6 +632,10 @@ App.prototype = {
                 callback()
             })
             if (jstorrent.options.load_options_on_start) { this.focus_or_open_options() }
+            if (jstorrent.device.platform == 'android') {
+                $('#url').val("http://academictorrents.com/details/af4c6ce643f30da2619fe6cf7dd838b1d4539743")
+            }
+
         },this))
     }
 }

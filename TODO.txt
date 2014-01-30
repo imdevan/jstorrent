@@ -1,7 +1,14 @@
 2.1 fixes
 - recalculateblacklist serially, bad
 - onupdated background page reload error?
+- highlight effect is jarring/red
+- drag and drop .torrent file in windows, or maybe button to add torrent file
 
+- see what happens when add invalid .torrent file
+
+new stuff to add
+- SOCKS5 support
+- add version numbers in the app
 
 
 - need to disconnect from peers when no message received in n seconds (i.e. if computer goes to sleep...)

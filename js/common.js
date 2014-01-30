@@ -1,5 +1,6 @@
 // common stuff
 window['jstorrent'] = window['jstorrent'] || {}
+jstorrent.device = window.device || { platform: "Chrome" };
 jstorrent.constants = {
     cws_jstorrent: "anhdpjpojoipgpmfanmedjghaligalgb",
     cws_jstorrent_lite: "abmohcnlldaiaodkpacnldcdnjjgldfh",

@@ -172,6 +172,7 @@ chrome.runtime.sendMessage(extensionId, {running:true}, function(response) {
 })
 */
 
+if (chrome.runtime.onMessageExternal) {
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {
     console.log('onMessageExternal',request,sender)
     if (request && request.command == 'checkInstalled') {
@@ -200,3 +201,4 @@ chrome.runtime.onMessageExternal.addListener(function(request, sender, sendRespo
                        message: 'unknown command' })
     }
 });
+}

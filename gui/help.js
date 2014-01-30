@@ -13,5 +13,7 @@ function purchase() {
 
 $(document).ready( function() {
     console.log('help page ready')
+    // TODO - send analytics event
+    debugger
     document.getElementById('sponsor').addEventListener('click', purchase)
 })

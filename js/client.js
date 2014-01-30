@@ -33,16 +33,26 @@ function Client(opts) {
         this.set('numActiveTorrents', _.keys(this.get('activeTorrents')).length)
     },this))
 
-    this.disks.fetch(_.bind(function() {
-        if (this.disks.items.length == 0) {
-            console.log('disks length == 0')
-            this.app.notifyNeedDownloadDirectory()
-        }
-        this.torrents.fetch(_.bind(function() {
-            this.ready = true
-            this.trigger('ready')
+    if (jstorrent.device.platform == 'Chrome') {
+        
+        this.disks.fetch(_.bind(function() {
+            if (this.disks.items.length == 0) {
+                console.log('disks length == 0')
+                this.app.notifyNeedDownloadDirectory()
+            }
+            this.torrents.fetch(_.bind(function() {
+                this.ready = true
+                this.trigger('ready')
+            },this))
         },this))
-    },this))
+    } else {
+        // phonegap/cordova port, we use HTML5 filesystem since it is not sandboxed :-)
+        var disk = new jstorrent.Disk({key:'HTML5:persistent'})
+
+        this.disks.add(disk)
+
+        
+    }
 
     // workerthread is used for SHA1 hashing data chunks so that it
     // doesn't cause the UI to be laggy. If UI is already in its own
@@ -123,7 +133,7 @@ Client.prototype = {
             var request = launchData.request
             this.add_from_url(request.url)
         } else if (launchData.type == 'onLaunched') {
-            if (launchData.launchData.items && launchData.launchData.items.length > 0) {
+            if (launchData.launchData && launchData.launchData.items && launchData.launchData.items.length > 0) {
                 for (var i=0; i<launchData.launchData.items.length; i++) {
                     item = launchData.launchData.items[i]
                     console.log('APP HANDLE LAUNCH ENTRY',item)
