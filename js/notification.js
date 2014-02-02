@@ -14,6 +14,13 @@ function Notification(opts) {
     }
 
     this.type = opts.type || 'basic'
+
+    if (jstorrent.device.platform == 'Android') {
+        if (this.type == 'progress') {
+            this.type = 'basic' // not supported yet for cordova
+        }
+    }
+
     this.notificationOpts = {
         type: this.type,
         title: message,
@@ -28,7 +35,7 @@ function Notification(opts) {
     if (opts.progress) {
         this.notificationOpts.progress = opts.progress || 0
     }
-
+    console.log('notification - opts', this.notificationOpts)
     this.show()
 }
 jstorrent.Notification = Notification

@@ -67,9 +67,9 @@ function UI(opts) {
             {id:'jobGroup'}
         ],
         'files':[
-            {attr:'num', name:"Number"},
-            {attr:'name', width:400},
-            {attr:'size', name:"Size", formatVal:byteUnits, width:100},
+            {attr:'num', name:"Number", sortable:true},
+            {attr:'name', name:"Name", width:400, sortable:true},
+            {attr:'size', name:"Size", formatVal:byteUnits, width:100, sortable:true},
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
             {id:'complete', name:"Complete", formatVal: fracToPercent},
             {id:"priority", 

@@ -21,7 +21,7 @@ This software was totally rewritten from scratch (Dec 2013). This is
 about the third time I've written a torrent client, so it should be
 the least buggy of them all :-)
 
-I'm currently charging $2 for the install on the chrome web store. But you can also run it from source here. I think you have to enter developer mode if you're on ChromeOS. I want to do some kind of donate/freemium model, once I can figure out this: http://stackoverflow.com/questions/21147236/get-user-openid-url-without-user-interaction (I want to be able to detect users who already paid $2)
+I'm currently charging $2 for the install on the chrome web store. But you can also run it from source here. I want to do some kind of donate/freemium model, once I can figure out this: http://stackoverflow.com/questions/21147236/get-user-openid-url-without-user-interaction (I want to be able to detect users who already paid $2)
 
 Installation:
 ====
@@ -32,7 +32,7 @@ source too.
 * Visit "chrome://extensions"
 * Click "load unpacked extension"
 * Browse to the unzipped file then press "Open"
-* You're done!
+* You're done! (Note that you will not get updates this way, you will need to manually update)
 
 Websites:
 ----

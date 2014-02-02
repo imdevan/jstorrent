@@ -5,6 +5,7 @@ jstorrent.protocol = {
     pieceSize: 16384,
     chunkSize: 16384,
     socketReadBufferMax: 4096, // doesn't really belong in this file, but whatever
+//    socketReadBufferMax: 32, // doesn't really belong in this file, but whatever
     socketWriteBufferMax: 4096, // doesn't really belong in this file, but whatever
     maxPacketSize: 32768,
     handshakeLength: 68,

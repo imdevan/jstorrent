@@ -42,7 +42,9 @@ function Analytics(opts) {
     // Get a Tracker using your Google Analytics app Tracking ID.
     this.app = opts.app
     var id, service
-    if (chrome.runtime.id == jstorrent.constants.cws_jstorrent) {
+    if (jstorrent.device.platform == 'Android') {
+        console.warn('android - analytics disabled')
+    } else if (chrome.runtime.id == jstorrent.constants.cws_jstorrent) {
         service = 'JSTorrentApp'
         id = "UA-35025483-2"
     } else if (chrome.runtime.id == jstorrent.constants.cws_jstorrent_lite) {

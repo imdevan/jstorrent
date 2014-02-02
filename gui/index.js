@@ -72,6 +72,12 @@ function onappready() {
 
     app.analytics.sendAppView("MainView")
 
+    if (true || jstorrent.device.platform == 'Android') {
+        var url = "http://academictorrents.com/download/af4c6ce643f30da2619fe6cf7dd838b1d4539743"
+
+        $('#url').val( url )
+    }
+
     if (jstorrent.options.add_torrents_on_start) {
 
         setTimeout( function() {

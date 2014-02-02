@@ -95,11 +95,12 @@ HTTPTracker.prototype = {
             uploaded: this.torrent.get('uploaded'),
             compact: 1,
             peer_id: ui82str(this.torrent.client.peeridbytes),
-            port: 0,
+            port: 6666, // some trackers complain when we send 0 and dont give a response
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
         //console.log('http tracker announce data',data)
-        var xhr = new ChromeSocketXMLHttpRequest;
+        //var xhr = new ChromeSocketXMLHttpRequest; // havent coded in chunked encoding ugh...
+        var xhr = new XMLHttpRequest;
 
         var url
         if (this.url.indexOf('?') == -1) {
@@ -118,7 +119,9 @@ HTTPTracker.prototype = {
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
             //console.log('http tracker response',data)
             this.response = data
-            if (data.peers) {
+            if (data.peers && typeof data.peers == 'object') {
+                this.torrent.addNonCompactPeerBuffer(data.peers)
+            } else if (data.peers) {
                 this.torrent.addCompactPeerBuffer(data.peers)
             } else {
                 this.set_error('no peers in response',data,evt)
@@ -134,7 +137,7 @@ HTTPTracker.prototype = {
             this.set_error('xhr error', evt)
         },this)
         xhr.open("GET", url, true)
-        xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)')
+        //xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)') // dont do this
         xhr.send()
     }
 }
@@ -212,7 +215,7 @@ UDPTracker.prototype = {
                 chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
                     this.set_state('read_announce')
                     // check error condition?
-                    chrome.socket.read( connectionInfo.socketId, null, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
+                    chrome.socket.read( connectionInfo.socketId, 4096, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
                 }, this))
 	    },this) );
 	} else {
@@ -234,7 +237,7 @@ UDPTracker.prototype = {
             0,0,0,0, /* ip */
             0,0,0,0, /* key */
             255,255,255,255, /* numwant */
-            2,0, /* port */
+            2,0, /* port, sending something random cuz we dont even listen yet */
             0,0, /* extensions */
         ]);
 
@@ -279,15 +282,16 @@ UDPTracker.prototype = {
         chrome.socket.create('udp', {}, _.bind(function(sockInfo) {
             var sockId = sockInfo.socketId
             chrome.socket.connect( sockId, this.host, this.port, _.bind( function(sockConnectResult) {
-
+                //console.log('udp connected', sockConnectResult)
                 var connRequest = this.get_connection_data();
                 chrome.socket.write( sockId, connRequest.payload, _.bind( function(sockWriteResult) {
-
-                    chrome.socket.read( sockId, null, _.bind( function(sockReadResult) {
-
-                        //console.log('udp get connection response',sockReadResult, 'len',sockReadResult.data.byteLength)
-
-                        if (sockReadResult.data.byteLength < 16) {
+                    //console.log('udp wrote', sockWriteResult)
+                    chrome.socket.read( sockId, 4096, _.bind( function(sockReadResult) {
+                        //console.log('udp read get connection response',sockReadResult)
+                        if (sockReadResult.data === undefined) {
+                            // cordova bug?
+                            callback( null, {error:'error udp connection response', result: sockReadResult } )
+                        } else if (sockReadResult.data.byteLength < 16) {
                             //console.log('tracker udp sock read bytelength',sockReadResult.data.byteLength)
                             callback( null, {error:'error udp connection response', result: sockReadResult } )
                         } else {

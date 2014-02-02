@@ -285,6 +285,8 @@ App.prototype = {
         return chrome.runtime.id == "abmohcnlldaiaodkpacnldcdnjjgldfh"
     },
     onTorrentProgress: function(torrent) {
+        if (jstorrent.device.platform === 'Android') { return } // progress notification broken on android
+
         var id = torrent.hashhexlower
 
         if (this.notifications.get(id)) {
@@ -479,6 +481,8 @@ App.prototype = {
                 return
             }
         }
+        client.add_from_url(url)
+        if (jstorrent.device.platform == 'Android') { return }
         // show notification for extension
         this.checkIsExtensionInstalled( _.bind(function(isInstalled) {
             if (! isInstalled) {
@@ -499,7 +503,6 @@ App.prototype = {
 
             }
         },this))
-        client.add_from_url(url)
     },
     external_storage_attached: function(storageInfo) {
         console.log('external storage attached',storageInfo)
@@ -632,10 +635,6 @@ App.prototype = {
                 callback()
             })
             if (jstorrent.options.load_options_on_start) { this.focus_or_open_options() }
-            if (jstorrent.device.platform == 'android') {
-                $('#url').val("http://academictorrents.com/details/af4c6ce643f30da2619fe6cf7dd838b1d4539743")
-            }
-
         },this))
     }
 }

@@ -176,6 +176,18 @@ Torrent.prototype = {
         console.assert(s.length == 40)
         return s
     },
+    addNonCompactPeerBuffer: function(added) {
+        for (var i=0; i<added.length; i++) {
+            var host = added[i].ip
+            var port = added[i].port
+            // also contains .peer_id, but we dont care
+            peer = new jstorrent.Peer({host:host, port:port, torrent:this})
+            if (! this.swarm.contains(peer)) {
+                //console.log('peer buffer added new peer',host,port)
+                this.swarm.add(peer)
+            }
+        }
+    },
     addCompactPeerBuffer: function(added) {
         var numPeers = added.length/6
         for (var i=0; i<numPeers; i++) {
@@ -720,7 +732,10 @@ Torrent.prototype = {
     getStorage: function() {
         var disk = this.get('disk')
         if (! disk) {
-            var disk = this.client.disks.getAttribute('default')
+            disk = this.client.disks.getAttribute('default')
+        }
+        if (jstorrent.device.platform == 'Android') {
+            disk = 'HTML5:persistent'
         }
 
         var storage = this.client.disks.get(disk)
@@ -948,7 +963,8 @@ Torrent.prototype = {
             }
         }
     },
-    start: function() {
+    start: function(reallyStart) {
+        //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         app.analytics.sendEvent("Torrent", "Starting")
 

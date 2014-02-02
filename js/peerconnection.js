@@ -61,7 +61,11 @@ function PeerConnection(opts) {
     this.handleAfterInfodict = []
 
     // connect state
-    this.connect_timeout_delay = 10000
+    if (jstorrent.device.platform == 'Android') {
+        this.connect_timeout_delay = 1000 // BUG THIS BLOCKS MAIN THREAD
+    } else {
+        this.connect_timeout_delay = 10000
+    }
     this.connect_timeout_callback = null
     this.connecting = false
     this.connect_timeouts = 0
@@ -143,6 +147,7 @@ PeerConnection.prototype = {
         return this.peer.host + ':' + this.peer.port
     },
     on_connect_timeout: function() {
+        //console.log(this.get_key(),'connect timeout')
         this.connecting = false;
         this.connect_timeouts++;
         chrome.socket.destroy( this.sockInfo.socketId )
@@ -150,6 +155,7 @@ PeerConnection.prototype = {
         this.trigger('connect_timeout')
     },
     close: function(reason) {
+        //console.log('socket close',reason)
         // XXX TODO -- does this always get called when the socket closes/peer disconnects/they leave peer list?
         if (this.connect_timeout_callback) { clearTimeout(this.connect_timeout_callback) }
         if (this.hasclosed) {
@@ -178,7 +184,9 @@ PeerConnection.prototype = {
         this.cleanup()
         if (this.sockInfo) {
             // if no this.sockInfo, perhaps we were not yet connected
-            chrome.socket.disconnect(this.sockInfo.socketId)
+            if (this.connectedWhen) {
+                chrome.socket.disconnect(this.sockInfo.socketId)
+            }
             chrome.socket.destroy(this.sockInfo.socketId)
         }
         this.sockInfo = null
@@ -199,6 +207,7 @@ PeerConnection.prototype = {
         chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
+        //console.log(this.get_key(),'connected.',connectInfo)
         if (this.hasclosed) { return } // XXX -- better handling for closing of sockets still in connecting state?
 
         this.connectedWhen = new Date()
@@ -315,6 +324,7 @@ PeerConnection.prototype = {
         this.write( payload )
     },
     write: function(data) {
+        //console.log('peer write',data,data.byteLength)
         console.assert(! this.hasclosed)
         console.assert(data.byteLength > 0)
         console.assert(data instanceof ArrayBuffer)
@@ -346,13 +356,17 @@ PeerConnection.prototype = {
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
         if(writeResult.bytesWritten != this.writing_length) {
-            if (writeResult.bytesWritten < 0) {
+            if (writeResult.bytesWritten == 0) {
+                this.close('bytesWritten==0, closed connection')
+            } else if (writeResult.bytesWritten < 0) {
                 this.error('negative bytesWritten',writeResult.bytesWritten)
             } else {
-                console.error('bytes written does not match!', writeResult.bytesWritten)
+                console.error('bytes written does not match!, was',writeResult.bytesWritten,'should be',this.writing_length)
+/*
                 chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
                     console.log('socket info -',socketStatus)
                 })
+*/
                 this.error('did not write everything')
             }
 
@@ -521,7 +535,9 @@ PeerConnection.prototype = {
     },
     error: function(msg) {
         //this.log(msg)
-        chrome.socket.disconnect(this.sockInfo.socketId)
+        if (this.connectedWhen) {
+            chrome.socket.disconnect(this.sockInfo.socketId)
+        }
         chrome.socket.destroy(this.sockInfo.socketId)
         this.trigger('error')
     },
@@ -540,6 +556,7 @@ PeerConnection.prototype = {
         }
     },
     onRead: function(readResult) {
+        //console.log('onread',readResult,readResult.data.byteLength, [ui82str(new Uint8Array(readResult.data))])
         if (! this.torrent.started) {
             //console.error('onRead, but torrent stopped')
             this.close('torrent stopped')
@@ -571,12 +588,13 @@ PeerConnection.prototype = {
         //this.close('no real reason')
     },
     checkBuffer: function() {
+        //console.log('checkBuffer, len', this.readBuffer.deque.length, 'sz', this.readBuffer._size)
         // checks if there are messages
         if (! this.peerHandshake) {
             if (this.readBuffer.size() >= jstorrent.protocol.handshakeLength) {
                 var buf = this.readBuffer.consume(jstorrent.protocol.handshakeLength)
 
-                this.handleMessage({type:'HANDSHAKE',payload:buf})
+                this.handleMessage({type:'HANDSHAKE',payloadSize: buf.byteLength, payload:buf})
                 //this.peerHandshake = 
                 //if (! this.peerHandshake) {
                 //    this.close('invalid handshake')
@@ -613,6 +631,7 @@ PeerConnection.prototype = {
             var messageString = jstorrent.protocol.messageCodes[data.code]
             data.type = messageString
             data.payload = buf
+            data.payloadLength = buf.byteLength
         }
 
         //console.log('Received message',data.type)
@@ -620,6 +639,7 @@ PeerConnection.prototype = {
         this.handleMessage(data)
     },
     handleMessage: function(msgData) {
+        //console.log('handling message',msgData)
         var method = this['handle_' + msgData.type]
         this.set('last_message_received',msgData.type) // TODO - get a more specific message for piece number
         if (! method) {

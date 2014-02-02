@@ -48,6 +48,7 @@ ChromeSocketXMLHttpRequest.prototype = {
     createRequestHeaders: function() {
         var lines = []
         var headers = {'Connection': 'close',
+//                       'Accept-Encoding': 'identity', // servers will send us chunked encoding even if we dont want it, bastards
                        'User-Agent': 'uTorrent/330B(30235)(server)(30235)',
                        'Host': this.uri.host}
         _.extend(headers, this.extraHeaders)
@@ -130,6 +131,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         }
     },
     onRead: function(result) {
+        console.log('onread',result.data.byteLength, [ui82str(new Uint8Array(result.data))])
         if (this.closed) { return }
         this.reading = false
         if (result.data.byteLength == 0) {
@@ -148,7 +150,7 @@ ChromeSocketXMLHttpRequest.prototype = {
             if (idx != -1) {
                 // not sure what encoding for headers is exactly, latin1 or something? whatever.
                 var headers = ui82str(new Uint8Array(data, 0, idx + 4))
-                //console.log('found http tracker response headers', headers)
+                console.log('found http tracker response headers', headers)
                 this.headersReceived = true
                 this.responseHeaders = headers
                 this.readBuffer.consume(idx+4)

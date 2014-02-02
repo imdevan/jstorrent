@@ -35,7 +35,7 @@ jstorrent.options = {
     transferable_objects: true,
     load_options_on_start: false,
     add_torrents_on_start: false,
-    run_unit_tests: false,
+    run_unit_tests: true,
     disable_trackers: false,
     manual_peer_connect_on_start: {
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['184.75.214.170:15402']

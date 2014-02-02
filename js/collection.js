@@ -16,7 +16,7 @@ function Collection(opts) {
     this.itemClass = opts.itemClass
     this.items = []
     this.length = 0
-    this.keyeditems = {}
+    this.keyeditems = {} // supports lookup by hash key
     this.event_listeners = {}
 
     this._attributes = {} // collection can have attributes too that
@@ -34,6 +34,23 @@ Collection.prototype = {
         if (oldval === v) { return }
         this._attributes[k] = v
         this.trigger('change',k,v,oldval)
+    },
+    sort: function(rawAttr, sortAsc) {
+        console.log('sorting by raw attr',rawAttr,sortAsc)
+        var sortBy = rawAttr
+        if (sortAsc) {
+            this.items.sort( function(a,b) {
+                return (a[sortBy] < b[sortBy]) ? 1 : -1
+            })
+        } else {
+            this.items.sort( function(a,b) {
+                return (a[sortBy] < b[sortBy]) ? -1 : 1
+            })
+        }
+        for (var i=0; i<this.items.length; i++) {
+            this.keyeditems[this.items[i].get_key()] = i
+        }
+        // now update keyeditems
     },
     data: function() {
         return this.items;

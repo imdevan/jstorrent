@@ -306,6 +306,7 @@ DiskIO.prototype = {
                 if (job.opts.type == 'write') {
                     //console.log('getMetadata')
                     entry.getMetadata( function(metaData) {
+                        if (metaData.size === undefined) { metaData.size = 0 } // bug with cordova
                         //console.log('gotMetadata')
                         //if (job.opts.size == 4096) { debugger }
                         //console.log(job.opts.jobId, 'doJob.getMetadata')

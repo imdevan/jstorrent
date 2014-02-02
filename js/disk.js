@@ -2,9 +2,21 @@ function Disk(opts) {
     jstorrent.Item.apply(this, arguments)
 
     this.diskio = new jstorrent.DiskIO({disk:this})
-    this.client = opts.parent.parent
+    this.client = opts.client || opts.parent.parent
 
-    if (opts.id) {
+    if (opts.key && opts.key == 'HTML5:persistent') {
+        function ondir(result) {
+            this.entry = result
+            this.trigger('ready')            
+        }
+
+        function onreq(result) {
+            result.root.getDirectory("Download",{create:true},_.bind(ondir,this),_.bind(ondir,this))
+        }
+        var req = window.webkitRequestFileSystem || window.requestFileSystem
+        req(window.PERSISTENT, 0, _.bind(onreq,this), _.bind(onreq,this))
+        this.key = opts.key
+    } else if (opts.id) {
         // being restored, need to call restoreEntry
         this.key = opts.id
 

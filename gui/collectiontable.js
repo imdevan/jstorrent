@@ -64,6 +64,25 @@ function SlickCollectionTable(opts) {
     grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
+    grid.onSort.subscribe( _.bind(function(evt, data) {
+        //console.log('onsort',data)
+
+        //data.grid.getData().sort
+
+        if (data.grid.collectionTable.collection.itemClass == jstorrent.File) {
+            // sorting files view
+            // XXX could be by attribute, too...
+
+
+
+            var sortBy = data.sortCol.id
+            data.grid.collectionTable.collection.sort(sortBy, data.sortAsc)
+        }
+
+        data.grid.invalidateAllRows();
+        data.grid.render();
+    }))
+
     grid.onCellChange.subscribe( _.bind(function(evt, data) {
 debugger // using CellSelectEditor now
 /*
@@ -113,6 +132,7 @@ debugger // using CellSelectEditor now
 	grid.removeCellCssStyles("hover");
     });
     this.grid = grid
+    grid.collectionTable = this
 
     this.l_onadd = _.bind(this.on_add, this)
     this.l_onremove = _.bind(this.on_remove, this)

@@ -46,12 +46,19 @@ function Client(opts) {
             },this))
         },this))
     } else {
-        // phonegap/cordova port, we use HTML5 filesystem since it is not sandboxed :-)
-        var disk = new jstorrent.Disk({key:'HTML5:persistent'})
 
+        // probably need to guard behind document.addEventListener('deviceready', callback, false)
+
+        // phonegap/cordova port, we use HTML5 filesystem since it is not sandboxed :-)
+        var disk = new jstorrent.Disk({key:'HTML5:persistent', client:this})
         this.disks.add(disk)
 
-        
+        this.disks.on('ready',_.bind(function(){
+            this.torrents.fetch(_.bind(function() {
+                this.ready = true
+                this.trigger('ready')
+            },this))
+        },this))
     }
 
     // workerthread is used for SHA1 hashing data chunks so that it
