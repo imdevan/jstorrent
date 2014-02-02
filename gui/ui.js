@@ -15,15 +15,16 @@ function UI(opts) {
 
     this.coldefs = {
         'torrent': [
-            {id: "name", name: "Name", width:400},
-            {id: "state", name: "State"},
+            {id: "name", name: "Name", width:400, sortable:true},
+            {id: "state", name: "State", sortable:true},
             {id: "bytes_received", name: "Bytes Received", formatVal: byteUnits, width:100},
-            {id: "size", name: "Size", formatVal: byteUnits, width: 100},
+            {id: "size", name: "Size", formatVal: byteUnits, width: 100, sortable:true},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
             {id: "numpeers", name: "Peers"},
             {id: "bytes_sent", name: "Bytes Sent", formatVal: byteUnits},
             {id: 'downloaded', formatVal:byteUnits},
-            {id: "added"},
+            {id: "added", sortable:true},
+            {attr: "numfiles", sortable:true },
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
@@ -43,13 +44,13 @@ function UI(opts) {
             {id:"peerChoked"}
         ],
         'swarm':[
-            {attr:"host", width:110},
-            {attr:"port"},
+            {attr:"host", width:110, sortable:true},
+            {attr:"port", sortable:true},
             {id:"connected_ever", name: "Ever Connected"},
             {id:'connectionResult'}
         ],
         'trackers':[
-            {attr:'url', name:"URL", width:200},
+            {attr:'url', name:"URL", width:200, sortable:true},
             {id:'announces'},
             {id:'errors'},
             {id:'timeouts'},
@@ -70,8 +71,6 @@ function UI(opts) {
             {attr:'num', name:"Number", sortable:true},
             {attr:'name', name:"Name", width:400, sortable:true},
             {attr:'size', name:"Size", formatVal:byteUnits, width:100, sortable:true},
-            {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
-            {id:'complete', name:"Complete", formatVal: fracToPercent},
             {id:"priority", 
              editor: Slick.Editors.SelectCellEditor,
              options:"Normal,Skip",
@@ -80,6 +79,8 @@ function UI(opts) {
              },
              name:'Priority',
             },
+            {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
+            {id:'complete', name:"Complete", formatVal: fracToPercent},
             {name:"Action" , displayFunc: fileAction}
         ],
         'pieces':[

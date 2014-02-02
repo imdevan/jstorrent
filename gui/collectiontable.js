@@ -65,20 +65,10 @@ function SlickCollectionTable(opts) {
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
     grid.onSort.subscribe( _.bind(function(evt, data) {
-        //console.log('onsort',data)
-
-        //data.grid.getData().sort
-
-        if (data.grid.collectionTable.collection.itemClass == jstorrent.File) {
+        //if (data.grid.collectionTable.collection.itemClass == jstorrent.File) {
             // sorting files view
             // XXX could be by attribute, too...
-
-
-
-            var sortBy = data.sortCol.id
-            data.grid.collectionTable.collection.sort(sortBy, data.sortAsc)
-        }
-
+        data.grid.collectionTable.collection.sort(data.sortCol, data.sortAsc)
         data.grid.invalidateAllRows();
         data.grid.render();
     }))

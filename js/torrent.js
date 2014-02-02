@@ -62,6 +62,10 @@ function Torrent(opts) {
     this.on('complete', _.bind(this.onComplete,this))
     this.on('stopped', _.bind(this.onStopped,this))
 
+    this.on('needRecalculatePieceBlacklist', _.debounce(_.bind(function() {
+        this.recalculatePieceBlacklist()
+    },this), 1000))
+
     this.think_interval = null
     this.pieceBlacklist = {}
 
@@ -400,7 +404,10 @@ Torrent.prototype = {
         }
 
 
-        this.recalculatePieceBlacklist()
+        //this.recalculatePieceBlacklist() // debounce this...
+
+        this.trigger('needRecalculatePieceBlacklist')
+
         this.save()
     },
     recalculatePieceBlacklist: function() {

@@ -35,16 +35,29 @@ Collection.prototype = {
         this._attributes[k] = v
         this.trigger('change',k,v,oldval)
     },
-    sort: function(rawAttr, sortAsc) {
-        console.log('sorting by raw attr',rawAttr,sortAsc)
-        var sortBy = rawAttr
+    sort: function(sortCol, sortAsc) {
+        if (sortCol.attr) {
+            var getAttr = function(item) {
+                return item[sortCol.attr]
+            }
+        } else {
+            var getAttr = function(item) {
+                return item._attributes[sortCol.id]
+            }
+        }
         if (sortAsc) {
             this.items.sort( function(a,b) {
-                return (a[sortBy] < b[sortBy]) ? 1 : -1
+                if (getAttr(a) == getAttr(b)) { return 0 }
+                if (getAttr(a) === undefined) { return 1 }
+                if (getAttr(b) === undefined) { return -1 }
+                return (getAttr(a) < getAttr(b)) ? 1 : -1
             })
         } else {
             this.items.sort( function(a,b) {
-                return (a[sortBy] < b[sortBy]) ? -1 : 1
+                if (getAttr(a) == getAttr(b)) { return 0 }
+                if (getAttr(a) === undefined) { return -1 }
+                if (getAttr(b) === undefined) { return 1 }
+                return (getAttr(a) < getAttr(b)) ? -1 : 1
             })
         }
         for (var i=0; i<this.items.length; i++) {

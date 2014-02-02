@@ -105,11 +105,17 @@ Item.prototype = {
         return attrs
     },
     save: function(callback) {
+        console.log(this.get_key(),'.save()')
+        if (this._saving) { console.warn(this.get_key(),'.save() in progress'); return }
+        this._saving = true
         var obj = {}
         var key = this.getStoreKey()
         obj[key] = this.getSaveData()
         //console.log('saving item',obj)
-        chrome.storage.local.set(obj, callback)
+        chrome.storage.local.set(obj, _.bind(function(){
+            this._saving = false
+            if (callback) { callback() }
+        },this))
     },
     on: function(event_name, callback) {
         if (! this._event_listeners[event_name]) {
