@@ -12,12 +12,6 @@ function Options(opts) {
             'description': 'your list of torrents will be synchronized across your devices'
         },
 
-        'spoof_utorrent': {
-            'editable':false,
-            'default':true,
-            'type':'bool'
-        },
-
         'show_progress_notifications': {
             'default':true,
             'name':'Show notifications for download progress',
@@ -62,7 +56,7 @@ function Options(opts) {
         'maxconns': {
             'name': 'Connections Per Torrent',
             'help': 'The maximum number of peers to download from. Higher numbers can potentially result in faster downloads, but use more system resources',
-            'default': 2,
+            'default': 15,
             'type':'int'
         },
 
@@ -78,6 +72,17 @@ function Options(opts) {
             'editable': false
         },
 
+        'report_to_trackers_override': {
+            'default': false,
+            'name': 'Spoofing - report to private trackers as uTorrent',
+            'type': 'bool'
+//            'children': [ 'report_to_trackers_override_as' ]
+        },
+        'report_to_trackers_override_as': {
+            'default': 'uTorrent/330B(30235)(server)(30235)',
+            'type': 'string',
+            'visible': false
+        },
         'max_unflushed_piece_data': {
             //        'default': 16384 * 20, // needs to be much larger, or else we will get "stuck" a lot...
             'editable': false,

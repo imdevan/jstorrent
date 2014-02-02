@@ -27,6 +27,7 @@ function Item(opts) {
     this._collections = []
     this._event_listeners = {}
     this._subcollections = []
+    this._savequeued = false
 }
 
 jstorrent.Item = Item
@@ -105,8 +106,15 @@ Item.prototype = {
         return attrs
     },
     save: function(callback) {
-        console.log(this.get_key(),'.save()')
-        if (this._saving) { console.warn(this.get_key(),'.save() in progress'); return }
+        //console.log(this.get_key(),'.save()')
+        if (this._saving) { 
+            console.warn(this.get_key(),'.save() in progress'); 
+            if (this._savequeued) {
+                console.warn(this.get_key(),'.save() doubly in progress')
+            }
+            this._savequeued = true
+            return 
+        }
         this._saving = true
         var obj = {}
         var key = this.getStoreKey()
@@ -114,6 +122,11 @@ Item.prototype = {
         //console.log('saving item',obj)
         chrome.storage.local.set(obj, _.bind(function(){
             this._saving = false
+            if (this._savequeued) {
+                this._savequeued = false
+                console.warn(this.get_key(),'executing queued .save()')
+                _.defer( _.bind(this.save, this) ) // save again ;-)
+            }
             if (callback) { callback() }
         },this))
     },

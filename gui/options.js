@@ -40,6 +40,10 @@ function OptionDisplay(opts) {
 }
 OptionDisplay.prototype = {
     getDOM: function() {
+        if (this.opts.meta.enabled === false) { return }
+        if (this.opts.meta.visible === false) { return }
+
+
         var s = 'Unsupported Option Type: ' + this.opts.meta.type + ' - ' + this.opts.key
         if (this.opts.meta.type == 'bool') {
             s = '<div class="checkbox">' +
@@ -51,6 +55,10 @@ OptionDisplay.prototype = {
             s = '<div class="input"><label><input style="width:30px" type="text" value="'+this.opts.val+'"></input> ' + this.getName() + '</label></div>'
         } else {
             debugger
+        }
+
+        if (this.opts.meta.children) {
+            s += '<div>... children</div>'
         }
 
         if (this.opts.meta.help) {
@@ -102,6 +110,7 @@ function OptionsView(opts) {
 
     for (var i=0; i<keys.length; i++) {
         console.log('opt',keys[i], this.options.get(keys[i]))
+
         cur = new OptionDisplay( { key: keys[i],
                                    options: this.options,
                                    meta: this.options.app_options[keys[i]],

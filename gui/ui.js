@@ -24,7 +24,6 @@ function UI(opts) {
             {id: "bytes_sent", name: "Bytes Sent", formatVal: byteUnits},
             {id: 'downloaded', formatVal:byteUnits},
             {id: "added", sortable:true},
-            {attr: "numfiles", sortable:true },
             {id: "numswarm", name: "Swarm"}
         ],
         'peers':[
@@ -46,8 +45,8 @@ function UI(opts) {
         'swarm':[
             {attr:"host", width:110, sortable:true},
             {attr:"port", sortable:true},
-            {id:"connected_ever", name: "Ever Connected"},
-            {id:'connectionResult'}
+            {id:"connected_ever", name: "Ever Connected", sortable:true},
+            {id:'connectionResult', sortable:true}
         ],
         'trackers':[
             {attr:'url', name:"URL", width:200, sortable:true},
@@ -55,7 +54,8 @@ function UI(opts) {
             {id:'errors'},
             {id:'timeouts'},
             {id:'seeders'},
-            {id:'leechers'}
+            {id:'leechers'},
+            {id:'lasterror', width:400}
         ],
         'diskio':[
             {id:'type'},

@@ -48,8 +48,8 @@ ChromeSocketXMLHttpRequest.prototype = {
     createRequestHeaders: function() {
         var lines = []
         var headers = {'Connection': 'close',
-//                       'Accept-Encoding': 'identity', // servers will send us chunked encoding even if we dont want it, bastards
-                       'User-Agent': 'uTorrent/330B(30235)(server)(30235)',
+                       'Accept-Encoding': 'identity', // servers will send us chunked encoding even if we dont want it, bastards
+//                       'User-Agent': 'uTorrent/330B(30235)(server)(30235)', // setRequestHeader /extra header is doing this
                        'Host': this.uri.host}
         _.extend(headers, this.extraHeaders)
         if (this.opts.method == 'GET') {
@@ -154,7 +154,16 @@ ChromeSocketXMLHttpRequest.prototype = {
                 this.headersReceived = true
                 this.responseHeaders = headers
                 this.readBuffer.consume(idx+4)
-                this.tryParseBody()
+
+                var response = parseHeaders(this.responseHeaders)
+                console.log('parsed http tracker response',response)
+                if (response.headers['transfer-encoding'] &&
+                    response.headers['transfer-encoding'] == 'chunked') {
+                    console.warn('this will break!')
+                    this.error('chunked encoding')
+                } else {
+                    this.tryParseBody()
+                }
             } else {
                 this.doRead()
             }
@@ -177,3 +186,24 @@ ChromeSocketXMLHttpRequest.prototype = {
     }
 }
 
+function parseHeaders(s) {
+    var lines = s.split('\r\n')
+    var firstLine = lines[0].split(/ +/)
+    var proto = firstLine[0]
+    var code = firstLine[1]
+    var status = firstLine[2]
+    var headers = {}
+
+    for (var i=1; i<lines.length; i++) {
+        var line = lines[i]
+        if (line) {
+            var j = line.indexOf(':')
+            var key = line.slice(0,j).toLowerCase()
+            headers[key] = line.slice(j+1,line.length).trim()
+        }
+    }
+    return {code: code,
+            status: status,
+            proto: proto,
+            headers: headers}
+}

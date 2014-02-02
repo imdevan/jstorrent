@@ -22,7 +22,7 @@ function Tracker(opts) {
     this.announce_callback = null
     this.announce_timeout = 10000;
     this.announce_timeout_hit = false
-    this.announce_timeout_callback = null
+    this.announce_timeout_id = null
 
     // tracker supplies us with these
     this.announceInterval = null
@@ -42,11 +42,31 @@ Tracker.prototype = {
         }
         this.state = state;
     },
-    set_error: function(err) {
+    set_error: function(err, details) {
+        var errString = ''
+        if (err && err.error) {
+            errString += err.error
+        } else {
+            errString += err
+        }
+        if (details) {
+            if (details.error) {
+                errString = details.error + ', ' + errString
+            } else {
+                errString = details + ', ' + errString
+            }
+        }
+        this.set('lasterror', errString)
+        if (details == 'chunked encoding') {
+            // fake chromexhrsocket does not support chunked encoding responses
+            app.createNotification({details:"Tracker error: spoofing not supported for this tracker. Turn of spoofing in the options.",
+                                    message:this.torrent.get('name'),
+                                    priority:1})
+        }
         var callback = this.announce_callback
-        if (this.announce_timeout_callback) { 
-            clearTimeout( this.announce_timeout_callback );
-            this.announce_timeout_callback = null
+        if (this.announce_timeout_id) { 
+            clearTimeout( this.announce_timeout_id );
+            this.announce_timeout_id = null
         }
         this.announce_callback = null
         this.set('errors',this.get('errors')+1)
@@ -55,7 +75,9 @@ Tracker.prototype = {
         if (callback) { callback(null, err) }
     },
     on_announce_timeout: function() {
-        this.announce_timeout_callback = null
+        if (! this.announce_timeout_id) { return } // success happened
+
+        this.announce_timeout_id = null
         this.announcing = false
         this.timeouts++
         this.set('timeouts',this.get('timeouts')+1)
@@ -86,7 +108,17 @@ HTTPTracker.prototype = {
         }
         return res
     },
+    shouldSpoof: function() {
+        return app.options.get('report_to_trackers_override') && this.torrent.isPrivate()
+    },
     announce: function(event, callback) {
+        if (this.shouldSpoof()) {
+            console.warn('spoofing announce')
+            var peeridbytes = this.torrent.client.peeridbytes_spoof
+        } else {
+            var peeridbytes = this.torrent.client.peeridbytes
+        }
+
         event = event || 'started'
         this.set('announces',this.get('announces')+1)
         var data = {
@@ -94,13 +126,17 @@ HTTPTracker.prototype = {
             downloaded: this.torrent.get('downloaded'),
             uploaded: this.torrent.get('uploaded'),
             compact: 1,
-            peer_id: ui82str(this.torrent.client.peeridbytes),
+            peer_id: ui82str(peeridbytes),
             port: 6666, // some trackers complain when we send 0 and dont give a response
             left: this.torrent.get('size') - this.torrent.get('downloaded')
         }
         //console.log('http tracker announce data',data)
-        //var xhr = new ChromeSocketXMLHttpRequest; // havent coded in chunked encoding ugh...
-        var xhr = new XMLHttpRequest;
+
+        if (this.shouldSpoof()) {
+            var xhr = new ChromeSocketXMLHttpRequest; // havent coded in chunked encoding ugh...
+        } else {
+            var xhr = new XMLHttpRequest;
+        }
 
         var url
         if (this.url.indexOf('?') == -1) {
@@ -116,6 +152,8 @@ HTTPTracker.prototype = {
         xhr.responseType = 'arraybuffer'
         xhr.timeout = 10000
         xhr.onload = _.bind(function(evt) {
+            this.set('lasterror','')
+            clearTimeout( this.announce_timeout_id )
             var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
             //console.log('http tracker response',data)
             this.response = data
@@ -137,7 +175,9 @@ HTTPTracker.prototype = {
             this.set_error('xhr error', evt)
         },this)
         xhr.open("GET", url, true)
-        //xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)') // dont do this
+        if (this.shouldSpoof()) {
+            xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)')
+        }
         xhr.send()
     }
 }
@@ -153,10 +193,10 @@ function UDPTracker() {
 
 UDPTracker.prototype = {
     on_announce_response: function(connectionInfo, announceRequest, readResponse) {
-        clearTimeout( this.announce_timeout_callback )
+        clearTimeout( this.announce_timeout_id )
         var callback = this.announce_callback
         this.announce_callback = null
-        this.announce_timeout_callback = null
+        this.announce_timeout_id = null
         this.announcing = false
         this.responses++
 
@@ -169,6 +209,7 @@ UDPTracker.prototype = {
         var seeders = v.getUint32(4*4);
         this.set('leechers',leechers)
         this.set('seeders',seeders)
+        this.set('lasterror','')
 
         console.assert( respTransactionId == announceRequest.transactionId )
 
@@ -199,7 +240,7 @@ UDPTracker.prototype = {
         this.set('announces',this.get('announces')+1)
         this.lasterror = null
         this.announce_callback = callback
-        this.announce_timeout_callback = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
+        this.announce_timeout_id = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
 
 	if (! this.connection) {
             this.set_state('get_connection')

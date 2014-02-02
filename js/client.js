@@ -68,26 +68,8 @@ function Client(opts) {
     // copies... hmm). Perhaps do some performance tests on this.
     this.workerthread = new jstorrent.WorkerThread({client:this});
 
-    this.peeridbytes = []
+    this.setPeerIdBytes()
 
-    if (this.app.options.get('spoof_utorrent')) {
-        this.peeridbytes = _.map('-UT3320-'.split(''), function(v){return v.charCodeAt(0)})
-    } else {
-        var verstr = chrome.runtime.getManifest().version.split('.').join('')
-        if (verstr.length < 4) {
-            verstr = verstr + '0'
-        }
-        console.assert(verstr.length == 4)
-        var beginstr = '-JS' + verstr + '-'
-        this.peeridbytes = _.map(beginstr.split(''), function(v){return v.charCodeAt(0)})
-    }
-
-    
-    for (var i=this.peeridbytes.length; i<20; i++) {
-        this.peeridbytes.push( 
-            Math.floor( Math.random() * 256 )
-        )
-    }
     //this.interval = setInterval( _.bind(this.frame,this), 1000 ) // try to only to edge triggered so that background page can go to slep
 
     this.on('error', _.bind(this.onError, this))
@@ -95,6 +77,26 @@ function Client(opts) {
 }
 
 Client.prototype = {
+    setPeerIdBytes: function(spoofing) {
+        this.peeridbytes = []
+        this.peeridbytes_spoof = []
+
+        this.peeridbytes_spoof = _.map('-UT3320-'.split(''), function(v){return v.charCodeAt(0)})
+
+        var verstr = chrome.runtime.getManifest().version.split('.').join('')
+        if (verstr.length < 4) {
+            verstr = verstr + '0'
+        }
+        console.assert(verstr.length == 4)
+        var beginstr = '-JS' + verstr + '-'
+        this.peeridbytes = _.map(beginstr.split(''), function(v){return v.charCodeAt(0)})
+        
+        for (var i=this.peeridbytes.length; i<20; i++) {
+            var val = Math.floor(Math.random() * 256)
+            this.peeridbytes.push( val )
+            this.peeridbytes_spoof.push( val )
+        }
+    },
     onChange: function(item,newval,oldval,attr) { 
         if (attr == 'numActiveTorrents') {
 

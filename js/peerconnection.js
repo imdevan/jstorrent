@@ -372,7 +372,7 @@ PeerConnection.prototype = {
 
         } else {
             this.set('bytes_sent', this.get('bytes_sent') + this.writing_length)
-            this.torrent.set('bytes_sent', this.torrent.get('bytes_sent') + this.writing_length)
+            this.torrent.countBytes('sent', this.writing_length)
             //this.torrent.set('uploaded', this.torrent.get('uploaded') + this.writing_length) // cheating? what is "uploaded" supposed to be, anyway
             this.writing = false
             this.writing_length = 0
@@ -572,7 +572,7 @@ PeerConnection.prototype = {
             return
         } else {
             this.set('bytes_received', this.get('bytes_received') + readResult.data.byteLength)
-            this.torrent.set('bytes_received', this.torrent.get('bytes_received') + readResult.data.byteLength)
+            this.torrent.countBytes('received', readResult.data.byteLength)
             //this.log('onRead',readResult.data.byteLength)
             this.readBuffer.add( readResult.data )
 

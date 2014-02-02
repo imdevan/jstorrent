@@ -47,6 +47,10 @@ function App() {
         var url = $('#url').val()
         if (! url) {
             console.log('add button clicked with no URL entered, popup select file dialog')
+            // open file chooser...
+
+            evt.preventDefault()
+            evt.stopPropagation()
         }
     })
 
@@ -140,7 +144,7 @@ App.prototype = {
         var row = this.client.torrents.keyeditems[hashhexlower]
         if (this.UI) {
             this.UI.torrenttable.grid.scrollRowIntoView(row);
-            this.UI.torrenttable.grid.flashCell(row, 0, 400);
+            this.UI.torrenttable.grid.flashCell(row, 0, 500);
         }
     },
     pulsate: function() {

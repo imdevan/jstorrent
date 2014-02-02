@@ -702,6 +702,13 @@ Torrent.prototype = {
         this.trigger('progress')
         this.save()
     },
+    countBytes: function(type, val) {
+        if (type == 'received') {
+            this.set('bytes_received', this.get('bytes_received') + val)
+        } else {
+            this.set('bytes_sent', this.get('bytes_sent') + val)
+        }
+    },
     notifyInvalidPiece: function(piece) {
         // when a piece comes back invalid, we delete the piece, and now need to clean up the peers too... ?
         this.peers.each( function(peerconn) {
