@@ -41,10 +41,7 @@ https://google.com/+jstorrent (Official Google+ Community Page)
 
 https://twitter.com/jstorrent (Twitter Page)
 
-http://jstorrent.com
-
-Documentation
-(to come)
+http://jstorrent.com (hosted by github pages - https://github.com/JSTorrent/jstorrent.github.io)
 
 Special New Features
 =======
