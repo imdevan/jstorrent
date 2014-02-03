@@ -125,14 +125,17 @@ Torrent.attributeSerializers = {
 
 Torrent.prototype = {
     resetState: function() {
+        console.log(this.get_key(),'resetState')
         var url = this.get('url')
         var client = this.client
         if (url) {
             this.remove( function() {
+                console.log('removed, adding')
                 client.add_from_url(url)
             })
         } else {
-            console.error('not yet supported')
+            app.createNotification({details:"Sorry. Unable to reset state for this torrent. Please remove the torrent and re-add it",
+                                    priority:2})
         }
     },
     resetStateOld: function() {
@@ -1136,10 +1139,11 @@ Torrent.prototype = {
             this.set('state','stopped')
             // TODO -- clear the entry from storage? nah, just put it in a trash bin
             this.save( function() {
-                _this.client.torrents.remove(_this)
+                console.log('torrent.remove().timeout(200).save(...',callback)
                 setTimeout( function() {
                     if (callback) { callback() }
                 }, 200)
+                _this.client.torrents.remove(_this)
             })
         },this), 200)
     },

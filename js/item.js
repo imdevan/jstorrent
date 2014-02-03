@@ -28,6 +28,7 @@ function Item(opts) {
     this._event_listeners = {}
     this._subcollections = []
     this._savequeued = false
+    this._savequeue = []
 }
 
 jstorrent.Item = Item
@@ -106,6 +107,8 @@ Item.prototype = {
         return attrs
     },
     save: function(callback) {
+        // this function is dubiously error free?
+
         //console.log(this.get_key(),'.save()')
         if (this._saving) { 
             if (this._savequeued) {
@@ -114,6 +117,10 @@ Item.prototype = {
                 console.warn(this.get_key(),'.save() in progress'); 
             }
             this._savequeued = true
+            if (callback) {
+                console.log('queueing post .save() callback')
+                this._savequeue.push( callback )
+            }
             return 
         }
         this._saving = true
@@ -127,6 +134,14 @@ Item.prototype = {
                 this._savequeued = false
                 console.warn(this.get_key(),'executing queued .save()')
                 _.defer( _.bind(this.save, this) ) // save again ;-)
+            } else {
+                if (this._savequeue.length > 0) {
+                    while (this._savequeue.length > 0) {
+                        var cb = this._savequeue.shift()
+                        console.log('executing queued .save() callback')
+                        _.defer( cb )
+                    }
+                }
             }
             if (callback) { callback() }
         },this))
