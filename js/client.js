@@ -136,11 +136,12 @@ Client.prototype = {
     },
     handleLaunchData: function(launchData) {
         var item
-        // check if client is ready for this, even...
         //console.log('handle launch data',launchData)
         if (launchData.type == 'onMessageExternal') {
+            app.analytics.sendEvent('launchData','onMessageExternal')
+            // track website it came from
             var request = launchData.request
-            this.add_from_url(request.url)
+            this.add_from_url(request.url, null, {pageUrl:request.pageUrl})
         } else if (launchData.type == 'onLaunched') {
             if (launchData.launchData && launchData.launchData.items && launchData.launchData.items.length > 0) {
                 for (var i=0; i<launchData.launchData.items.length; i++) {
@@ -200,11 +201,14 @@ Client.prototype = {
     set_ui: function(ui) {
         this.ui = ui
     },
-    add_from_url_response: function(callback, data) {
+    add_from_url_response: function(callback, opts, data) {
         if (data.torrent) {
             if (! this.torrents.containsKey(data.torrent.hashhexlower)) {
                 this.torrents.add( data.torrent )
                 this.app.highlightTorrent(data.torrent.hashhexlower)
+                if (opts && opts.pageUrl) {
+                    data.torrent.set('sourcePageUrl',opts.pageUrl)
+                }
                 this.torrents.save()
                 if (callback) { callback(data) }
             }
@@ -212,7 +216,7 @@ Client.prototype = {
             console.error('add url response',data)
         }
     },
-    add_from_url: function(url, cb) {
+    add_from_url: function(url, cb, opts) {
         // adds a torrent from a text input url
         app.analytics.sendEvent("Torrent", "Add", "URL")
         // parse url
@@ -222,7 +226,7 @@ Client.prototype = {
         var torrent = new jstorrent.Torrent({url:url,
                                              itemClass: jstorrent.Torrent,
                                              attributes:{added:new Date()},
-                                             callback: _.bind(this.add_from_url_response,this,cb),
+                                             callback: _.bind(this.add_from_url_response,this,cb,opts),
                                              parent:this.torrents})
 
         if (torrent.invalid) {

@@ -176,5 +176,8 @@ SlickCollectionTable.prototype = {
         this.grid.updateRowCount()
         this.grid.invalidateAllRows()
         this.grid.render()
+    },
+    resizeCanvas: function() {
+        this.grid.resizeCanvas()
     }
 }

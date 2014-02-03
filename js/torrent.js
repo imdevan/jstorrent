@@ -76,7 +76,7 @@ function Torrent(opts) {
     } else if (opts.entry) {
         // initialize from filesystem entry!
         console.assert(opts.callback)
-        this.initializeFromEntry(opts.entry, opts.callback)
+        this.initializeFromEntry(opts.entry, opts.callback, {needSave:false})
     } else {
         console.error('unsupported torrent initializer', opts)
         this.invalid = true
@@ -209,7 +209,7 @@ Torrent.prototype = {
         }
 
     },
-    initializeFromWeb: function(url, callback) {
+    initializeFromWeb: function(url, callback, opts) {
         console.log('torrent initialize from web')
 
         if (url.length == 40) {
@@ -255,7 +255,7 @@ Torrent.prototype = {
             xhr.onload = _.bind(function(evt) {
                 var headers = xhr.getAllResponseHeaders()
                 console.log('loaded url',url, headers)
-                this.initializeFromBuffer(evt.target.response, callback)
+                this.initializeFromBuffer(evt.target.response, callback, opts)
             },this)
             xhr.onerror = function(evt) {
                 console.error('unable to load torrent url',evt)
@@ -264,7 +264,7 @@ Torrent.prototype = {
             xhr.send() // can throw exception "A network error has occured" NetworkError
         }
     },
-    initializeFromBuffer: function(buffer, callback) {
+    initializeFromBuffer: function(buffer, callback, opts) {
         var _this = this
         function onHashResult(result) {
             var hash = result.hash
@@ -273,7 +273,7 @@ Torrent.prototype = {
                 _this.hashbytes = ui82arr(hash)
                 _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
                 _this.initializeTrackers()
-                _this.metadataPresentInitialize()
+                _this.metadataPresentInitialize(opts)
                 console.assert(_this.hashhexlower.length == 40)
                 if (callback) { callback({torrent:_this}) }
             } else {
@@ -281,6 +281,7 @@ Torrent.prototype = {
             }
         }
         try {
+            // try to make this utf-8 aware...
             this.metadata = bdecode(ui82str(new Uint8Array(buffer)))
         } catch(e) {
             callback({error:"Invalid torrent file"})
@@ -292,7 +293,7 @@ Torrent.prototype = {
         this.client.workerthread.send( { command: 'hashChunks',
                                          chunks: [new Uint8Array(chunkData)] }, onHashResult )
     },
-    initializeFromEntry: function(entry, callback) {
+    initializeFromEntry: function(entry, callback, opts) {
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
         var _this = this
         var reader = new FileReader;
@@ -303,8 +304,7 @@ Torrent.prototype = {
                 callback({error:"read 0 bytes"})
                 return
             }
-
-            this.initializeFromBuffer(evt.target.result, callback)
+            this.initializeFromBuffer(evt.target.result, callback, opts)
 
         },this)
         reader.onerror = _.bind(function(evt) {
@@ -448,7 +448,7 @@ Torrent.prototype = {
             //return this.infodict['piece length']
         }
     },
-    metadataPresentInitialize: function() { // i.e. postMetadataReceived
+    metadataPresentInitialize: function(opts) { // i.e. postMetadataReceived
         // call this when infodict is newly available
         this.connectionsServingInfodict = []
 
@@ -486,7 +486,10 @@ Torrent.prototype = {
         this.set('metadata',true)
         this.set('complete', this.getPercentComplete())
         this.save()
-        this.saveMetadata() // trackers maybe not initialized so they arent being saved...
+        if (! opts ||
+            opts.needSave !== false) {
+            this.saveMetadata() // trackers maybe not initialized so they arent being saved...
+        }
         this.recalculatePieceBlacklist()
         this.trigger('havemetadata')
         //this.recheckData() // only do this under what conditions?
@@ -495,6 +498,8 @@ Torrent.prototype = {
         return this.get('name') + '.torrent'
     },
     loadMetadata: function(callback) {
+        var opts = {needSave:false}
+        
         // xxx this is failing when disk is not attached!
         var _this = this
         if (this.get('metadata')) {
@@ -506,7 +511,7 @@ Torrent.prototype = {
                     storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
                         // XXX XXX XXX sometimes this does NOT return!!! need to restart the app cuz its BROKEN as FUK
                         if (entry) {
-                            _this.initializeFromEntry(entry, callback)
+                            _this.initializeFromEntry(entry, callback, opts)
                         } else {
                             callback({error:'file missing'})
                         }
@@ -1203,6 +1208,14 @@ Torrent.prototype = {
     },
     getMaxConns: function() {
         return this.get('maxconns') || this.client.app.options.get('maxconns')
+    },
+    getShareLink: function() {
+        var url = 'http://jstorrent.com/share/#hash=' + this.hashhexlower + '&dn=' + encodeURIComponent(this.get('name')) + '&magnet_uri=' + encodeURIComponent(this.getMagnetLink())
+        return url
+    },
+    getMagnetLink: function() {
+        url = 'magnet:?xt=urn:btih:' + this.hashhexlower + '&dn=' + this.get('name')
+        return url
     },
     should_add_peers: function() {
         if (this.started) {

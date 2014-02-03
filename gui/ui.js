@@ -155,6 +155,17 @@ UI.prototype = {
             } else {
                 // no storage...
             }
+        } else if (type == 'info') {
+            // general info pane
+
+            if (! torrent.infodict && torrent.get('metadata')) {
+                torrent.loadMetadata(function(){})
+            }
+
+            this.detailtable = new GeneralInfoView({
+                domid: domid,
+                torrent: torrent,
+            })
         } else {
             if (! torrent[type] || ! this.coldefs[type]) {
                 console.warn('invalid table definition for type',type)
@@ -178,5 +189,87 @@ UI.prototype = {
                 }
             }
         }
+    }
+}
+
+
+function GeneralInfoView(opts) {
+    this.opts = opts
+    this.torrent = opts.torrent
+    this.render()
+}
+GeneralInfoView.prototype = {
+    render: function() {
+        //$('#'+this.opts.domid).css('opacity',1)
+        //$('#'+this.opts.domid).stop()
+        $('#'+this.opts.domid).show()
+
+        if (! this.torrent) {
+            $('#'+this.opts.domid).html("<p>No Torrent selected</p>")
+/*        } else if (! this.torrent.infodict && this.torrent.get('metadata')) {
+            $('#'+this.opts.domid).html("Loading...")
+            //$('#'+this.opts.domid).fadeOut()
+*/
+        } else {
+            var s = '<div style="-webkit-user-select: text; overflow:scroll"><ul>'
+            var excludes = ['info', 'announce','announce-list']
+            var magnet = this.torrent.getMagnetLink()
+            s += '<label>Links</label>'
+            s += ('<li>magnet link: <a target="_blank" href="'+magnet+'">' + _.escape(magnet) +  '</a></li>')
+            s += ('<li>share link: <a target="_blank" href="'+this.torrent.getShareLink()+'">JSTorrent.com web link for sharing</a></li>')
+
+            //var attr_includes = ['added']
+            var attr_includes = this.torrent._attributes
+            var attr_excludes = ['bitfield','filePriority']
+
+            var haveExtraMeta = false
+            if (this.torrent.metadata) {
+                for (var key in this.torrent.metadata) {
+                    if (! _.contains(excludes, key)) {
+                        if (! haveExtraMeta) {
+                            s += '<label style="margin-top:0.5em">Extra Metadata</label>'
+                            haveExtraMeta = true
+                        }
+                        s += ('<li>' + _.escape(key) + ': ' + this.renderValue(this.torrent.metadata[key]) + '</li>')
+                    }
+                }
+            } else {
+                s += '<li>Metadata not present (magnet only)</li>'
+            }
+
+            s += '<label style="margin-top:0.5em">Attributes</label>'
+            for (var key in attr_includes) {
+                if (! _.contains(attr_excludes, key)) {
+                    s += ('<li>' + _.escape(key) + ': ' + this.renderValue(this.torrent._attributes[key]) + '</li>')
+                }
+            }
+
+            s += ('<li>' + _.escape('multifile') + ': ' + this.renderValue(this.torrent.multifile) + '</li>')
+            s += ('<li>' + _.escape('private') + ': ' + this.renderValue(this.torrent.isPrivate()) + '</li>')
+            s += ('<li>' + _.escape('storage') + ': ' + this.renderValue(this.torrent.getStorage()) + '</li>')
+            s += ('<li>' + _.escape('lasterror') + ': ' + this.renderValue(this.torrent.lasterror) + '</li>')
+
+            s += '</ul></div>'
+            $('#'+this.opts.domid).html(s)
+        }
+        this.resizeCanvas()
+    },
+
+    renderValue: function(v) {
+        if (typeof v == 'string' &&
+            (v.toLowerCase().match('^http:') || 
+             v.toLowerCase().match('^https:'))
+           ) {
+            return '<a target="_blank" href="'+v+'">'+_.escape(v)+'</a>'
+        } else {
+            return _.escape(v)
+        }
+    },
+    destroy: function() {
+        $('#'+this.opts.domid).html("")
+    },
+    resizeCanvas: function() {
+        //console.log('info view - resize my canvas')
+        $('#'+this.opts.domid).children().height( $('#'+this.opts.domid).height() )
     }
 }

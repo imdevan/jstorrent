@@ -233,7 +233,7 @@ App.prototype = {
     },
     onTorrentHaveMetadata: function(torrent) {
         if (this.UI.get_selected_torrent() == torrent) {
-            // reset the detail view
+            // reset the detail view (works for files view, general view)
             this.UI.set_detail(this.UI.detailtype, torrent)
         }
     },
@@ -396,7 +396,7 @@ App.prototype = {
     open_share_window: function() {
         var torrent = this.UI.get_selected_torrent()
         if (torrent) {
-            window.open('http://jstorrent.com/share#hash=' + torrent.hashhexlower + '&dn=' + encodeURIComponent(torrent.get('name')), '_blank')
+            window.open(torrent.getShareLink())
         }
     },
     toolbar_resetstate: function() {

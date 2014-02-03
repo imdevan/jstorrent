@@ -108,9 +108,10 @@ Item.prototype = {
     save: function(callback) {
         //console.log(this.get_key(),'.save()')
         if (this._saving) { 
-            console.warn(this.get_key(),'.save() in progress'); 
             if (this._savequeued) {
                 console.warn(this.get_key(),'.save() doubly in progress')
+            } else {
+                console.warn(this.get_key(),'.save() in progress'); 
             }
             this._savequeued = true
             return 

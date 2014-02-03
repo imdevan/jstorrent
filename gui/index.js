@@ -36,7 +36,7 @@ function onresizewindow() {
     $("#detailGrid")[0].style.width = width
     $("#torrentGrid")[0].style.height = Math.floor((height - totalchrome) * 0.4)
     $("#detailGrid")[0].style.height = Math.ceil((height - totalchrome) * 0.6)
-    if (app && app.UI && app.UI.detailtable) { app.UI.detailtable.grid.resizeCanvas() }
+    if (app && app.UI && app.UI.detailtable) { app.UI.detailtable.resizeCanvas() }
     if (app && app.UI && app.UI.torrenttable) { app.UI.torrenttable.grid.resizeCanvas() }
 }
 
