@@ -87,8 +87,11 @@ Client.prototype = {
         if (verstr.length < 4) {
             verstr = verstr + '0'
         }
+        this.version = chrome.runtime.getManifest().version
+        this.verstr = verstr
         console.assert(verstr.length == 4)
         var beginstr = '-JS' + verstr + '-'
+        this.peeridbytes_begin = beginstr
         this.peeridbytes = _.map(beginstr.split(''), function(v){return v.charCodeAt(0)})
         
         for (var i=this.peeridbytes.length; i<20; i++) {
@@ -96,6 +99,9 @@ Client.prototype = {
             this.peeridbytes.push( val )
             this.peeridbytes_spoof.push( val )
         }
+    },
+    getUserAgent: function() {
+        return 'JSTorrent/' + this.verstr
     },
     onChange: function(item,newval,oldval,attr) { 
         if (attr == 'numActiveTorrents') {

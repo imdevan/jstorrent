@@ -14,6 +14,15 @@ function purchase() {
 $(document).ready( function() {
     console.log('help page ready')
     // TODO - send analytics event
-    debugger
-    document.getElementById('sponsor').addEventListener('click', purchase)
+    //document.getElementById('sponsor').addEventListener('click', purchase)
+
+    chrome.runtime.getBackgroundPage( function(bg) {
+        bg.window.windowManager.getMainWindow(function(window){
+            document.getElementById('version').innerText = window.contentWindow.client.version
+            document.getElementById('user-agent').innerText = navigator.userAgent;
+            document.getElementById('x-user-agent').innerText = window.contentWindow.client.getUserAgent();
+            document.getElementById('peerid').innerText = window.contentWindow.client.peeridbytes_begin;
+        })
+    })
+
 })

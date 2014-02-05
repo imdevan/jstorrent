@@ -52,13 +52,18 @@ Special New Features
   - multiple download directories
 - Unlimited size downloads (multi gigabyte torrents)
 
-
-Options page
+Private tracker support
 =======
-Option - global upload rate limiting etc
-Option - whether to download while machine is idle (screen locked)
-Option - show system notifications when torrents complete etc
-... etc (this readme is not being kept up to date :-()
+
+Typically trackers will employ a "whitelist" and only allow certain
+BitTorrent clients. Since this software is relatively new, many
+trackers have not yet whitelisted JSTorrent. You will need to contact
+the administrators of your private tracker and give them the following
+information:
+
+- JSTorrent reports itself to the tracker a "User-Agent" string the same as the underlying browser (e.g. something like "Mozilla/5.0 (X11; CrOS x86_64 4731.101.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.67 Safari/537.36"). (current limitations disallow changing this)
+- It adds an "X-User-Agent" string of the form: (JSTorrent/{version}) (current x-user-agent string version: "JSTorrent/2120")
+- Its peer id begins with "-JS{version}-", currently peer id begins with "-JS2120-"
 
 Todo
 =======

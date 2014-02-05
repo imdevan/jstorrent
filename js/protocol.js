@@ -1,6 +1,6 @@
 jstorrent.protocol = {
     protocolName: 'BitTorrent protocol',
-    reportedClientName: 'JSTorrent 2.0.0',
+    reportedClientName: 'JSTorrent ' + chrome.runtime.getManifest().version, // update with version
     handshakeClientName: 'JS',
     pieceSize: 16384,
     chunkSize: 16384,

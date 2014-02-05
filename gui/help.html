@@ -13,7 +13,17 @@ Thank you for using JSTorrent, a torrent client for Google ChromeOS.
 
 Having difficulty understanding how to use JSTorrent?
 
-<ul>
+<ul style="-webkit-user-select: text">
+
+  <li>
+    <span class="question">
+      What version am I running?
+    </span>
+    <span class="answer">
+      <p>This is JSTorrent version <span id="version"></span></p>
+    </span>
+  </li>
+
 
   <li>
     <span class="question">
@@ -63,10 +73,19 @@ Having difficulty understanding how to use JSTorrent?
     <span class="answer">
       <p>First off, did you select your download directory?</p>
 
-      <p>Check the "Trackers" tab and make sure there are no numbers in
-      the "errors" or "timeouts" columns, and that there are numbers
-      in the "seeders" column. Then check out the "Peers" tab and make
-      sure you're connecting to peers.</p>
+      <p>Check the "Trackers" tab and make sure there are no numbers
+      in the "errors" or "timeouts" columns, and that there are
+      numbers in the "seeders" column. See if there is any information
+      in the "lasterror" column.
+
+      <p>Verify that there are peers present in the "Swarm" tab</p>
+
+      <p>Then check out the "Peers" tab and make sure you're
+      connecting to peers.</p>
+
+      <p>If you still have no success, please report detailed information to graehlarts@gmail.com or to the 
+        <a target="_blank" href="http://google.com/+JSTorrent">JSTorrent community page</a>
+      </p>
     </span>
   </li>
 
@@ -97,7 +116,15 @@ Having difficulty understanding how to use JSTorrent?
       <p>With a private tracker, you'll need to download the ".torrent" file from the web browser first, and then load it into JSTorrent. This is because you need to be signed in, and JSTorrent doesn't know about your login credentials.
       </p>
 
-      <p>That being said, there seem to be some issues with some private trackers. If you have a problem with a specific private tracker, please let me know about it and I can attempt to figure out what the problem is.</p>
+      <p>Typically trackers will employ a "whitelist" and only allow certain BitTorrent clients. Since this software is relatively new, many trackers have not yet whitelisted JSTorrent. You will need to contact the administrators of your private tracker and give them the following information:</p>
+
+        <ul>
+          <li>JSTorrent reports itself to the tracker a "User-Agent" string the same as the underlying browser (e.g. "<span id="user-agent"></span>"). (current limitations disallow changing this)</li>
+          <li>It adds an "X-User-Agent" string of the form: (JSTorrent/{version}) (current x-user-agent string version: "<span id="x-user-agent"></span>"
+          <li>Its peer id begins with "-JS{version}-", currently peer id begins with "<span id="peerid"></span>"</li>
+        </ul>
+      </p>
+
     </span>
   </li>
 
@@ -130,14 +157,14 @@ Having difficulty understanding how to use JSTorrent?
     </span>
   </li>
 
-  <li>
+  <!--li>
     <span class="question">
       Can I create torrents?
     </span>
     <span class="answer">
       You sure can! Just drag a file into JSTorrent
     </span>
-  </li>
+  </li-->
 
   <li>
     <span class="question">
