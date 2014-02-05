@@ -37,11 +37,12 @@ source too.
 Websites:
 ----
 
+http://jstorrent.com (hosted by github pages - https://github.com/JSTorrent/jstorrent.github.io)
+
 https://google.com/+jstorrent (Official Google+ Community Page)
 
 https://twitter.com/jstorrent (Twitter Page)
 
-http://jstorrent.com (hosted by github pages - https://github.com/JSTorrent/jstorrent.github.io)
 
 Special New Features
 =======
@@ -61,9 +62,11 @@ trackers have not yet whitelisted JSTorrent. You will need to contact
 the administrators of your private tracker and give them the following
 information:
 
-- JSTorrent reports itself to the tracker a "User-Agent" string the same as the underlying browser (e.g. something like "Mozilla/5.0 (X11; CrOS x86_64 4731.101.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.67 Safari/537.36"). (current limitations disallow changing this)
+- JSTorrent reports itself to the tracker a "User-Agent" string the same as the underlying browser (e.g. something like "Mozilla/5.0 (X11; CrOS x86_64 4731.101.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.67 Safari/537.36"). (current limitations disallow changing this - see https://code.google.com/p/chromium/issues/detail?id=335934)
 - It adds an "X-User-Agent" string of the form: (JSTorrent/{version}) (current x-user-agent string version: "JSTorrent/2120")
 - Its peer id begins with "-JS{version}-", currently peer id begins with "-JS2120-"
+
+Otherwise, you may try enabling "spoofing" in the options. Use at your own risk.
 
 Todo
 =======
@@ -77,7 +80,7 @@ Todo
 - use chrome.system.storage to detect external media detach/attach events
 - DHT
 - uPNP
-- bind/listen TCP
+- bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
 
 Ideas
 =======
