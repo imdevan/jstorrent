@@ -8,21 +8,16 @@
     "minimum_chrome_version": "31",
     "permissions": [
         "contextMenus",
-        "notifications",
-        "*://*.jstorrent.com/*",
-        "*://jstorrent.com/*"
+        "notifications"
     ],
     "externally_connectable": {
-      "ids": [ 
-          "anhdpjpojoipgpmfanmedjghaligalgb",
-          "abmohcnlldaiaodkpacnldcdnjjgldfh"
-       ],
-      "matches": [
-          "*://*.jstorrent.com/*",
-          "*://jstorrent.com/*"
-      ]
+        "ids": [
+            "anhdpjpojoipgpmfanmedjghaligalgb",
+            "abmohcnlldaiaodkpacnldcdnjjgldfh"
+        ]
     },
     "background": {
+        "persistent": false,
         "scripts": ["background.js"]
     },
     "icons": { 
