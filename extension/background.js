@@ -4,9 +4,17 @@ var jstorrent_lite_id = "abmohcnlldaiaodkpacnldcdnjjgldfh"
 var cws_url = "https://chrome.google.com/webstore/detail/"
 // TODO -- add jstorrent lite
 var createProps = {
+    id:"contextMenu",
     title:"Add to JSTorrent",
     contexts:["link"],
-    onclick: function(info, tab) {
+    targetUrlPatterns: ["magnet:*",
+                        "*://*/*.torrent",
+                        "*://*/*.torrent?*",
+                        "*://*/*.torrent#*"
+                       ]
+}
+
+function onContextMenuClickHandler(info, tab) {
         //console.log(info, tab)
 
         chrome.runtime.sendMessage(jstorrent_id, {command:'add-url',url:info.linkUrl, pageUrl:info.pageUrl}, function(result) {
@@ -25,20 +33,15 @@ var createProps = {
 
             // if no result, then try jstorrent lite ?
         })
-
-
-
-
-    },
-    targetUrlPatterns: ["magnet:*",
-                        "*://*/*.torrent",
-                        "*://*/*.torrent?*",
-                        "*://*/*.torrent#*"
-                       ]
-    
 }
-chrome.contextMenus.create(createProps, function() {
-    //console.log('created contextMenu')
+
+chrome.contextMenus.onClicked.addListener(onContextMenuClickHandler)
+
+// Set up context menu at install time.
+chrome.runtime.onInstalled.addListener(function() {
+    chrome.contextMenus.create(createProps, function() {
+        //console.log('created contextMenu')
+    })
 })
 
 
