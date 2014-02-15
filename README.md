@@ -82,6 +82,9 @@ Todo
 - uPNP
 - bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
 
+![Coinbase](https://coinbase.com/assets/buttons/donation_small.png)
+[Donate to this project using bitcoin](https://coinbase.com/checkouts/3e0c50345e530ac1756b006d6cc48b86")
+
 Ideas
 =======
 - disk cache for serving torrent data (seeding)
