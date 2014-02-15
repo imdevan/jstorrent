@@ -82,9 +82,7 @@ Todo
 - uPNP
 - bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
 
-![donate image](https://coinbase.com/assets/buttons/donation_small.png)
-
-[Donate to this project using bitcoin](https://coinbase.com/checkouts/3e0c50345e530ac1756b006d6cc48b86)
+[Donate to this project using bitcoin](https://coinbase.com/checkouts/0d6e86a8aebda055fb5697a5b397ba7d)
 
 Ideas
 =======
