@@ -21,8 +21,8 @@ function onaddkeydown(evt) {
 }
 
 function onadd(evt) {
+    // called when pressing ENTER, or clicking on "Add"
     var url = document.getElementById("url").value;
-    debugger
     if (! url) {
         // open dialog to select file
         app.select_torrent()

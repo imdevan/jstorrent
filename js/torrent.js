@@ -268,6 +268,7 @@ Torrent.prototype = {
         }
     },
     initializeFromBuffer: function(buffer, callback, opts) {
+        console.log('initializefrombuffer')
         var _this = this
         function onHashResult(result) {
             var hash = result.hash
@@ -897,22 +898,26 @@ Torrent.prototype = {
         this.starting = false
         this.set('state','error')
         this.lasterror = msg
-        console.error('torrent error:',[msg,detail])
+        //console.error('torrent error:',[msg,detail])
 
-        if (msg == 'read 0 bytes') {
-            this.client.app.onClientError(msg, 'Torrent file invalid. Click "Reset state" from the "More Actions" toolbar.')
-/*
-        } else if (msg == 'Disk Missing') {
-            this.client.app.createNotification({details:'The disk this torrent was saving to cannot be found. Either "reset" this torrent (More Actions in the toolbar) or re-insert the disk'})
-*/
-        } else {
-            if (this.client.disks.items.length == 0) {
-            // need a more generic error...
-                this.client.app.notifyNeedDownloadDirectory()
+        if (false) {
+            if (msg == 'read 0 bytes') {
+                this.client.app.onClientError(msg, 'Torrent file invalid. Click "Reset state" from the "More Actions" toolbar.')
+                /*
+                  } else if (msg == 'Disk Missing') {
+                  this.client.app.createNotification({details:'The disk this torrent was saving to cannot be found. Either "reset" this torrent (More Actions in the toolbar) or re-insert the disk'})
+                */
             } else {
-                this.client.app.notifyStorageError()
+                if (this.client.disks.items.length == 0) {
+                    // need a more generic error...
+                    this.client.app.notifyNeedDownloadDirectory()
+                } else {
+                    this.client.app.notify(msg)
+                    //this.client.app.notifyStorageError() // NO!
+                }
             }
         }
+
         this.started = false
         this.starting = false
         this.save()
@@ -982,6 +987,20 @@ Torrent.prototype = {
                     }
                     this.trackers.add( tracker )
                 }
+            }
+        }
+    },
+    addPublicTrackers: function() {
+        if (this.isPrivate()) { return }
+        for (var i=0; i<jstorrent.constants.publicTrackers.length; i++) {
+            var url = jstorrent.constants.publicTrackers[i]
+            if (url.toLowerCase().match('^udp')) {
+                tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
+            } else {
+                tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+            }
+            if (! this.trackers.contains(tracker)) {
+                this.trackers.add( tracker )
             }
         }
     },
@@ -1057,9 +1076,28 @@ Torrent.prototype = {
         this.client.trigger('activeTorrentsChange')
 
         if (! jstorrent.options.disable_trackers) {
+            if (this.trackers.length == 0) {
+                // if we start a torrent and there are no trackers, then it has no chance...
+                this.addPublicTrackers()
+            }
             for (var i=0; i<this.trackers.length; i++) {
                 this.trackers.get_at(i).announce('started')
             }
+        }
+        setTimeout( this.afterTrackerAnnounceResponses.bind(this), jstorrent.Tracker.announce_timeout + 1000 )
+    },
+    forceAnnounce: function() {
+        for (var i=0; i<this.trackers.length; i++) {
+            this.trackers.get_at(i).announce('started')
+        }
+    },
+    afterTrackerAnnounceResponses: function() {
+        // called after all tracker announce responses
+        if (this.swarm.length == 0) {
+            //this.error("No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site")
+            app.notifyWantToAddPublicTrackers(this)
+            //this.addPublicTrackers()
+            //this.forceAnnounce()
         }
     },
     onComplete: function() {
@@ -1196,8 +1234,8 @@ Torrent.prototype = {
         this.maybeDropShittyConnection()
 
         var idx, peer, peerconn
-        if (this.should_add_peers() && this.swarm.length > 0) {
-            idx = Math.floor( Math.random() * this.swarm.length )
+        if (this.should_add_peers() && this.swarm.items.length > 0) {
+            idx = Math.floor( Math.random() * this.swarm.items.length )
             peer = this.swarm.get_at(idx)
             peerconn = new jstorrent.PeerConnection({peer:peer})
             //console.log('should add peer!', idx, peer)

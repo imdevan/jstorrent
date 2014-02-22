@@ -73,6 +73,8 @@ Collection.prototype = {
         this.event_listeners[event_type].splice(idx,1)
     },
     on: function(event_type, callback) {
+        // XXX - if we set a debugger here, UI fucks up
+        //console.log('register',event_type)
         if (! this.event_listeners[event_type]) {
             this.event_listeners[event_type] = []
         }
@@ -83,9 +85,24 @@ Collection.prototype = {
         return this.keyeditems[key]
     },
     trigger: function(event_type, item, newval, oldval, attrName) {
-        if (this.event_listeners[event_type]) {
-            for (var i=0; i<this.event_listeners[event_type].length; i++) {
-                this.event_listeners[event_type][i](item, newval, oldval, attrName)
+        if (event_type == 'change') {
+            if (this.event_listeners && this.event_listeners[event_type]) {
+                for (var i=0; i<this.event_listeners[event_type].length; i++) {
+                    this.event_listeners[event_type][i](item, newval, oldval, attrName)
+                }
+            }
+        } else {
+            if (this.event_listeners && this.event_listeners[event_type]) {
+                for (var i=0; i<this.event_listeners[event_type].length; i++) {
+                    var args = Array.prototype.slice.call(arguments,1)
+/*                    var args = [arguments[0],this]
+                    for (var j=1;j<arguments.length; j++) {
+                        args.push(arguments[j])
+                    }*/
+
+
+                    this.event_listeners[event_type][i].apply(undefined, args)
+                }
             }
         }
     },

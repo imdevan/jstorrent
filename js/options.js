@@ -147,7 +147,7 @@ Options.prototype = {
         chrome.storage.local.get(this.getStorageKey(), _.bind(this.options_loaded, this, callback))
     },
     options_loaded: function(callback, data) {
-        console.log('options loaded',data);
+        //console.log('options loaded',data);
         this.data = data[this.getStorageKey()] || {}
         callback()
     },

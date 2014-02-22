@@ -69,8 +69,18 @@ Item.prototype = {
             }
         }
         if (this._collections.length > 0) {
-            for (var i=0; i<this._collections.length; i++) {
-                this._collections[i].trigger(k, this, newval, oldval, attrName)
+            if (k == 'change') {
+                for (var i=0; i<this._collections.length; i++) {
+                    this._collections[i].trigger(k, this, newval, oldval, attrName)
+                }
+            } else {
+                for (var i=0; i<this._collections.length; i++) {
+                    var args = [arguments[0],this]
+                    for (var j=1;j<arguments.length; j++) {
+                        args.push(arguments[j])
+                    }
+                    this._collections[i].trigger.apply(this._collections[i], args)
+                }
             }
         }
     },
@@ -132,7 +142,7 @@ Item.prototype = {
             this._saving = false
             if (this._savequeued) {
                 this._savequeued = false
-                console.warn(this.get_key(),'executing queued .save()')
+                //console.warn(this.get_key(),'executing queued .save()')
                 _.defer( _.bind(this.save, this) ) // save again ;-)
             } else {
                 if (this._savequeue.length > 0) {

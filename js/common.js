@@ -14,8 +14,9 @@ jstorrent.constants = {
     manifest: chrome.runtime.getManifest(),
     chunkRequestTimeoutInterval: 20000,
     endgameDuplicateRequests: 3,
-    publicTrackers: ["udp://tracker.openbittorrent.com:80/announce",
-                     "udp://tracker.publicbt.com:80/announce"]
+    publicTrackers: ["udp://tracker.openbittorrent.com:80",
+                     'udp://tracker.istole.it:6969',
+                     "udp://tracker.publicbt.com:80"]
 }
 jstorrent.strings = {
     NOTIFY_NO_DOWNLOAD_FOLDER: 'No Download Folder selected. Click to select your Download Directory.',

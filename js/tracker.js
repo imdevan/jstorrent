@@ -20,7 +20,6 @@ function Tracker(opts) {
     this.timeouts = 0
     this.announcing = false
     this.announce_callback = null
-    this.announce_timeout = 10000;
     this.announce_timeout_hit = false
     this.announce_timeout_id = null
 
@@ -28,6 +27,7 @@ function Tracker(opts) {
     this.announceInterval = null
     this.announceMinInterval = null
 }
+Tracker.announce_timeout = 1000
 jstorrent.Tracker = Tracker;
 
 Tracker.prototype = {
@@ -150,7 +150,7 @@ HTTPTracker.prototype = {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
         }
         xhr.responseType = 'arraybuffer'
-        xhr.timeout = 10000
+        xhr.timeout = Tracker.announce_timeout
         xhr.onload = _.bind(function(evt) {
             this.set('lasterror','')
             clearTimeout( this.announce_timeout_id )
@@ -243,7 +243,7 @@ UDPTracker.prototype = {
         this.set('announces',this.get('announces')+1)
         this.lasterror = null
         this.announce_callback = callback
-        this.announce_timeout_id = setTimeout( _.bind(this.on_announce_timeout,this), this.announce_timeout )
+        this.announce_timeout_id = setTimeout( _.bind(this.on_announce_timeout,this), Tracker.announce_timeout )
 
 	if (! this.connection) {
             this.set_state('get_connection')

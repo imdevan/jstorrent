@@ -44,6 +44,7 @@ function App() {
     this.updateRemainingDownloadsDisplay()
 
     $('#url-btn').click( function(evt) {
+        console.log('url-btn click')
         var url = $('#url').val()
         if (! url) {
             console.log('add button clicked with no URL entered, popup select file dialog')
@@ -83,7 +84,7 @@ App.prototype = {
         })
     },
     initialize_client: function() {
-        console.log('app:initialize_client')
+        //console.log('app:initialize_client')
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('error', _.bind(this.onTorrentError, this))
         this.client.torrents.on('started', _.bind(this.onTorrentStart, this))
@@ -112,6 +113,25 @@ App.prototype = {
         this.createNotification({details:'There seems to be a problem with the disk for this torrent. Is it attached? You can reset the disk for this torrent in the "More Actions" in the toolbar. This could just be the disk was too slow, and you can try again.',
                                  priority:2,
                                  id:'storage-missing'})
+    },
+    notifyWantToAddPublicTrackers: function(torrent) {
+        function onclick(idx) {
+            if (idx == 1) {
+                
+            } else {
+                torrent.addPublicTrackers()
+                torrent.forceAnnounce()
+            }
+        }
+        this.createNotification({ details:"No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site. Or you can:",
+                                  buttons: [ 
+                                      {title:"Add public trackers and reattempt"},
+                                      {title:"Do nothing"}
+                                  ],
+                                  id:'tracker-error-' + torrent.hashhexlower,
+                                  priority:1,
+                                  onButtonClick: _.bind(onclick,this),
+                                  onClick: _.bind(onclick,this) })
     },
     notifyNoDownloadsLeft: function() {
         function onclick(idx) {
@@ -316,15 +336,18 @@ App.prototype = {
     onTorrentError: function(torrent, err) {
         this.sessionState['haderror'] = true
 
+        // TODO -- we are handling torrent error notificationsin too many places!
+
         if (err == 'Disk Missing') {
             err = 'Disk Missing. Choose a download directory in the options.'
         }
-        if (err === undefined) { debugger }
+
+        //if (err === undefined) { debugger }
         this.createNotification({
             details: "Error with torrent: " + err,
             priority: 1
         })
-        console.log('torrent->error event->app',err)
+        //console.log('torrent->error event->app',err)
     },
     onTorrentStart: function(torrent) {
         if (torrent.get('complete') == 1) { return }
