@@ -112,13 +112,13 @@ Item.prototype = {
         //console.log(this.get_key(),'.save()')
         if (this._saving) { 
             if (this._savequeued) {
-                console.warn(this.get_key(),'.save() doubly in progress')
+                //console.warn(this.get_key(),'.save() doubly in progress')
             } else {
-                console.warn(this.get_key(),'.save() in progress'); 
+                //console.warn(this.get_key(),'.save() in progress'); 
             }
             this._savequeued = true
             if (callback) {
-                console.log('queueing post .save() callback')
+                //console.log('queueing post .save() callback')
                 this._savequeue.push( callback )
             }
             return 

@@ -359,7 +359,7 @@ App.prototype = {
         if (files) {
             for (var i=0; i<files.length; i++) {
                 file = files[i]
-                console.log('drop found file',file)
+                console.log('drop found file (but use FileEntry instead)',file)
                 // check if ends in .torrent, etc...
             }
         }
@@ -370,7 +370,7 @@ App.prototype = {
                 //console.log('drop found item',item)
                 if (item.kind == 'file') {
                     var entry = item.webkitGetAsEntry()
-                    console.log('was able to extract entry.',entry)
+                    //console.log('was able to extract entry.',entry)
                     if (item.type == 'application/x-bittorrent') {
                         app.analytics.sendEvent("MainWindow", "Drop", "Torrent")
                         this.client.handleLaunchWithItem({entry:entry,

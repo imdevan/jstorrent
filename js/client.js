@@ -163,6 +163,7 @@ Client.prototype = {
         }
     },
     addTorrentFromEntry: function(entry) {
+        // XXX - this is not saving the torrent file to the downloads directory, so on next load, it cannot load the metadata
         var t = new jstorrent.Torrent({entry:entry,
                                        itemClass:jstorrent.Torrent,
                                        parent:this.torrents,
@@ -173,6 +174,7 @@ Client.prototype = {
                                                    this.torrents.add(result.torrent)
                                                    this.app.highlightTorrent(result.torrent.hashhexlower)
                                                    result.torrent.save()
+                                                   result.torrent.saveMetadata()
                                                    this.torrents.save()
                                                } else {
                                                    this.app.highlightTorrent(result.torrent.hashhexlower)
