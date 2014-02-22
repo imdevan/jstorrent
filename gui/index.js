@@ -13,6 +13,7 @@ window.onresize = _.debounce(function(evt) {
 },100)
 
 function onaddkeydown(evt) {
+    debugger
     if (evt && evt.keyCode == 13) {
         app.add_from_url(url);
     }

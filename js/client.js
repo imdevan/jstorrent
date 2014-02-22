@@ -219,6 +219,7 @@ Client.prototype = {
                 if (callback) { callback(data) }
             }
         } else {
+            app.notify('Invalid torrent file. Try a different URL')
             console.error('add url response',data)
         }
     },

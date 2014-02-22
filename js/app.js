@@ -480,12 +480,15 @@ App.prototype = {
             this.notifyNoDownloadsLeft()
             return
         }
+        client.add_from_url(url)
+
         if (this.syncAppAttributes) {
             if (this.syncAppAttributes['dont_show_extension_help']) {
+                // HOLY CRAP im an idiot
                 return
             }
         }
-        client.add_from_url(url)
+
         if (jstorrent.device.platform == 'Android') { return }
         // show notification for extension
         this.checkIsExtensionInstalled( _.bind(function(isInstalled) {

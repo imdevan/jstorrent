@@ -106,7 +106,7 @@ function str2ab(str) {
 function ui82str(arr, startOffset) {
     console.assert(arr)
     if (! startOffset) { startOffset = 0 }
-    var length = arr.length - startOffset
+    var length = arr.length - startOffset // XXX a few random exceptions here
     var str = ""
     for (var i=0; i<length; i++) {
         str += String.fromCharCode(arr[i + startOffset])

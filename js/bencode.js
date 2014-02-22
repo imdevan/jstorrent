@@ -108,7 +108,7 @@
     }
 
     window.bdecode = function(x, opts) {
-        var data = decode_func[x[0]](x, 0, opts); /// maybe have this check if decode_func[x[0]] exists?
+        var data = decode_func[x[0]](x, 0, opts); /// maybe have this check if decode_func[x[0]] exists? // most of the time object has no method "<" (html tag?)
         var r = data[0];
         var l = data[1];
         return r;
