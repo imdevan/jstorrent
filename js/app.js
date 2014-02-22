@@ -47,12 +47,13 @@ function App() {
         var url = $('#url').val()
         if (! url) {
             console.log('add button clicked with no URL entered, popup select file dialog')
+            this.select_torrent()
             // open file chooser...
 
             evt.preventDefault()
             evt.stopPropagation()
         }
-    })
+    }.bind(this))
 
     if (this.isLite()) {
         $('#download-remain-container').show()
@@ -474,6 +475,24 @@ App.prototype = {
                                      }
                                  },this),
                                  details:"Let other users know about your experience with JSTorrent!"})
+    },
+    select_torrent: function() {
+        chrome.fileSystem.chooseEntry( {type: 'openFile',
+                                        accepts: [
+                                            {
+                                                mimeTypes: ['application/x-bittorrent'],
+                                                extensions: ['torrent']
+                                            }
+                                        ],
+                                        acceptsAllTypes: false,
+                                        acceptsMultiple: false },
+                                       this.on_select_torrent.bind(this) )
+    },
+    on_select_torrent: function(result) {
+        if (result) {
+            var entry = result[0]
+            this.client.addTorrentFromEntry(entry)
+        }
     },
     add_from_url: function(url) {
         if (! this.canDownload()) {

@@ -162,35 +162,34 @@ Client.prototype = {
             debugger
         }
     },
+    addTorrentFromEntry: function(entry) {
+        var t = new jstorrent.Torrent({entry:entry,
+                                       itemClass:jstorrent.Torrent,
+                                       parent:this.torrents,
+                                       attributes: {added: new Date()},
+                                       callback: _.bind(function(result) {
+                                           if (result.torrent) {
+                                               if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
+                                                   this.torrents.add(result.torrent)
+                                                   this.app.highlightTorrent(result.torrent.hashhexlower)
+                                                   result.torrent.save()
+                                                   this.torrents.save()
+                                               } else {
+                                                   this.app.highlightTorrent(result.torrent.hashhexlower)
+                                                   this.trigger('error','already had this torrent',result.torrent.hashhexlower)
+                                               }
+                                           } else {
+                                               console.error('error initializing torrent from entry', result)
+                                               this.trigger('error',result)
+                                           }
+                                       },this)
+                                      })
+    },
     handleLaunchWithItem: function(item) {
         if (item.type == "application/x-bittorrent") {
-            console.log('have a bittorrent file... hrm whattodo',item.entry)
-
+            console.log('have a bittorrent file... do handleLaunchWithItem',item.entry)
             var entry = item.entry
-            
-            var torrent = new jstorrent.Torrent({entry:item.entry,
-                                                 itemClass:jstorrent.Torrent,
-                                                 parent:this.torrents,
-                                                 attributes: {added: new Date()},
-                                                 callback: _.bind(function(result) {
-                                                     if (result.torrent) {
-                                                         if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
-                                                             this.torrents.add(result.torrent)
-                                                             this.app.highlightTorrent(result.torrent.hashhexlower)
-                                                             result.torrent.save()
-                                                             this.torrents.save()
-                                                         } else {
-                                                             this.app.highlightTorrent(result.torrent.hashhexlower)
-                                                             this.trigger('error','already had this torrent',result.torrent.hashhexlower)
-                                                         }
-                                                     } else {
-                                                         console.error('error initializing torrent from entry', result)
-                                                         this.trigger('error',result)
-                                                     }
-                                                 },this)
-                                                })
-            
-
+            this.addTorrentFromEntry(entry)
         }
     },
     error: function(msg) {

@@ -2505,7 +2505,13 @@ if (typeof Slick === "undefined") {
       }
 
         // TODO -- prevent this from throwing exception columns[cell] is undefined
+        if (cell === null) {
+            return false
+        }
+        
       // are we in the Add New row?  can we create new from this cell?
+
+
       if (columns[cell].cannotTriggerInsert && row >= dataLength) {
         return false;
       }

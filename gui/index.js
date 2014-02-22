@@ -13,6 +13,7 @@ window.onresize = _.debounce(function(evt) {
 },100)
 
 function onaddkeydown(evt) {
+    console.assert(false) // never being called
     debugger
     if (evt && evt.keyCode == 13) {
         app.add_from_url(url);
@@ -21,7 +22,14 @@ function onaddkeydown(evt) {
 
 function onadd(evt) {
     var url = document.getElementById("url").value;
-    app.add_from_url(url)
+    debugger
+    if (! url) {
+        // open dialog to select file
+        app.select_torrent()
+    } else {
+        app.add_from_url(url)
+    }
+
     document.getElementById("url").value = ''
     if (evt) evt.preventDefault()
 }
@@ -62,6 +70,7 @@ function onappready() {
     document.getElementById("detailGrid").style.width = gui_opts.detailGrid_width;
     document.getElementById("detailGrid").style.height = gui_opts.detailGrid_height;
 */
+
     document.getElementById("add-form").addEventListener('submit', onadd)
 
 
