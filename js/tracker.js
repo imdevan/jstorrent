@@ -27,7 +27,7 @@ function Tracker(opts) {
     this.announceInterval = null
     this.announceMinInterval = null
 }
-Tracker.announce_timeout = 1000
+Tracker.announce_timeout = 10000
 jstorrent.Tracker = Tracker;
 
 Tracker.prototype = {
@@ -178,7 +178,7 @@ HTTPTracker.prototype = {
         if (this.shouldSpoof()) {
             xhr.setRequestHeader('User-Agent','uTorrent/330B(30235)(server)(30235)')
         } else {
-            console.log('setting x-user-agent','JSTorrent/'+this.torrent.client.verstr)
+            //console.log('setting x-user-agent','JSTorrent/'+this.torrent.client.verstr)
             xhr.setRequestHeader('X-User-Agent',this.torrent.client.getUserAgent())
         }
         xhr.send()

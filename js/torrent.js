@@ -1091,9 +1091,27 @@ Torrent.prototype = {
             this.trackers.get_at(i).announce('started')
         }
     },
+    haveNoSeeders: function() {
+        if (this.swarm.length == 0) {
+            return true
+        }
+
+        var countseeds = 0
+        for (var i=0; i<this.trackers.items.length; i++) {
+            var tracker = this.trackers.items[i]
+            if (tracker.get('seeders')) {
+                countseeds += tracker.get('seeders')
+            }
+        }
+        if (countseeds == 0) {
+            return true
+        }
+
+        return false;
+    },
     afterTrackerAnnounceResponses: function() {
         // called after all tracker announce responses
-        if (this.swarm.length == 0) {
+        if (this.haveNoSeeders()) {
             //this.error("No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site")
             app.notifyWantToAddPublicTrackers(this)
             //this.addPublicTrackers()

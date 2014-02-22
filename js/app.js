@@ -30,6 +30,9 @@ function App() {
     this.UI = null
 
     this.freeTrialFreeDownloads = 20
+
+    chrome.i18n.getAcceptLanguages(this.onAcceptLanguages.bind(this))
+
     this.totalDownloads = 0
 
     this.popup_windows = {}
@@ -68,6 +71,13 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    onAcceptLanguages: function(s) {
+        // detect if 
+        app.analytics.sendEvent('acceptLanguages',window.navigator.language,s)
+        if (_.contains(['pt-BR'], window.navigator.language) || true) {
+            this.freeTrialFreeDownloads = 999
+        }
+    },
     setSyncAttribute: function(k,v, callback) {
         if (this.syncAppAttributes) {
             this.syncAppAttributes[k] = v
