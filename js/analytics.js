@@ -51,7 +51,9 @@ function Analytics(opts) {
         service = 'JSTorrent Lite'
         id = "UA-35025483-4"
     } else {
-        console.error('analytics disabled')
+        service = 'JSTorrent-Unpacked'
+        id = "UA-35025483-5"
+        console.warn('analytics for jstorrent-unpacked')
     }
 
     //id = null

@@ -1,5 +1,4 @@
 {
-    "key":"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqVkeimcHmKsjHDtmoH19r2XG1bFf6Dks3e8s6l+8LrS5SMY0FlJqTVNq5o3XR9jv8xk3v7Fxw79P2UR1SYgY1lwifIofjvB3ROylKmu3OvVxYaiJmPUoeGicyrjs4vRF9NuyQuvV1ltCpyA9dFqpsAai7neT8vpjgELbfddoE3OeDQ3u7ztG/tGxVjpBP5B1XcKPIU1IsJwfPZcvoL7lwaOL+8t0LFdMnlNCzkO+WsKG313oOvV+D1Fz/EEu4d7VfDOvQOwJ+DSFupd0Q0edLYKgh4LsOp42UCFABr+kS3O9CoNTgg8CBVpGQe3n1Yd+/jj0VUfdX7ZrIM3ilt7VmQIDAQAB",
     "name": "JSTorrent",
     "short_name": "JSTorrent",
     "description": "A Torrent Client for Google Chrome, runs everywhere in pure JavaScript",

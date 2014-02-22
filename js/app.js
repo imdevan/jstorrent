@@ -63,7 +63,8 @@ function App() {
         $('#download-remain-container').show()
         $('#title-lite').show()
         $('#button-sponsor').hide()
-    } else {
+    } else if (this.isUnpacked()) {
+        $('#unpacked-container').show()
 
     }
 }
@@ -77,6 +78,11 @@ App.prototype = {
         if (_.contains(['pt-BR'], window.navigator.language) || true) {
             this.freeTrialFreeDownloads = 999
         }
+
+        if (this.isUnpacked()) {
+            this.freeTrialFreeDownloads = 99999
+        }
+
     },
     setSyncAttribute: function(k,v, callback) {
         if (this.syncAppAttributes) {
@@ -317,7 +323,11 @@ App.prototype = {
         },this))
     },
     isLite: function() {
-        return chrome.runtime.id == "abmohcnlldaiaodkpacnldcdnjjgldfh"
+        return chrome.runtime.id == jstorrent.constants.cws_jstorrent_lite
+    },
+    isUnpacked: function() {
+        return ! _.contains([jstorrent.constants.cws_jstorrent,
+                             jstorrent.constants.cws_jstorrent_lite], chrome.runtime.id)
     },
     onTorrentProgress: function(torrent) {
         if (jstorrent.device.platform === 'Android') { return } // progress notification broken on android
