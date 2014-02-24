@@ -96,6 +96,25 @@ File.prototype = {
     get_key: function() {
         return this.num
     },
+    getEntryFile: function(callback) {
+        // XXX -- cache this for read events and have it get wiped out after a write event
+        var fd = {}
+        var filesystem = this.torrent.getStorage().entry
+        var path = this.path.slice()
+        recursiveGetEntry(filesystem, path, function(entry) {
+            fd.metadata = { fullPath:entry.fullPath,
+                            name:entry.name }
+            entry.file( function(f) {
+                //console.log('collected file',fileNum,f)
+                fd.metadata.lastModifiedDate = f.lastModifiedDate
+                fd.metadata.size = f.size
+                fd.metadata.type = f.type
+                fd.file = f
+                callback(fd)
+            })
+        })
+        
+    },
     getEntry: function(callback) {
         // XXX this is not calling callback in some cases!
         // gets file entry, recursively creating directories as needed...

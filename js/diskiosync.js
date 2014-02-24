@@ -16,6 +16,8 @@ if (self.jstorrent) {
     this.jobGroupCallbacks = {}
     this.jobsLeftInGroup = {}
 
+        this.queue = []
+
         jstorrent.Collection.apply(this, arguments)
     }
     jstorrent.DiskIO = DiskIO
@@ -72,8 +74,23 @@ debugger
             this.send({command:'writePiece'}, callback)
         },
         readPiece: function(piece, offset, size, callback) {
-            // collect
+            this.queue.push( {piece:piece,offset:offset,size:size,callback:callback} )
+            this.doReadQueue()
+        },
+        doReadQueue: function() {
+            if (this.readQueueActive) {
+                return
+            }
+            if (this.queue.length == 0) {
+                return
+            }
+            this.readQueueActive = true
+            var d = this.queue.shift()
 
+            var piece = d.piece
+            var offset = d.offset
+            var size = d.size
+            var callback = d.callback
 
             var filesSpanInfo = piece.getSpanningFilesInfo(offset, size)
             var jobGroup = this.jobGroupCounter++
@@ -103,23 +120,15 @@ debugger
                 var fileNum = info.fileNum
                 var file = piece.torrent.getFile(fileNum)
                 fe[fileNum] = {}
-                file.getEntry( _.bind(function(fileNum,job,entry) {
-                    fe[fileNum].metadata = { fullPath:entry.fullPath,
-                                       name:entry.name }
-                    entry.file( _.bind(function(fileNum,job,f) {
-                        //console.log('collected file',fileNum,f)
-                        fe[fileNum].metadata.lastModifiedDate = f.lastModifiedDate
-                        fe[fileNum].metadata.size = f.size
-                        fe[fileNum].metadata.type = f.type
+                file.getEntryFile( _.bind(function(fileNum,job,fd) {
+                    collectstate.collected++
+                    fe[fileNum] = fd
 
-                        fe[fileNum].file = f
-                        collectstate.collected++
+                    if (collectstate.collected == collectstate.total) {
+                        job.set('state','collected')
+                        this.onCollected(piece, filesSpanInfo, fe, jobGroup, callback)
+                    }
 
-                        if (collectstate.collected == collectstate.total) {
-                            job.set('state','collected')
-                            this.onCollected(piece, filesSpanInfo, fe, jobGroup, callback)
-                        }
-                    },this,fileNum,job));
                 }, this,fileNum,job) )
             }
         },
@@ -144,9 +153,14 @@ debugger
                 var job = this.items[i]
                 if (job.opts.jobGroup == jobGroup) {
                     job.set('state','done')
+                    setTimeout( _.bind(function(job) {
+                        this.remove(job)
+                    },this,job), 200)
+
                 }
             }
-
+            this.readQueueActive = false
+            _.defer( this.doReadQueue.bind(this) )
             callback(result)
         },
         cancelTorrentJobs: function(torrent, callback) {
