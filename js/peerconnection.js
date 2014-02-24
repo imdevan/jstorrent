@@ -288,7 +288,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        //console.log('Sending Message',type)
+        console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -716,7 +716,7 @@ PeerConnection.prototype = {
     },
     handle_INTERESTED: function() {
         this.peerInterested = true
-        if (this.torrent.isPrivate()) {
+        if (this.torrent.isPrivate() || true) {
             this.sendMessage('UNCHOKE') // TODO - under what conditions?
         }
     },
@@ -773,17 +773,17 @@ PeerConnection.prototype = {
         this.torrent.maybePropagatePEX(data)
     },
     handle_UTORRENT_MSG_ut_metadata: function(msg) {
-        if (this.torrent.infodict_buffer) {
-            //console.log('ignoring it, we already received one.')
-            return
-        }
-
         var extMessageBencodedData = bdecode(ui82str(new Uint8Array(msg.payload),6))
         //console.log(this.get('address'),'ut_metadata',extMessageBencodedData)
         var infodictCode = extMessageBencodedData.msg_type
         var infodictMsgType = jstorrent.protocol.infodictExtensionMessageCodes[infodictCode]
 
         if (infodictMsgType == 'DATA') {
+            if (this.torrent.infodict_buffer) {
+                //console.log('ignoring it, we already received one.')
+                return
+            }
+
             // looks like response to metadata request! yay
 
             var dataStartIdx = bencode(extMessageBencodedData).length;

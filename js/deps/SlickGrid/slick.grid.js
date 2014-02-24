@@ -116,6 +116,7 @@ if (typeof Slick === "undefined") {
     var $container;
     var uid = "slickgrid_" + Math.round(1000000 * Math.random());
     var self = this;
+    var _this = this;
     var $focusSink, $focusSink2;
     var $headerScroller;
     var $headers;
@@ -971,6 +972,7 @@ if (typeof Slick === "undefined") {
     }
 
     function destroy() {
+        //console.log('grid',self.collectionTable.collection.itemClass.name,'destroy')
       getEditorLock().cancelCurrentEdit();
 
       trigger(self.onBeforeDestroy, {});
@@ -985,10 +987,12 @@ if (typeof Slick === "undefined") {
       }
 
       unbindAncestorScrollEvents();
-      $container.unbind(".slickgrid");
+      //$container.unbind(".slickgrid");
+        $container.unbind()
       removeCssRules();
 
-      $canvas.unbind("draginit dragstart dragend drag");
+      //$canvas.unbind("draginit dragstart dragend drag");
+        $canvas.unbind()
       $container.empty().removeClass(uid);
     }
 
@@ -2228,6 +2232,7 @@ if (typeof Slick === "undefined") {
     }
 
     function handleClick(e) {
+        //console.log('handleClick',self.collectionTable.collection.itemClass.name)
       if (!currentEditor) {
         // if this click resulted in some cell child node getting focus,
         // don't steal it back - keyboard events will still bubble up
@@ -2256,6 +2261,7 @@ if (typeof Slick === "undefined") {
     }
 
     function handleContextMenu(e) {
+        //console.log('handlecontextmenu',self.collectionTable.collection.itemClass.name)
       var $cell = $(e.target).closest(".slick-cell", $canvas);
       if ($cell.length === 0) {
         return;
@@ -2350,6 +2356,10 @@ if (typeof Slick === "undefined") {
     }
 
     function getRowFromNode(rowNode) {
+        //console.log('getRowFromNode',self.collectionTable.collection.itemClass.name)
+        //console.assert(self == _this)
+        //console.assert(self == app.UI.torrenttable.grid)
+
       for (var row in rowsCache) {
         if (rowsCache[row].rowNode === rowNode) {
           return row | 0;
@@ -3377,7 +3387,7 @@ if (typeof Slick === "undefined") {
       "setCellCssStyles": setCellCssStyles,
       "removeCellCssStyles": removeCellCssStyles,
       "getCellCssStyles": getCellCssStyles,
-
+        "rowsCache": rowsCache,
       "init": finishInitialization,
       "destroy": destroy,
 

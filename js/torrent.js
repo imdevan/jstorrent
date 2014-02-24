@@ -138,6 +138,11 @@ Torrent.prototype = {
                                     priority:2})
         }
     },
+    reportIssue: function() {
+        // serializes a bunch of this torrent's state and uploads it to jstorrent.com
+
+        
+    },
     resetStateOld: function() {
         console.log('reset torrent state')
         if (this.started) { return }
@@ -226,6 +231,8 @@ Torrent.prototype = {
 
 
         if (url.toLowerCase().match('^magnet:')) {
+            app.analytics.sendEvent("Torrent", "Add", "Magnet")
+
             // initialize torrent from a URL...
             // parse trackers
             this.magnet_info = parse_magnet(url);
@@ -251,10 +258,10 @@ Torrent.prototype = {
             this.save()
             if (callback) { callback({torrent:this}) }
         } else {
+            app.analytics.sendEvent("Torrent", "Add", "XHR")
             var xhr = new XMLHttpRequest;
             xhr.open("GET", url, true)
             xhr.responseType = 'arraybuffer'
-            var app = this.client.app
             xhr.onload = _.bind(function(evt) {
                 var headers = xhr.getAllResponseHeaders()
                 console.log('loaded url',url, headers)
@@ -293,9 +300,9 @@ Torrent.prototype = {
         }
         this.infodict = this.metadata.info
         this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
-        var chunkData = this.infodict_buffer
+        var chunkData = this.infodict_buffer // turn off transferable
         this.client.workerthread.send( { command: 'hashChunks',
-                                         chunks: [new Uint8Array(chunkData)] }, onHashResult )
+                                         chunks: [new Uint8Array(chunkData)] }, onHashResult, {transferable:false} )
     },
     initializeFromEntry: function(entry, callback, opts) {
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
@@ -502,6 +509,11 @@ Torrent.prototype = {
         return this.get('name') + '.torrent'
     },
     loadMetadata: function(callback) {
+        // need to do have a timeout, because sometimes this dont work!!!
+        //this.loadMetadataTimeout = setTimeout( function() {
+        //},1000)
+        
+
         var opts = {needSave:false}
         
         // xxx this is failing when disk is not attached!
@@ -529,6 +541,8 @@ Torrent.prototype = {
         } else {
             callback({error:'have no metadata'})
         }
+    },
+    onLoadedMetadata: function(callback, data) {
     },
     saveMetadata: function(callback) {
         var filename = this.getMetadataFilename()
@@ -701,7 +715,7 @@ Torrent.prototype = {
                 peer.sendMessage("NOT_INTERESTED")
             });
 
-            app.analytics.sendEvent("Torrent", "Completed")
+            app.analytics.sendEvent("Torrent", "Completed", undefined, this.size)
         }
 
         var dld = this.getDownloaded()
@@ -877,6 +891,10 @@ Torrent.prototype = {
         // if so...
         var piece = this.getPiece(pieceNum)
         piece.getData(offset, size, _.bind(function(result) {
+            if (result.error) {
+                console.error('error getting piece data',result)
+                return
+            }
             // what if peer disconnects before we even get around to starting this disk i/o job?
             // dont want to waste cycles reading...
             var header = new Uint8Array(8)
@@ -1007,7 +1025,7 @@ Torrent.prototype = {
     start: function(reallyStart) {
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
-        app.analytics.sendEvent("Torrent", "Starting")
+        app.analytics.sendEvent("Torrent", "Start")
 
         this.starting = true
         this.think_interval = setInterval( _.bind(this.newStateThink, this), 1000 )
@@ -1062,13 +1080,23 @@ Torrent.prototype = {
                 for (var i=0; i<hosts.length; i++) {
                     var host = hosts[i]
                     var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
-                    this.swarm.add(peer)
+                    if (! this.swarm.contains(peer)) {
+                        this.swarm.add(peer)
+                    }
+                    var peerconn = new jstorrent.PeerConnection({peer:peer})
+                    //console.log('should add peer!', idx, peer)
+                    if (! this.peers.contains(peerconn)) {
+                        this.peers.add( peerconn )
+                        this.set('numpeers',this.peers.items.length)
+                        peerconn.connect()
+                    }
                 }
             }
         }
         this.newStateThink()
     },
     onStarted: function() {
+        app.analytics.sendEvent("Torrent", "onStarted")
         console.log('torrent.onStarted')
         var a = this.client.get('activeTorrents')
         a[this.hashhexlower] = true
@@ -1080,6 +1108,7 @@ Torrent.prototype = {
                 // if we start a torrent and there are no trackers, then it has no chance...
                 this.addPublicTrackers()
             }
+            app.analytics.sendEvent("Torrent", "Tracker","Announce",this.trackers.length)
             for (var i=0; i<this.trackers.length; i++) {
                 this.trackers.get_at(i).announce('started')
             }
@@ -1110,6 +1139,16 @@ Torrent.prototype = {
         return false;
     },
     afterTrackerAnnounceResponses: function() {
+        // bucketize this
+        var arr = jstorrent.constants.announceSizeBuckets
+        var bucket = arr[ bisect_left(arr, this.swarm.length) ]
+        var tstr = this.isPrivate() ? 'TrackerPrivate' : 'TrackerPublic'
+
+        if (bucket === undefined) {
+            app.analytics.sendEvent("Torrent", tstr,"SwarmSize(>"+arr[arr.length-1]+")")
+        } else {
+            app.analytics.sendEvent("Torrent", tstr,"SwarmSize(<="+bucket+")")
+        }
         // called after all tracker announce responses
         if (this.haveNoSeeders()) {
             //this.error("No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site")

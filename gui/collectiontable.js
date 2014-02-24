@@ -61,7 +61,7 @@ function SlickCollectionTable(opts) {
 
 
 
-    grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
+    var grid = new Slick.Grid("#" + this.domid, collectiondata, this.columns, options);
     grid.setSelectionModel(new Slick.RowSelectionModel());
 
     grid.onSort.subscribe( _.bind(function(evt, data) {
@@ -90,7 +90,27 @@ debugger // using CellSelectEditor now
 */
     },this))
 
+    grid.onContextMenu.subscribe( _.bind(function(evt, data) {
+
+        //var cell1 = grid.getCellFromPoint(evt.clientX,evt.clientY)
+        //var cell2 = grid.getCellFromPoint(evt.offsetX,evt.offsetY)
+        //console.log("CONTEXT",cell1,cell2)
+        //return
+        //console.log(app.UI.torrenttable.grid.rowsCache)
+
+        var cell = grid.getCellFromEvent(evt)
+
+        if (cell) {
+            grid.setSelectedRows([cell.row])
+            var item = grid.getDataItem(cell.row)
+            return app.onContextMenu(grid, item, evt)
+        } else {
+            console.error('unable to get cell from event')
+        }
+    }))
+
     grid.onDblClick.subscribe( _.bind(function(evt, data) {
+        
         //this.handleDoubleClick(evt.row, evt.cell)
         //console.log('dblclick',evt,data)
     },this))

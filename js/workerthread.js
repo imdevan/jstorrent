@@ -27,10 +27,11 @@ if (self.jstorrent) {
             delete this.callbacks[id]
             callback(msg)
         },
-        send: function(msg, callback) {
+        send: function(msg, callback, opts) {
+            opts = opts || {transferable:jstorrent.options.transferable_objects}
             //console.log('compute hash')
             var transfers = []
-            if (msg.chunks && jstorrent.options.transferable_objects) {
+            if (msg.chunks && opts.transferable) {
                 for (var i=0; i<msg.chunks.length; i++) {
                     // msg.chunks[i] is actually a uint8array with
                     // offset, but with a standard 13 bytes extra at
@@ -47,10 +48,10 @@ if (self.jstorrent) {
             this.busy = true
             var id = this.messageCounter++
             msg._id = id
-            msg.transferable = jstorrent.options.transferable_objects
+            msg.transferable = opts.transferable
             this.callbacks[id] = callback
 
-            if (transfers.length > 0) {
+            if (transfers.length > 0 && opts.transferable) {
                 //console.log('sending with transfers',transfers)
                 this.worker.postMessage(msg, transfers)
             } else {

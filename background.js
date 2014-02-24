@@ -111,7 +111,13 @@ function onAppLaunchMessage(launchData) {
 
     windowManager.getMainWindow( function(mainWindow) {
         // if window already existed...
-        mainWindow.focus()
+        if (mainWindow.focus) {
+            mainWindow.focus()
+        } else {
+            // WTF chrome.app.window.get doesnt even exist at this point
+            // crash
+            chrome.runtime.reload()
+        }
 
         if (mainWindow.contentWindow.app) {
             onMainWindow(mainWindow)

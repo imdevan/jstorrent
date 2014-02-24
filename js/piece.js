@@ -471,7 +471,11 @@ debugger
     getData: function(offset, size, callback) {
         //var filesSpan = this.getSpanningFilesInfo(offset, size)
         this.torrent.getStorage().diskio.readPiece(this, offset, size, function(result) {
-            callback(result.data)
+            if (result && result.error) {
+                callback(result)
+            } else {
+                callback(result.data)
+            }
         })
     },
     getEntry: function(callback) {

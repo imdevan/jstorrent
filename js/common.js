@@ -16,7 +16,8 @@ jstorrent.constants = {
     endgameDuplicateRequests: 3,
     publicTrackers: ["udp://tracker.openbittorrent.com:80",
                      'udp://tracker.istole.it:6969',
-                     "udp://tracker.publicbt.com:80"]
+                     "udp://tracker.publicbt.com:80"],
+    announceSizeBuckets: [0,1,5,10,25,50,100,200,400,800,1600]
 }
 jstorrent.strings = {
     NOTIFY_NO_DOWNLOAD_FOLDER: 'No Download Folder selected. Click to select your Download Directory.',
@@ -39,6 +40,7 @@ jstorrent.options = {
     run_unit_tests: true,
     disable_trackers: false,
     manual_peer_connect_on_start: {
+        "d0a7ed3e79d51ea05775cae7122d5e46c0a9451f": ['127.0.0.1:8030']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['184.75.214.170:15402']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
 //        '726ff42f84356c9aeb27dfa379678c89f0e62149': ['127.0.0.1:9090'],
@@ -242,7 +244,7 @@ window.onerror = function(message, url, line) {
         // if window.onerror has an error, then bad things happen.
         // make sure sendEvent cant have bad errors :-)
         try {
-            window.app.analytics.sendEvent("window.onerror", url + "(" + line + ")", message)
+            window.app.analytics.sendEvent("window.onerror("+jstorrent.constants.manifest.version+")", url + "(" + line + ")", message)
         } catch(e) {
             console.error('error sending window.onerror analytics event')
         }

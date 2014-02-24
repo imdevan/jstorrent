@@ -25,6 +25,8 @@ function App() {
     chrome.notifications.onButtonClicked.addListener(_.bind(this.notificationButtonClicked, this))
     chrome.notifications.onClosed.addListener(_.bind(this.notificationClosed, this))
 
+    chrome.contextMenus.onClicked.addListener(_.bind(this.onContextMenuClick, this))
+
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
     // maybe use notifications instead... ( or in addition ... )
     this.UI = null
@@ -72,6 +74,47 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    onContextMenu: function(grid, item, evt) {
+        console.log('oncontextmenu',item)
+        if (item.itemClass == jstorrent.Torrent) {
+            var opts = {
+                contexts:["all"],
+                title:"Report Issue with this Torrent",
+                id:"reportTorrentIssue"
+            }
+            window.contextMenuContextItem = item
+            chrome.contextMenus.create(opts, _.bind(this.onContextMenuCreate,this) )
+        }
+        return true
+    },
+    onContextMenuCreate: function(c) {
+        console.log('created contextmenu', c)
+
+    },
+    onContextMenuClick: function(c) {
+        chrome.contextMenus.removeAll(function(){})
+        var item = contextMenuContextItem
+        window.contextMenuContextItem = null
+        console.log('contextmenuclick',c)
+        if (c.menuItemId == 'reportTorrentIssue') {
+            var torrent = item
+            var data = {data:torrent.getSaveData()}
+
+            this.focus_or_open('issue', function(win) {
+
+                if (win.contentWindow.sendItem) {
+                        win.contentWindow.sendItem(item)
+                } else {
+                    win.contentWindow.addEventListener('DOMContentLoaded',function() {
+                        win.contentWindow.sendItem(item)
+                    })
+                }
+            })
+
+
+        }
+
+    },
     onAcceptLanguages: function(s) {
         // detect if 
         app.analytics.sendEvent('acceptLanguages',window.navigator.language,s)
@@ -135,6 +178,7 @@ App.prototype = {
             if (idx == 1) {
                 
             } else {
+                app.analytics.sendEvent("Torrent", "Tracker","addPublicTrackers")
                 torrent.addPublicTrackers()
                 torrent.forceAnnounce()
             }
@@ -624,21 +668,23 @@ App.prototype = {
     upsell_window_closed: function() {
         this.upsell_window = null
     },
-    focus_or_open: function(type) {
+    focus_or_open: function(type, callback) {
         if (this.popup_windows[type]) {
             this.popup_windows[type].focus()
+            if (callback) {callback(this.popup_windows[type])}
         } else {
             chrome.app.window.create( 'gui/'+type+'.html', 
                                       { width: 520,
                                         id:"help",
                                         height: 480 },
-                                      _.bind(this.window_opened, this, type)
+                                      _.bind(this.window_opened, this, type, callback)
                                     );
         }
     },
-    window_opened: function(type, win) {
+    window_opened: function(type, callback, win) {
         this.popup_windows[type] = win
         win.contentWindow.mainAppWindow = window;
+        if (callback) {callback(win)}
         win.onClosed.addListener( _.bind(this.window_closed, this, type) )
     },
     window_closed: function(type) {
