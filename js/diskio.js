@@ -239,8 +239,8 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
     }
     DiskIO.jobctr = 0
     DiskIO.debugtimeout = 1
-    //DiskIO.allowedJobTime = 60000 // 30 seconds should be enough... ?
-    DiskIO.allowedJobTime = 500 // 30 seconds should be enough... ?
+    DiskIO.allowedJobTime = 60000 // 30 seconds should be enough... ?
+    //DiskIO.allowedJobTime = 500 // 30 seconds should be enough... ?
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
 
