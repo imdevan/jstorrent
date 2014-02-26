@@ -4,6 +4,28 @@ function Disk(opts) {
     this.diskio = new jstorrent.DiskIO({disk:this})
     this.client = opts.client || opts.parent.parent
 
+    this.think_interval = null
+    this.client.on('activeTorrentsChange', _.bind(function(){
+        _.delay(function() {
+            var numActive = this.client.get('numActiveTorrents')
+
+            if (numActive == 0) {
+                console.log('disk, stop tick interval')
+                if (this.think_interval) { 
+                    clearInterval(this.think_interval)
+                    this.think_interval = null
+                }
+            } else {
+                console.log('disk, start tick interval')
+                if (! this.think_interval) {
+                    this.think_interval = setInterval( this.checkBroken.bind(this), 35000 )
+                }
+            }
+
+        }.bind(this))
+
+    },this))
+
     if (opts.key && opts.key == 'HTML5:persistent') {
         function ondir(result) {
             this.entry = result
@@ -60,24 +82,35 @@ function Disk(opts) {
 jstorrent.Disk = Disk
 Disk.prototype = {
     checkBroken: function(callback) {
+        console.log('checkBroken')
         var _this = this
-        if (this.checkingBroken) { return }
+        if (this.checkingBroken) { console.log('alreadycheckingbroken');return }
         this.checkingBroken = true
+
         this.checkBrokenTimeout = setTimeout( function(){
-            _this.checkingBroken = false
-            console.error('disk is definitely broken. app needs restart')
-            app.notify("FATAL ERROR. Please restart the app")
+            this.checkingBroken = false
+            this.concurrentBroken++
+            console.error('disk seems definitely broken. needs restart?',this.concurrentBroken)
+            if (this.concurrentBroken > 1) {
+                console.error('disk broken concurrently...',this.concurrentBroken)
+                app.notify("FATAL ERROR. Please restart the app",2)
+            }
             if (callback) { callback(true) }
-        },1000)
+        }.bind(this),30000)
+
         this.entry.getMetadata(function(info) {
-            _this.checkingBroken = false
-            clearTimeout(_this.checkBrokenTimeout)
-            console.log('disk getMetadata',info)
-        },
+            this.checkingBroken = false
+            this.concurrentBroken = 0
+            clearTimeout(this.checkBrokenTimeout)
+            console.log('notbroken')
+            //console.log('disk getMetadata',info)
+        }.bind(this),
                                function(err) {
-                                   _this.checkingBroken = false
+                                   this.checkingBroken = false
+                                   clearTimeout(this.checkBrokenTimeout)
+                                   debugger
                                    console.log('disk getMetadata err',err)
-                               }
+                               }.bind(this)
                               )
     },
     cancelTorrentJobs: function(torrent) {

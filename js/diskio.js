@@ -19,8 +19,10 @@
         zeroCache[ Math.pow(2,i) ] = new Uint8Array(Math.pow(2,i))
     }
 
-function recursiveGetEntryReadOnly(filesystem, path, callback) {
+function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
+    // XXX - this looks messy, refactor it
     var state = {e:filesystem}
+    var path = inpath.slice()
 
     function recurse(e) {
         if (path.length == 0) {
@@ -41,7 +43,7 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                 e.getDirectory(path.shift(), {create:false}, recurse, recurse)
             } else {
                 state.e = e
-                state.path = _.clone(path)
+                state.path = path.slice()
                 e.getFile(path.shift(), {create:false}, recurse, recurse)
             }
         } else {
@@ -55,13 +57,33 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
     recurse(filesystem)
 }
 
-    function recursiveGetEntryWrite(filesystem, path, callback) {
+    function recursiveGetEntryWrite(filesystem, inpath, callback) {
+        var path = inpath.slice()
+        var state = {callback:callback,
+                     returned:false,
+                     timeoutHit:false}
+        var oncallback = function() {
+            if (state.timeoutHit) {
+                console.warn('timed out getentry, but it returned later')
+            } else {
+                clearTimeout(state.timeoutId)
+                state.returned=true
+                callback.apply(this,arguments)
+            }
+        }
+        state.timeoutId = setTimeout( function() {
+            state.timeoutHit=true
+            console.assert(! state.returned)
+            console.error("timeout with getentrywrite")
+            callback({error:'timeout'})
+        }, 5000 )
+
         function recurse(e) {
             if (path.length == 0) {
                 if (e.isFile) {
-                    callback(e)
+                    oncallback(e)
                 } else {
-                    callback({error:'file exists'})
+                    oncallback({error:'file exists'})
                 }
             } else if (e.isDirectory) {
                 if (path.length > 1) {
@@ -71,7 +93,7 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                     e.getFile(path.shift(), {create:true}, recurse, recurse)
                 }
             } else {
-                callback({error:'file exists'})
+                oncallback({error:'file exists'})
             }
         }
         recurse(filesystem)
@@ -255,8 +277,7 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
             this.doQueue()
         },
         getFileEntryWriteable: function(path, callback) {
-            var fn = recursiveGetEntryWrite
-            fn(this.disk.entry, path, function(entry) {
+            recursiveGetEntryWrite(this.disk.entry, path, function(entry) {
                 console.assert(entry)
                 if (entry.error) {
                     callback(entry)
@@ -271,8 +292,9 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
         doGetMetadata: function(opts, callback, job) {
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             var oncallback = _.bind(this.wrapCallback,this,callback,job)
-            job.set('state','getentry')
+            job.set('state','getentry') // XXX getting stuck here, even though sometimes
             recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
+                job.set('state','gotentry')
                 if (entry.error) {
                     if (entry.error.name == 'NotFoundError') {
                         oncallback({size:0,exists:false})
@@ -429,12 +451,10 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
             // find a better place to insert this
             var others = _.filter(this.items, function(v) { return v.get('type') == 'doWritePiece' })
             if (others.length > 0) {
-                console.log('do smarter insert to reduce zero writing...')
+                //console.warn('do smarter insert to reduce zerowrite/truncate...')
                 // find the right place to insert it.
             }
-
             var thisPieceNum = arguments[0].piece.num
-
             this.addToQueue('doWritePiece',arguments)
         },
         readPiece: function() {
@@ -506,7 +526,6 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                         oncallback({error:evt})
                     }
                     writer.seek(offset)
-                    //console.log('writer.Write')
                     job.set('state','writing')
                     setTimeout( function() {
                         writer.write(new Blob([buftowrite]))
@@ -587,16 +606,25 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
+                        job.set('state','onwrite')
                         oncallback(evt)
                     }
+                    writer.onprogress = function(evt) {
+                        var pct = Math.floor( 100 * evt.loaded / evt.total )
+                        job.set('progress',pct)
+                    }
+                    writer.onwriteend = function(evt) {
+                        job.set('state','onwriteend')
+                    }
                     writer.onerror = function(evt) {
+                        job.set('state','onwriteerror')
                         console.error('writer error',evt)
                         debugger
                         oncallback({error:evt})
                     }
                     writer.seek(fileOffset)
                     //console.log('writer.Write')
-                    job.set('state','writing')
+                    job.set('state','writing') // hangs in this state too!
                     setTimeout( function() {
                         writer.write(new Blob([buftowrite]))
                     }, DiskIO.debugtimeout )
@@ -617,6 +645,7 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                 if (job.fileOffset > metaData.size) {
                     var useTruncate = true
                     if (useTruncate) {
+                        // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',
                                                            writeJob:writeJob,
                                                            piece:writeJob.piece,
@@ -628,9 +657,6 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                         newjobs.push(doWriteFileJob)
 
                     } else {
-
-                        // CALL TRUNCATE!!!!!!!
-
                         // create a bunch of extra small pad jobs
                         var numZeroes = job.fileOffset - metaData.size
 

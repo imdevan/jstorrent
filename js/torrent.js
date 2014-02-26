@@ -379,7 +379,7 @@ Torrent.prototype = {
     setFilePriority: function(fileNum, priority, oldPriority) {
         // 0 - skip, 1 - normal
 
-        console.log('set file priority',fileNum,priority)
+        //console.log('set file priority',fileNum,priority)
         var d
         // would be really nice to do a compact encoding, but lets just use an array for now
         if (! this._attributes['filePriority']) {
@@ -502,6 +502,7 @@ Torrent.prototype = {
         this.save()
         if (! opts ||
             opts.needSave !== false) {
+            // XXX use savemetadata callback, it can take a while if its queued...
             this.saveMetadata() // trackers maybe not initialized so they arent being saved...
         }
         this.recalculatePieceBlacklist()
@@ -1089,7 +1090,7 @@ Torrent.prototype = {
     },
     onStarted: function() {
         app.analytics.sendEvent("Torrent", "onStarted")
-        console.log('torrent.onStarted')
+        //console.log('torrent.onStarted')
         var a = this.client.get('activeTorrents')
         a[this.hashhexlower] = true
         this.client.set('activeTorrents', a)
@@ -1150,7 +1151,7 @@ Torrent.prototype = {
         }
     },
     onComplete: function() {
-        console.log('torrent.onComplete')
+        //console.log('torrent.onComplete')
         var a = this.client.get('activeTorrents')
         delete a[this.hashhexlower]
         this.client.set('activeTorrents', a)
@@ -1161,7 +1162,7 @@ Torrent.prototype = {
         }
     },
     onStopped: function() {
-        console.log('torrent.onStopped')
+        //console.log('torrent.onStopped')
         var a = this.client.get('activeTorrents')
         delete a[this.hashhexlower]
         this.client.set('activeTorrents', a)

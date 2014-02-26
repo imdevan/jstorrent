@@ -244,7 +244,7 @@ Piece.prototype = {
     checkHashMatch: function(chunks, callback) {
         var worker = this.torrent.client.workerthread
         if (worker.busy) {
-            console.warn('worker busy indicates we should have more than one thread')
+            //console.warn('worker busy indicates we should have more than one thread')
             // TODO -- # worker threads, perhaps show a warning, and
             // in the options page, optional permission to get CPU
             // info and adjust number of workers debugger

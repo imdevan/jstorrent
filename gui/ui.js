@@ -67,6 +67,7 @@ function UI(opts) {
             {id:'pieceNum'},
             {id:'fileNum'},
             {id:'size'},
+            {id:'progress'},
             {id:'fileOffset'},
             {id:'pieceOffset'},
             {id:'torrent'}

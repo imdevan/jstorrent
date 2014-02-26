@@ -24,7 +24,6 @@ function App() {
     chrome.notifications.onClicked.addListener(_.bind(this.notificationClicked, this))
     chrome.notifications.onButtonClicked.addListener(_.bind(this.notificationButtonClicked, this))
     chrome.notifications.onClosed.addListener(_.bind(this.notificationClosed, this))
-
     chrome.contextMenus.onClicked.addListener(_.bind(this.onContextMenuClick, this))
 
     this.popupwindowdialog = null // what it multiple are triggered? do we queue up the messages?
@@ -112,8 +111,7 @@ App.prototype = {
         chrome.contextMenus.removeAll(function(){})
         var item = contextMenuContextItem
         window.contextMenuContextItem = null
-        console.log('contextmenuclick',c,c.menuItemId)
-
+        //console.log('contextmenuclick',c,c.menuItemId)
         if (c.menuItemId == 'reportTorrentIssue') {
             var torrent = item
             var data = {data:torrent.getSaveData()}
