@@ -890,7 +890,7 @@ Torrent.prototype = {
         piece.getData(offset, size, _.bind(function(result) {
             if (result.error) {
                 console.error('error getting piece data',result)
-                if (result.error == 'NotFoundError') {
+                if (result.error == 'NotFoundError' || result.error == 'timeout') {
                     this.error('Error seeding',result.error,true)
                 }
                 return
