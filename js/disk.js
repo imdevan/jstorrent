@@ -73,16 +73,26 @@ function Disk(opts) {
             } else {
                 //console.log('successfully restored entry')
                 this.entry = entry
+                this.onentry()
             }
         },this))
 
     } else {
         this.entry = opts.entry
+        this.onentry()
         this.key = null
     }
 }
 jstorrent.Disk = Disk
 Disk.prototype = {
+    onentry: function() {
+        if (chrome.fileSystem.getDisplayPath) {
+            chrome.fileSystem.getDisplayPath(this.entry, function(displaypath) {
+                //console.log('got display path',displaypath)
+                this.set('entrydisplaypath',displaypath)
+            }.bind(this))
+        }
+    },
     checkBroken: function(callback) {
         //console.log('checkBroken')
         var _this = this

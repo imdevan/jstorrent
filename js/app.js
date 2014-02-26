@@ -424,7 +424,7 @@ App.prototype = {
             chrome.notifications.clear(id, function(){})
         }
     },
-    onTorrentError: function(torrent, err) {
+    onTorrentError: function(torrent, err, msg, seedingError) {
         this.sessionState['haderror'] = true
 
         // TODO -- we are handling torrent error notificationsin too many places!
@@ -433,16 +433,20 @@ App.prototype = {
             err = 'Disk Missing. Choose a download directory in the options.'
         }
 
+        console.log('onTorrentError',arguments)
+
         //if (err === undefined) { debugger }
         this.createNotification({
             message: torrent.get('name'),
-            details: "Error with torrent: " + err,
+            details: "Error with torrent: " + err + ((msg&&typeof msg=='string')?(','+msg):''),
             priority: 1
         })
 
 
         if (this.options.get('restart_torrent_on_error')) {
-            _.delay( function() { torrent.start() } )
+            if (! seedingError && torrent.stopinfo && torrent.stopinfo.reason == 'error') {
+                _.delay( function() { torrent.start() } )
+            }
         }
         // option to re-start on an error!
 

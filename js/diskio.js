@@ -281,8 +281,24 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                 this.queueActive = false
                 this.doQueue()
             } else if (job instanceof PieceReadJob) {
-                job.set('state','done')
-                job.onfinished({data:job.assembleReadData()})
+                var haderror = []
+                for (var i=0; i<job._subjobs.length; i++) {
+                    var err = job._subjobs[i].get('error')
+                    if (err) {
+                        haderror.push(err)
+                    }
+                }
+                if (haderror.length>0) {
+                    // report job error here, too?
+                    job.set('state','error')
+                    job.onfinished({error:haderror.join(','), job:job})
+
+                    _.defer( function() { this.reportJobError({error:true,metajob:true}, job, null) }.bind(this) )
+
+                } else {
+                    job.set('state','done')
+                    job.onfinished({data:job.assembleReadData()})
+                }
                 this.shift()
                 this.queueActive = false
                 this.doQueue()
@@ -408,6 +424,14 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         getWholeContents: function() {
             this.addToQueue('doGetWholeContents',arguments)
         },
+        reportJobError: function(err, evt, state) {
+            if (err.metajob) {
+                // subjob reports us
+            } else {
+                console.log('report job error')
+                //console.log("Report job error:",err, evt)
+            }
+        },
         createWrapCallback: function(callback, job) {
             console.assert(callback)
             console.assert(job)
@@ -428,13 +452,6 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             // if no return in 30 seconds, 
             return theoncallback
         },
-        reportJobError: function(err, evt, state) {
-            if (err.metajob) {
-                // subjob reports us
-            } else {
-                console.log("Report job error:",err, evt)
-            }
-        },
         wrapCallback: function(callback, job, state) {
             if (state.timeoutId) {
                 clearTimeout(state.timeoutId)
@@ -448,6 +465,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             if (cargs[0] && cargs[0].error) { // double triggering?
                 job.set('state','error')
                 job.set('error',cargs[0].error)
+                job._error_all = cargs
 
                 _.defer( function() { this.reportJobError(cargs[0], job, state) }.bind(this) )
 
@@ -470,11 +488,11 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
                 if (entry.error) {
-                    oncallback(entry)
+                    oncallback({error:entry.error.name,evt:entry})
                 } else {
                     function onFile(result) {
                         if (result.err) {
-                            oncallback({error:result.err,evt:result})
+                            oncallback({error:result.err.name,evt:result})
                         } else {
                             var file = result
                             function onRead(evt) {

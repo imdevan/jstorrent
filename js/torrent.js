@@ -26,6 +26,7 @@ function Torrent(opts) {
     this.invalid = false;
     this.started = false; // get('state') ? 
     this.starting = false
+    this.stopinfo = null
 
     this.metadata = {}
     this.infodict = null
@@ -889,6 +890,9 @@ Torrent.prototype = {
         piece.getData(offset, size, _.bind(function(result) {
             if (result.error) {
                 console.error('error getting piece data',result)
+                if (result.error == 'NotFoundError') {
+                    this.error('Error seeding',result.error,true)
+                }
                 return
             }
             // what if peer disconnects before we even get around to starting this disk i/o job?
@@ -906,13 +910,13 @@ Torrent.prototype = {
     has_infodict: function() {
         return this.infodict ? true : false
     },
-    error: function(msg, detail) {
-        this.stop()
-        this.trigger('error',msg,detail)
+    error: function(msg, detail, opt) {
+        this.stop({reason:'error'})
+        this.trigger('error',msg,detail,opt)
         this.starting = false
         this.set('state','error')
         this.lasterror = msg
-        console.error('torrent error:',[msg,detail])
+        console.error('torrent error:',[msg,detail,opt])
 
         if (false) {
             if (msg == 'read 0 bytes') {
@@ -1188,7 +1192,8 @@ Torrent.prototype = {
             }
         })
     },
-    stop: function() {
+    stop: function(info) {
+        this.stopinfo = info
         this.starting = false
         this.isEndgame = false
         if (this.get('state') == 'stopped') { return }
