@@ -40,6 +40,7 @@ jstorrent.options = {
     add_torrents_on_start: false,
     run_unit_tests: true,
     disable_trackers: false,
+    seed_public_torrents: false, // default off
     allow_report_torrent_bug: false,
     manual_peer_connect_on_start: {
 //        "d0a7ed3e79d51ea05775cae7122d5e46c0a9451f": ['127.0.0.1:6881']

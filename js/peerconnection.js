@@ -716,7 +716,7 @@ PeerConnection.prototype = {
     },
     handle_INTERESTED: function() {
         this.peerInterested = true
-        if (this.torrent.isPrivate() || true) {
+        if (this.torrent.isPrivate() || jstorrent.options.seed_public_torrents) {
             this.sendMessage('UNCHOKE') // TODO - under what conditions?
         }
     },
