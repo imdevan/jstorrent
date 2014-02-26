@@ -500,6 +500,9 @@ debugger
 debugger
         return '.piece.' + this.num + '.hidden'
     },
+    isComplete: function() {
+        return this.torrent._attributes.bitfield[this.num]
+    },
     markAsIncomplete: function() {
         // to simplify things, when changing from skipped to
         // non-skipped, we simply call this function on any boundary

@@ -667,7 +667,7 @@ Torrent.prototype = {
         if (result.error) {
             //console.error('persist piece result',result)
             this.error('error persisting piece: ' + result.error, result.job)
-            console.log('report bad job',result.job)
+            //console.log('report bad job',result.job)
         } else {
             // clean up all registered chunk requests
             result.piece.notifyPiecePersisted()
