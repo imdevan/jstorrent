@@ -26,6 +26,8 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
         if (path.length == 0) {
             if (e.name == 'TypeMismatchError') {
                 state.e.getDirectory(state.path, {create:false}, recurse, recurse)
+            } else if (e.name == 'NotFoundError') {
+                callback({error:e})
             } else if (e.isFile) {
                 callback(e)
             } else if (e.isDirectory) {
@@ -201,7 +203,7 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
         jstorrent.BasicCollection.apply(this, arguments)
     }
     DiskIO.jobctr = 0
-    DiskIO.debugtimeout = 1000
+    DiskIO.debugtimeout = 1
 
     var DiskIOProto = {
         doQueue: function() {
@@ -291,6 +293,48 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                     entry.getMetadata(onMetadata, onMetadata)
                 }
             })
+        },
+        writeWholeContents: function() {
+            this.addToQueue('doWriteWholeContents',arguments)
+        },
+        doWriteWholeContents: function(opts, callback, job) {
+            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var path = opts.path.slice()
+            job.set('state','getentry')
+
+            this.getFileEntryWriteable( path, function(entry) {
+                job.set('state','createwriter')
+                entry.createWriter( function(writer) {
+                    writer.onwrite = function(evt) {
+                        job.set('state','createwriter2')
+                        entry.createWriter( function(writer2) {
+                            writer2.onwrite = function(evt2) {
+                                oncallback(evt2)
+                            }
+                            writer2.onerror = function(evt2) {
+                                console.error('writer error',evt2)
+                                debugger
+                                oncallback({error:evt2})
+                            }
+                            job.set('state','writing')
+                            setTimeout( function() {
+                                writer2.write(new Blob([opts.data]))
+                            }, DiskIO.debugtimeout)
+                        })
+                    }
+                    writer.onerror = function(evt) {
+                        console.error('truncate error',evt)
+                        debugger
+                        oncallback({error:evt})
+                    }
+                    //console.log('writer.Write')
+                    job.set('state','truncating')
+                    setTimeout( function() {
+                        writer.truncate(0)
+                    }, DiskIO.debugtimeout )
+                }.bind(this))
+            }.bind(this))
+
         },
         getWholeContents: function() {
             this.addToQueue('doGetWholeContents',arguments)
@@ -403,6 +447,34 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
             }
             return false
         },
+        doTruncate: function(opts, callback, job) {
+            if (this.checkTorrentStopped(job)) return
+            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var piece = opts.piece
+            var writeJob = opts.writeJob
+            var fileNum = opts.fileNum
+            var size = opts.size
+            var path = piece.torrent.getFile(opts.fileNum).path.slice()
+            job.set('state','getentry')
+            this.getFileEntryWriteable( path, function(entry) {
+                job.set('state','createwriter')
+                entry.createWriter( function(writer) {
+                    writer.onwrite = function(evt) {
+                        oncallback(evt)
+                    }
+                    writer.onerror = function(evt) {
+                        console.error('writer error',evt)
+                        debugger
+                        oncallback({error:evt})
+                    }
+                    //console.log('writer.Write')
+                    job.set('state','truncating')
+                    setTimeout( function() {
+                        writer.truncate(opts.size)
+                    }, DiskIO.debugtimeout)
+                }.bind(this))
+            }.bind(this))
+        },
         doWriteZeroes: function(opts, callback, job) {
             if (this.checkTorrentStopped(job)) return
             job.set('state','preparebuffer')
@@ -419,7 +491,6 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
             } else {
                 var buftowrite = new Uint8Array(size)
             }
-
             var path = writeJob.piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
             this.getFileEntryWriteable( path, function(entry) {
@@ -544,42 +615,59 @@ function recursiveGetEntryReadOnly(filesystem, path, callback) {
                 var metaData = writeJob.filesMetadata[job.fileNum]
 
                 if (job.fileOffset > metaData.size) {
-                    // create a bunch of extra small pad jobs
-                    var numZeroes = job.fileOffset - metaData.size
+                    var useTruncate = true
+                    if (useTruncate) {
+                        var doWriteFileJob = new BasicJob({type:'doTruncate',
+                                                           writeJob:writeJob,
+                                                           piece:writeJob.piece,
+                                                           pieceNum:writeJob.piece.num,
+                                                           torrent:writeJob.piece.torrent.hashhexlower,
+                                                           fileNum:job.fileNum,
+                                                           size:job.fileOffset,
+                                                           callback:null})
+                        newjobs.push(doWriteFileJob)
 
-                    var writtenSoFar = 0
-                    var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
-                    //var limitPerStep = Math.pow(2,15)
+                    } else {
 
-                    var zeroJobData = []
+                        // CALL TRUNCATE!!!!!!!
 
-                    while (writtenSoFar < numZeroes) {
-                        var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
-                        zeroJobData.push( {type:'doWriteZeroes',
-                                           writeJob:writeJob,
-                                           torrent:writeJob.piece.torrent.hashhexlower,
-                                           pieceNum:writeJob.piece.num,
-                                           fileNum:job.fileNum,
-                                           fileOffset:metaData.size + writtenSoFar,
-                                           size:curZeroes} )
-                        writtenSoFar += curZeroes
-                    }
+                        // create a bunch of extra small pad jobs
+                        var numZeroes = job.fileOffset - metaData.size
+
+                        var writtenSoFar = 0
+                        var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
+                        //var limitPerStep = Math.pow(2,15)
+
+                        var zeroJobData = []
+
+                        while (writtenSoFar < numZeroes) {
+                            var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
+                            zeroJobData.push( {type:'doWriteZeroes',
+                                               writeJob:writeJob,
+                                               torrent:writeJob.piece.torrent.hashhexlower,
+                                               pieceNum:writeJob.piece.num,
+                                               fileNum:job.fileNum,
+                                               fileOffset:metaData.size + writtenSoFar,
+                                               size:curZeroes} )
+                            writtenSoFar += curZeroes
+                        }
 
 
-                    writeJob.filesZeroInfo[job.fileNum] = { done:0,
-                                                            total:zeroJobData.length }
+                        writeJob.filesZeroInfo[job.fileNum] = { done:0,
+                                                                total:zeroJobData.length }
 
-                    for (var j=0; j<zeroJobData.length; j++) {
-                        var zeroJob = zeroJobData[j]
-/*                        var cb = _.bind(writeJob.wroteFileZeroes,
-                                        writeJob,
-                                        job.fileNum,
-                                        j,
-                                        zeroJobData.length) 
-                        zeroJob.callback = cb
-*/
-                        var zeroJobObj = new BasicJob(zeroJob)
-                        newjobs.push(zeroJobObj)
+                        for (var j=0; j<zeroJobData.length; j++) {
+                            var zeroJob = zeroJobData[j]
+                            /*                        var cb = _.bind(writeJob.wroteFileZeroes,
+                                                      writeJob,
+                                                      job.fileNum,
+                                                      j,
+                                                      zeroJobData.length) 
+                                                      zeroJob.callback = cb
+                            */
+                            var zeroJobObj = new BasicJob(zeroJob)
+                            newjobs.push(zeroJobObj)
+                        }
                     }
                 }
                 // at this point we added the zero pad jobs to newjobs, so we can proceed to write the piece data

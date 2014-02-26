@@ -305,6 +305,8 @@ Torrent.prototype = {
                                          chunks: [new Uint8Array(chunkData)] }, onHashResult, {transferable:false} )
     },
     initializeFromEntry: function(entry, callback, opts) {
+        // XXX this is not going through diskio. Maybe disable all disk io and wait for inactive and then do this read...
+
         // should we save this as a "disk" ? no... that would be kind of silly. just read out the metadata.
         var _this = this
         var reader = new FileReader;
@@ -527,7 +529,6 @@ Torrent.prototype = {
             } else {
                 var storage = this.getStorage()
                 if (storage) {
-
                     storage.diskio.getWholeContents( {path:[this.getMetadataFilename()]}, function(result) {
                         if (result.error) {
                             callback({error:"Cannot load torrent - " + result.error})
@@ -535,19 +536,6 @@ Torrent.prototype = {
                             _this.initializeFromBuffer(result, callback, opts)
                         }
                     })
-
-/*
-                    storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
-                        // XXX XXX XXX sometimes this does NOT return!!! need to restart the app cuz its BROKEN as FUK
-                        if (entry) {
-                            _this.initializeFromEntry(entry, callback, opts)
-                        } else {
-                            callback({error:'file missing'})
-                        }
-                    }, function(err) {
-                        callback({error:"Cannot load torrent - " + err.message})
-                    })
-*/
                 } else {
                     callback({error:'disk missing'})
                 }
@@ -569,26 +557,11 @@ Torrent.prototype = {
                 callback({error:'disk missing'})
             }
         } else {
-            storage.entry.getFile( filename, {create:true}, function(entry) {
-                entry.createWriter(function(writer) {
-                    writer.onwrite = function(evt) {
-                        console.log('wrote torrent metadata', evt.loaded)
-                        if (callback){ callback({wrote:true}) }
-                    }
-                    writer.onerror = function(evt) {
-                        console.error('error writing torrent metadata')
-                        if (callback){ callback({error:true}) }
-                    }
-                    var data = new Uint8Array(bencode(_this.metadata))
-                    console.assert(data.length > 0)
-                    writer.write(new Blob([data]))
-                })
-            },
-                                   function(err) {
-                                       console.log('saveMetadata fail -- ',err)
-                                       if (callback){callback({error:err.message})}
-                                   }
-                                 )
+
+            var data = new Uint8Array(bencode(_this.metadata))
+            storage.diskio.writeWholeContents({path:[filename],
+                                               data:data},
+                                              callback)
         }
     },
     getDownloaded: function() {
@@ -1039,9 +1012,9 @@ Torrent.prototype = {
         }
     },
     start: function(reallyStart) {
-        this.set('state','loading')
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
+        this.set('state','starting')
         app.analytics.sendEvent("Torrent", "Start")
 
         this.starting = true
@@ -1052,6 +1025,7 @@ Torrent.prototype = {
         }
 
         if (this.get('metadata')) {
+            this.set('state','loading')
             this.loadMetadata( _.bind(function(result) {
                 if (result.error) {
                     this.error(result.error)

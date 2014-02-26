@@ -515,6 +515,8 @@ debugger
         this.torrent.save()
     },
     persistDataDueToFileSkip: function(callback) {
+        debugger
+        console.assert(false)
         // do we store state somewhere that this was done?
         // or, maybe when "unskipping" a file, just mark pieces that were complete as no longer complete (easier)
 

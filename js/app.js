@@ -77,13 +77,16 @@ App.prototype = {
     onContextMenu: function(grid, item, evt) {
         console.log('oncontextmenu',item)
         if (item.itemClass == jstorrent.Torrent) {
-            var opts = {
-                contexts:["all"],
-                title:"Report Issue with this Torrent",
-                id:"reportTorrentIssue"
+            if (jstorrent.options.allow_report_torrent_bug) {
+
+                var opts = {
+                    contexts:["all"],
+                    title:"Report Issue with this Torrent",
+                    id:"reportTorrentIssue"
+                }
+                window.contextMenuContextItem = item
+                chrome.contextMenus.create(opts, _.bind(this.onContextMenuCreate,this) )
             }
-            window.contextMenuContextItem = item
-            chrome.contextMenus.create(opts, _.bind(this.onContextMenuCreate,this) )
         } else if (item.itemClass == jstorrent.File) {
             window.contextMenuContextItem = item
             var opts1 = {
