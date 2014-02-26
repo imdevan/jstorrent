@@ -41,18 +41,27 @@ if (self.jstorrent) {
             opts = opts || {transferable:jstorrent.options.transferable_objects}
             //console.log('compute hash')
             var transfers = []
+            var curchunk
             if (msg.chunks && jstorrent.options.transferable_objects) {
                 for (var i=0; i<msg.chunks.length; i++) {
                     // msg.chunks[i] is actually a uint8array with
                     // offset, but with a standard 13 bytes extra at
                     // the beginning, so the sha1 hasher needs to know
                     // this
-                    if (msg.chunks[i].buffer.byteLength == 0) {
+                    
+                    if (msg.chunks[i] instanceof ArrayBuffer) {
+                        curchunk = msg.chunks[i]
+                    } else {
+                        console.assert(msg.chunks[i].buffer instanceof ArrayBuffer)
+                        curchunk = msg.chunks[i].buffer
+                    }
+
+                    if (curchunk.byteLength == 0) {
                         console.warn('tried to send data to be hashed that had byteLength 0, likely already sent this piece to worker')
                         callback({error:"data already transfered"})
                         return
                     }
-                    transfers.push( msg.chunks[i].buffer )
+                    transfers.push( curchunk )
                 }
             }
             this.busy = true
@@ -69,24 +78,86 @@ if (self.jstorrent) {
             }
         },
         writePiece: function(piece, callback) {
-            var filesSpanInfo = piece.getSpanningFilesInfo()
-debugger
-            this.send({command:'writePiece'}, callback)
+            this.queue.push( {type:'write',piece:piece,callback:callback} )
+            this.doQueue()
         },
         readPiece: function(piece, offset, size, callback) {
-            this.queue.push( {piece:piece,offset:offset,size:size,callback:callback} )
-            this.doReadQueue()
+            this.queue.push( {type:'read',piece:piece,offset:offset,size:size,callback:callback} )
+            this.doQueue()
         },
-        doReadQueue: function() {
-            if (this.readQueueActive) {
+        doQueue: function() {
+            if (this.queueActive) {
                 return
             }
             if (this.queue.length == 0) {
                 return
             }
-            this.readQueueActive = true
+            this.queueActive = true
             var d = this.queue.shift()
+            if (d.type == 'read') {
+                this.doReadQueue(d)
+            } else {
+                this.doWriteQueue(d)
+            }
+        },
+        doWriteQueue: function(d) {
+            var piece = d.piece
+            var callback = d.callback
 
+            var filesSpanInfo = piece.getSpanningFilesInfo()
+            var jobGroup = this.jobGroupCounter++
+            var job, fileSpanInfo
+
+            var fe = {}
+            var collectstate={collected:0,total:filesSpanInfo.length}
+
+            for (var i=0; i<filesSpanInfo.length; i++) {
+                fileSpanInfo = filesSpanInfo[i]
+                var info = fileSpanInfo
+                //console.log('writepiecefilespan',fileSpanInfo)
+
+                var bufslice = new Uint8Array(piece.data, fileSpanInfo.pieceOffset, fileSpanInfo.size)
+
+                if (fileSpanInfo.pieceOffset == 0 && fileSpanInfo.size == piece.data.byteLength) {
+                    // TODO -- more efficient if piece fully contained in this file (dont have to do this copy)
+                    var buftowrite = bufslice
+                } else {
+                    var buftowrite = new Uint8Array(fileSpanInfo.size)
+                    buftowrite.set(bufslice, 0)
+                }
+
+                // XXX entering debugger here, then allowing one job to be created, then remaining in debugger causes the dreaded disk io timeout bug. why?
+
+                job = new jstorrent.DiskIOJob( {type: 'write',
+                                                data: buftowrite.buffer,
+                                                piece: piece,
+                                                jobId: this.jobIdCounter++,
+                                                torrent: piece.torrent.hashhexlower,
+                                                fileNum: fileSpanInfo.fileNum,
+                                                fileOffset: fileSpanInfo.fileOffset,
+                                                size: fileSpanInfo.size,
+                                                jobGroup: jobGroup} )
+
+                job.set('state','collecting')
+                this.add(job)
+
+                var fileNum = info.fileNum
+                var file = piece.torrent.getFile(fileNum)
+                fe[fileNum] = {}
+                file.getEntryFile( _.bind(function(fileNum,job,fd) {
+                    collectstate.collected++
+                    fe[fileNum] = fd
+
+                    if (collectstate.collected == collectstate.total) {
+                        job.set('state','collected')
+                        this.onCollectedWrite(piece, filesSpanInfo, fe, jobGroup, callback)
+                    }
+
+                }, this,fileNum,job) )
+
+            }
+        },
+        doReadQueue: function(d) {
             var piece = d.piece
             var offset = d.offset
             var size = d.size
@@ -126,13 +197,13 @@ debugger
 
                     if (collectstate.collected == collectstate.total) {
                         job.set('state','collected')
-                        this.onCollected(piece, filesSpanInfo, fe, jobGroup, callback)
+                        this.onCollectedRead(piece, filesSpanInfo, fe, jobGroup, callback)
                     }
 
                 }, this,fileNum,job) )
             }
         },
-        onCollected: function(piece, filesSpanInfo, fe, jobGroup, callback) {
+        onCollectedRead: function(piece, filesSpanInfo, fe, jobGroup, callback) {
             // all jobs in group -- set to sent
             // job.set('state','sent')
             for (var i=0; i<this.items.length; i++) {
@@ -148,6 +219,23 @@ debugger
                        filesSpanInfo:filesSpanInfo}, 
                       this.onResponse.bind(this, callback, jobGroup))
         },
+        onCollectedWrite: function(piece, filesSpanInfo, fe, jobGroup, callback) {
+            // all jobs in group -- set to sent
+            // job.set('state','sent')
+            for (var i=0; i<this.items.length; i++) {
+                var job = this.items[i]
+                if (job.opts.jobGroup == jobGroup) {
+                    job.set('state','sent')
+                }
+            }
+
+            this.send({command:'writePiece', 
+                       piece:piece.num, 
+                       chunks:[piece.data],
+                       files:fe,
+                       filesSpanInfo:filesSpanInfo}, 
+                      this.onResponse.bind(this, callback, jobGroup))
+        },
         onResponse: function(callback, jobGroup, result) {
             for (var i=0; i<this.items.length; i++) {
                 var job = this.items[i]
@@ -156,11 +244,10 @@ debugger
                     setTimeout( _.bind(function(job) {
                         this.remove(job)
                     },this,job), 200)
-
                 }
             }
-            this.readQueueActive = false
-            _.defer( this.doReadQueue.bind(this) )
+            this.queueActive = false
+            _.defer( this.doQueue.bind(this) )
             callback(result)
         },
         cancelTorrentJobs: function(torrent, callback) {
@@ -206,13 +293,10 @@ for (var method in jstorrent.Item.prototype) {
 
 
     function doReadPiece(msg) {
-
         var results = []
 
-        debugger
         for (var i=0; i<msg.filesSpanInfo.length; i++) {
             var fr = new FileReaderSync()
-
             var job = msg.filesSpanInfo[i]
             var filemeta = msg.files[job.fileNum].metadata
             var file = msg.files[job.fileNum].file
@@ -220,7 +304,19 @@ for (var method in jstorrent.Item.prototype) {
             var data = fr.readAsArrayBuffer(blobSlice)
             results.push(data)
         }
+        return results
+    }
 
+    function doWritePiece(msg) {
+        for (var i=0; i<msg.filesSpanInfo.length; i++) {
+            var fr = new FileWriterSync()
+            var job = msg.filesSpanInfo[i]
+            var filemeta = msg.files[job.fileNum].metadata
+            var file = msg.files[job.fileNum].file
+            var blobSlice = file.slice(job.fileOffset, job.fileOffset + job.size)
+            var data = fr.readAsArrayBuffer(blobSlice)
+            results.push(data)
+        }
         return results
     }
 
@@ -238,21 +334,9 @@ for (var method in jstorrent.Item.prototype) {
             } else {
                 self.postMessage({data:results, _id:id})
             }
-        } else if (msg.command == 'hashChunks') {
-            var digest = new Digest.SHA1()
-            for (var i=0; i<msg.chunks.length; i++) {
-                digest.update( msg.chunks[i] )
-                if (transferable) {
-                    // this seems to have helped, creating a new uint8array on it...?
-                    returnchunks.push( new Uint8Array(msg.chunks[i]).buffer )
-                }
-            }
-            var responseHash = new Uint8Array(digest.finalize())
-            if (transferable) {
-                self.postMessage({hash:responseHash, _id:id, chunks:msg.chunks}, returnchunks)
-            } else {
-                self.postMessage({hash:responseHash, _id:id})
-            }
+        } else if (msg.command == 'writePiece') {
+            var result = doWritePiece(msg)
+            self.postMessage({data:result, _id:id})
         } else {
             self.postMessage({error:'unhandled command', _id:id})
         }

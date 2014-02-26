@@ -288,7 +288,7 @@ PeerConnection.prototype = {
         }
         
         if (! payloads) { payloads = [] }
-        console.log('Sending Message',type)
+        //console.log('Sending Message',type)
         console.assert(jstorrent.protocol.messageNames[type] !== undefined)
         var payloadsz = 0
         for (var i=0; i<payloads.length; i++) {
@@ -906,7 +906,7 @@ PeerConnection.prototype = {
         for (var i=0; i<maxi; i++) {
             curByte = 0
             idx = 8*i
-            for (var j=0; j<8; j++) {
+            for (var j=7; j>=0; j--) {
                 idx++
                 if (idx < this.torrent.numPieces) {
                     curByte = (curByte | (this.torrent._attributes.bitfield[idx] << j))

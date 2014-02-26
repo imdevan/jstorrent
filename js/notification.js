@@ -71,6 +71,7 @@ Notification.prototype = {
         return this.id
     },
     show: function() {
+        if (jstorrent.options.disable_notifications) return
         var notification = chrome.notifications.create(this.id, this.notificationOpts, function(id) {
             //console.log('created notification with id',id)
         })

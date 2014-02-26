@@ -66,6 +66,7 @@ Disk.prototype = {
         this.checkBrokenTimeout = setTimeout( function(){
             _this.checkingBroken = false
             console.error('disk is definitely broken. app needs restart')
+            app.notify("FATAL ERROR. Please restart the app")
             if (callback) { callback(true) }
         },1000)
         this.entry.getMetadata(function(info) {

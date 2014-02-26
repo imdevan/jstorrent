@@ -24,6 +24,8 @@ Piece.getSpanningFilesInfo = function(this_torrent, this_num, this_size, offset,
     var startByte = this_torrent.pieceLength * this_num + offset
     var endByte = this_torrent.pieceLength * this_num + offset + size - 1
 
+    console.assert(startByte === 0 || startByte)
+
     var infos = []
 
     var idx = bisect_right(this_torrent.fileOffsets, startByte)
@@ -143,7 +145,9 @@ Piece.prototype = {
                                                  peerconn:peerconn} )
             var filled = this.checkChunkResponsesFilled();
 
-            if (filled) {
+            if (this.checkingChunkResponseHash) {
+                console.warn('got a chunk response but already checking hash...')
+            } else if (filled) {
                 this.checkingChunkResponseHash = true
                 this.checkChunkResponseHash( null, _.bind(function(valid) {
 
@@ -470,7 +474,9 @@ debugger
     },
     getData: function(offset, size, callback) {
         //var filesSpan = this.getSpanningFilesInfo(offset, size)
-        this.torrent.getStorage().diskio.readPiece(this, offset, size, function(result) {
+        this.torrent.getStorage().diskio.readPiece({piece:this, 
+                                                    pieceOffset:offset,
+                                                    size:size}, function(result) {
             if (result && result.error) {
                 callback(result)
             } else {
@@ -491,6 +497,7 @@ debugger
         recursiveGetEntry(filesystem, path, callback)
     },
     getSecretStoragePlace: function() {
+debugger
         return '.piece.' + this.num + '.hidden'
     },
     markAsIncomplete: function() {

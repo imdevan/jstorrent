@@ -357,7 +357,7 @@ Torrent.prototype = {
     getFile: function(num) {
         var file = this.files.get(num)
         if (! file) {
-            file = new jstorrent.File({torrent:this, shouldPersist:false, num:num})
+            file = new jstorrent.File({itemClass:jstorrent.File,torrent:this, shouldPersist:false, num:num})
             this.files.add(file)
         }
         return file
@@ -376,6 +376,7 @@ Torrent.prototype = {
     },
     setFilePriority: function(fileNum, priority, oldPriority) {
         // 0 - skip, 1 - normal
+
         console.log('set file priority',fileNum,priority)
         var d
         // would be really nice to do a compact encoding, but lets just use an array for now
@@ -388,7 +389,7 @@ Torrent.prototype = {
         }
         d[fileNum] = priority
         this.set('filePriority', d)
-        this.getFile(fileNum).set('priority',priority,false)
+        this.getFile(fileNum).set('priority',priority)
 
         if (oldPriority == jstorrent.constants.PRIO_SKIP) {
 
@@ -509,6 +510,8 @@ Torrent.prototype = {
         return this.get('name') + '.torrent'
     },
     loadMetadata: function(callback) {
+        // TODO -- better yet, have this use disk i/o queue
+
         // need to do have a timeout, because sometimes this dont work!!!
         //this.loadMetadataTimeout = setTimeout( function() {
         //},1000)
@@ -524,6 +527,16 @@ Torrent.prototype = {
             } else {
                 var storage = this.getStorage()
                 if (storage) {
+
+                    storage.diskio.getWholeContents( {path:[this.getMetadataFilename()]}, function(result) {
+                        if (result.error) {
+                            callback({error:"Cannot load torrent - " + result.error})
+                        } else {
+                            _this.initializeFromBuffer(result, callback, opts)
+                        }
+                    })
+
+/*
                     storage.entry.getFile( this.getMetadataFilename(), null, function(entry) {
                         // XXX XXX XXX sometimes this does NOT return!!! need to restart the app cuz its BROKEN as FUK
                         if (entry) {
@@ -534,6 +547,7 @@ Torrent.prototype = {
                     }, function(err) {
                         callback({error:"Cannot load torrent - " + err.message})
                     })
+*/
                 } else {
                     callback({error:'disk missing'})
                 }
@@ -761,7 +775,7 @@ Torrent.prototype = {
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
         if (storage) {
-            storage.diskio.writePiece(piece, _.bind(this.persistPieceResult,this))
+            storage.diskio.writePiece({piece:piece}, _.bind(this.persistPieceResult,this))
         } else {
             this.error('Storage missing')
         }
@@ -1003,7 +1017,9 @@ Torrent.prototype = {
                     } else {
                         tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
                     }
-                    this.trackers.add( tracker )
+                    if (! this.trackers.contains(tracker)) {
+                        this.trackers.add( tracker )
+                    }
                 }
             }
         }
@@ -1023,6 +1039,7 @@ Torrent.prototype = {
         }
     },
     start: function(reallyStart) {
+        this.set('state','loading')
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         app.analytics.sendEvent("Torrent", "Start")

@@ -3,6 +3,9 @@ function UI(opts) {
         if (val === undefined || val === null) { return '' }
         return (val * 100).toFixed(1) + '%';
     }
+    function priority(val) {
+        return val == 0 ? 'Skip' : ''
+    }
     function fileAction(val) {
         return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
     }
@@ -10,7 +13,7 @@ function UI(opts) {
     this.client = opts.client
 
     this.detailtable = null
-    var default_tab = 'peers'
+    var default_tab = 'diskio' // TODO -- remember last
     this.detailtype = default_tab
 
     this.coldefs = {
@@ -58,26 +61,28 @@ function UI(opts) {
             {id:'lasterror', width:400}
         ],
         'diskio':[
-            {id:'type'},
-            {id:'state'},
-            {id:'torrent'},
-            {id:'fileNum'},
-            {id:'fileOffset'},
-            {id:'size'},
             {id:'jobId'},
-            {id:'jobGroup'}
+            {id:'type', width:150},
+            {id:'state'},
+            {id:'pieceNum'},
+            {id:'fileNum'},
+            {id:'size'},
+            {id:'fileOffset'},
+            {id:'pieceOffset'},
+            {id:'torrent'}
         ],
         'files':[
             {attr:'num', name:"Number", sortable:true},
             {attr:'name', name:"Name", width:400, sortable:true},
             {attr:'size', name:"Size", formatVal:byteUnits, width:100, sortable:true},
-            {id:"priority", 
-             editor: Slick.Editors.SelectCellEditor,
+            {id:"priority", formatVal: priority
+/*
+  ,editor: Slick.Editors.SelectCellEditor,
              options:"Normal,Skip",
              formatVal: function(v) {
                  return (v == 0) ? 'Skip' : ''
              },
-             name:'Priority',
+             name:'Priority',*/
             },
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
             {id:'complete', name:"Complete", formatVal: fracToPercent},
@@ -105,6 +110,16 @@ function UI(opts) {
 }
 
 UI.prototype = {
+    get_selected_files: function() {
+        var rows = this.detailtable.grid.getSelectedRows()
+        var files = []
+        var file
+        for (var i=0; i<rows.length; i++) {
+            file = this.detailtable.grid.getData()[rows[i]]
+            files.push( file )
+        }
+        return files
+    },
     get_selected_torrents: function() {
         var rows = this.torrenttable.grid.getSelectedRows()
         var torrents = []

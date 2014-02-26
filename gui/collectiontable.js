@@ -101,13 +101,15 @@ debugger // using CellSelectEditor now
         var cell = grid.getCellFromEvent(evt)
 
         if (cell) {
-            grid.setSelectedRows([cell.row])
+            if (this.collection.itemClass != jstorrent.File) {
+                grid.setSelectedRows([cell.row])
+            }
             var item = grid.getDataItem(cell.row)
             return app.onContextMenu(grid, item, evt)
         } else {
             console.error('unable to get cell from event')
         }
-    }))
+    },this))
 
     grid.onDblClick.subscribe( _.bind(function(evt, data) {
         
@@ -171,6 +173,7 @@ SlickCollectionTable.prototype = {
         var idx = this.collection.indexOf( item.get_key() )
         //console.log('change at row',idx)
         this.grid.updateCell(idx, this.columnNumberByAttribute[attr])
+
     },
     on_add: function(item) {
         //console.log('collection onadd')

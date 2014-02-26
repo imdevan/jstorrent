@@ -84,6 +84,20 @@ App.prototype = {
             }
             window.contextMenuContextItem = item
             chrome.contextMenus.create(opts, _.bind(this.onContextMenuCreate,this) )
+        } else if (item.itemClass == jstorrent.File) {
+            window.contextMenuContextItem = item
+            var opts1 = {
+                contexts:["all"],
+                title:"Skip Download",
+                id:"skip-download"
+            }
+            var opts2 = {
+                contexts:["all"],
+                title:"Normal Download",
+                id:"normal-download"
+            }
+            chrome.contextMenus.create(opts2)
+            chrome.contextMenus.create(opts1)
         }
         return true
     },
@@ -95,7 +109,8 @@ App.prototype = {
         chrome.contextMenus.removeAll(function(){})
         var item = contextMenuContextItem
         window.contextMenuContextItem = null
-        console.log('contextmenuclick',c)
+        console.log('contextmenuclick',c,c.menuItemId)
+
         if (c.menuItemId == 'reportTorrentIssue') {
             var torrent = item
             var data = {data:torrent.getSaveData()}
@@ -110,8 +125,18 @@ App.prototype = {
                     })
                 }
             })
-
-
+        } else if (c.menuItemId == 'normal-download') {
+            var files = app.UI.get_selected_files()
+            for (var i=0; i<files.length; i++) {
+                var file = files[i]
+                file.torrent.setFilePriority(file.num, 1, file.getPriority())
+            }
+        } else if (c.menuItemId == 'skip-download') {
+            var files = app.UI.get_selected_files()
+            for (var i=0; i<files.length; i++) {
+                var file = files[i]
+                file.torrent.setFilePriority(file.num, 0, file.getPriority())
+            }
         }
 
     },
@@ -739,8 +764,9 @@ App.prototype = {
         this.client.disks.setAttribute('default',disk.get_key())
         this.client.disks.save()
     },
-    notify: function(msg) {
-        this.createNotification({details:msg, priority:0})
+    notify: function(msg,prio) {
+        if (prio === undefined) { prio = 0 }
+        this.createNotification({details:msg, priority:prio})
         console.warn('notification:',msg);
     },
     initialize: function(callback) {

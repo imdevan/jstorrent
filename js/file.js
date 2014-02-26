@@ -31,7 +31,7 @@ function File(opts) {
     this.set('downloaded',this.getDownloaded()) // not zero! need to get our spanning pieces and add up the components...
     this.set('complete',this.get('downloaded')/this.size)
     this.set('priority',this.getPriority())
-    this.on('change', _.bind(this.priorityChanged,this))
+    //this.on('change', _.bind(this.priorityChanged,this)) // NO, we use contextmenu now
 }
 File.getStoragePath = function(torrent) {
     if (torrent.multifile) {

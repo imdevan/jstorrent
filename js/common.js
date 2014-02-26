@@ -34,13 +34,16 @@ jstorrent.getLocaleString = function(s) {
     return s
 }
 jstorrent.options = {
+    disable_notifications: false,
     transferable_objects: true,
     load_options_on_start: false,
     add_torrents_on_start: false,
     run_unit_tests: true,
     disable_trackers: false,
     manual_peer_connect_on_start: {
+        "bde4301e590bedd19487714699c8ae37bd0e6a45": ['127.0.0.1:8030'],
         "d0a7ed3e79d51ea05775cae7122d5e46c0a9451f": ['127.0.0.1:8030']
+//        "d0a7ed3e79d51ea05775cae7122d5e46c0a9451f": ['127.0.0.1:6881']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['184.75.214.170:15402']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
 //        '726ff42f84356c9aeb27dfa379678c89f0e62149': ['127.0.0.1:9090'],

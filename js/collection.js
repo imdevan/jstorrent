@@ -1,3 +1,69 @@
+function BasicCollection(opts) {
+    this.event_listeners = {}
+    this.items = []
+}
+jstorrent.BasicCollection = BasicCollection
+BasicCollection.prototype = {
+    data: function() { return this.items },
+    unshift: function(item) {
+        item._collections = [this]
+        this.items.unshift(item)
+
+        // update key on all items
+        for (var i=0; i<this.items.length; i++) {
+            this.items[i].key = i
+        }
+        this.trigger('add')
+    },
+    indexOf: function(key) {
+        return key
+    },
+    shift: function() {
+        this.items.shift()
+        this.trigger('remove')
+    },
+    unon: function(event_type, callback) {
+        var idx = this.event_listeners[event_type].indexOf(callback)
+        this.event_listeners[event_type].splice(idx,1)
+    },
+    get_at: function(idx) {
+        return this.items[idx]
+    },
+    addAt: function(item, idx) {
+        item._collections = [this]
+        console.assert(idx === undefined)
+        this.items.push(item)
+        for (var i=0; i<this.items.length; i++) {
+            this.items[i].key = i
+        }
+        this.trigger('add',item)
+    },
+    on: function(event_type, callback) {
+        // XXX - if we set a debugger here, UI fucks up
+        //console.log('register',event_type)
+        if (! this.event_listeners[event_type]) {
+            this.event_listeners[event_type] = []
+        }
+        this.event_listeners[event_type].push(callback)
+    },
+    trigger: function(event_type, item, newval, oldval, attrName) {
+        if (event_type == 'change') {
+            if (this.event_listeners && this.event_listeners[event_type]) {
+                for (var i=0; i<this.event_listeners[event_type].length; i++) {
+                    this.event_listeners[event_type][i](item, newval, oldval, attrName)
+                }
+            }
+        } else {
+            if (this.event_listeners && this.event_listeners[event_type]) {
+                for (var i=0; i<this.event_listeners[event_type].length; i++) {
+                    var args = Array.prototype.slice.call(arguments,1)
+                    this.event_listeners[event_type][i].apply(undefined, args)
+                }
+            }
+        }
+    }
+}
+
 
 function Collection(opts) {
     // collection of items, good for use with a slickgrid
@@ -24,8 +90,7 @@ function Collection(opts) {
 }
 
 jstorrent.Collection = Collection
-
-Collection.prototype = {
+var CollectionProto = {
     getAttribute: function(k) {
         return this._attributes[k]
     },
@@ -65,46 +130,9 @@ Collection.prototype = {
         }
         // now update keyeditems
     },
-    data: function() {
-        return this.items;
-    },
-    unon: function(event_type, callback) {
-        var idx = this.event_listeners[event_type].indexOf(callback)
-        this.event_listeners[event_type].splice(idx,1)
-    },
-    on: function(event_type, callback) {
-        // XXX - if we set a debugger here, UI fucks up
-        //console.log('register',event_type)
-        if (! this.event_listeners[event_type]) {
-            this.event_listeners[event_type] = []
-        }
-        this.event_listeners[event_type].push(callback)
-    },
     indexOf: function(key) {
         // quick lookup of item
         return this.keyeditems[key]
-    },
-    trigger: function(event_type, item, newval, oldval, attrName) {
-        if (event_type == 'change') {
-            if (this.event_listeners && this.event_listeners[event_type]) {
-                for (var i=0; i<this.event_listeners[event_type].length; i++) {
-                    this.event_listeners[event_type][i](item, newval, oldval, attrName)
-                }
-            }
-        } else {
-            if (this.event_listeners && this.event_listeners[event_type]) {
-                for (var i=0; i<this.event_listeners[event_type].length; i++) {
-                    var args = Array.prototype.slice.call(arguments,1)
-/*                    var args = [arguments[0],this]
-                    for (var j=1;j<arguments.length; j++) {
-                        args.push(arguments[j])
-                    }*/
-
-
-                    this.event_listeners[event_type][i].apply(undefined, args)
-                }
-            }
-        }
     },
     clear: function() {
         var items = _.clone(this.items) // crashing?
@@ -161,9 +189,6 @@ Collection.prototype = {
     },
     get: function(k) {
         return this.items[this.keyeditems[k]]
-    },
-    get_at: function(idx) {
-        return this.items[idx]
     },
     getParent: function() {
         return this.client || this.opts.client || this.opts.parent
@@ -281,3 +306,5 @@ Collection.prototype = {
         }*/
     }
 }
+
+_.extend(Collection.prototype, BasicCollection.prototype, CollectionProto)
