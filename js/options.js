@@ -83,6 +83,11 @@ function Options(opts) {
             'type': 'string',
             'visible': false
         },
+        'restart_torrent_on_error': {
+            'default':true,
+            'name':'Restart Torrent when error occurs',
+            'type':'bool'
+        },
         'max_unflushed_piece_data': {
             //        'default': 16384 * 20, // needs to be much larger, or else we will get "stuck" a lot...
             'editable': false,

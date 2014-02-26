@@ -210,6 +210,7 @@ App.prototype = {
             }
         }
         this.createNotification({ details:"No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site. Or you can:",
+                                  message: torrent.get('name'),
                                   buttons: [ 
                                       {title:"Add public trackers and reattempt"},
                                       {title:"Do nothing"}
@@ -438,6 +439,14 @@ App.prototype = {
             details: "Error with torrent: " + err,
             priority: 1
         })
+
+
+        if (this.options.get('restart_torrent_on_error')) {
+            _.delay( function() { torrent.start() } )
+        }
+        // option to re-start on an error!
+
+        app.analytics.sendEvent('Torrent','Error',err)
         //console.log('torrent->error event->app',err)
     },
     onTorrentStart: function(torrent) {

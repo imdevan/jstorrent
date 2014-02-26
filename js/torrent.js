@@ -539,7 +539,7 @@ Torrent.prototype = {
                     storage.diskio.getWholeContents( {torrent:this.hashhexlower, path:[this.getMetadataFilename()]}, function(result) {
                         if (result.error) {
                             console.warn(result)
-                            callback({error:"Cannot load torrent - " + result.error.name})
+                            callback({error:"Cannot load torrent - " + (result.error.name ? result.error.name : result.error)})
                         } else {
                             _this.initializeFromBuffer(result, callback, opts)
                         }
@@ -665,8 +665,9 @@ Torrent.prototype = {
     persistPieceResult: function(result) {
         var foundmissing = true
         if (result.error) {
-            console.error('persist piece result',result)
-            this.error('error persisting piece: ' + result.error)
+            //console.error('persist piece result',result)
+            this.error('error persisting piece: ' + result.error, result.job)
+            console.log('report bad job',result.job)
         } else {
             // clean up all registered chunk requests
             result.piece.notifyPiecePersisted()
@@ -911,7 +912,7 @@ Torrent.prototype = {
         this.starting = false
         this.set('state','error')
         this.lasterror = msg
-        //console.error('torrent error:',[msg,detail])
+        console.error('torrent error:',[msg,detail])
 
         if (false) {
             if (msg == 'read 0 bytes') {
