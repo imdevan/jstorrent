@@ -741,7 +741,9 @@ PeerConnection.prototype = {
         if (extType == jstorrent.protocol.extensionMessageHandshakeCode) {
             // bencoded extension message handshake follows
             this.peerExtensionHandshake = bdecode(ui82str(new Uint8Array(msg.payload, 6)))
-            this.set('peerClientName',jstorrent.protocol.tweakPeerClientName(this.peerExtensionHandshake.v))
+            if (this.peerExtensionHandshake.v) {
+                this.set('peerClientName',jstorrent.protocol.tweakPeerClientName(this.peerExtensionHandshake.v))
+            }
             if (this.peerExtensionHandshake.m) {
                 for (var key in this.peerExtensionHandshake.m) {
                     this.peerExtensionHandshakeCodes[this.peerExtensionHandshake.m[key]] = key
