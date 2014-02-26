@@ -149,7 +149,13 @@ function onready() {
     }
 
     chrome.runtime.getBackgroundPage( function(bg) {
-        window.app = bg.windowManager.mainWindow.contentWindow.app
+        if (bg.windowManager.mainWindow) {
+            window.app = bg.windowManager.mainWindow.contentWindow.app
+        } else {
+            // somehow mainWindow reference can die, perhaps when event page reloads?
+            window.app = chrome.app.window.get('mainWindow').contentWindow.app
+        }
+
         window.options = app.options
 
         if (app.client.disks.items.length == 0) {

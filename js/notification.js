@@ -35,7 +35,7 @@ function Notification(opts) {
     if (opts.progress) {
         this.notificationOpts.progress = opts.progress || 0
     }
-    console.log('notification - opts', this.notificationOpts)
+    //console.log('notification - opts', this.notificationOpts)
     this.show()
 }
 jstorrent.Notification = Notification
@@ -53,7 +53,7 @@ Notification.prototype = {
     defaultOnClick: function() {
         //this._collection each blah.remove(this) // onClosed event gets triggered, which does this
         chrome.notifications.clear(this.id, function(id) {
-            console.log('cleared notification with id',id)
+            //console.log('cleared notification with id',id)
             // hopefully onClosed gets triggered... ?
         })
     },

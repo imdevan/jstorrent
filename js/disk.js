@@ -3,20 +3,21 @@ function Disk(opts) {
 
     this.diskio = new jstorrent.DiskIO({disk:this})
     this.client = opts.client || opts.parent.parent
-
+    this.concurrentBroken = 0
     this.think_interval = null
     this.client.on('activeTorrentsChange', _.bind(function(){
+        return // use job timeouts instead
         _.delay(function() {
             var numActive = this.client.get('numActiveTorrents')
 
             if (numActive == 0) {
-                console.log('disk, stop tick interval')
+                console.log('disk, stop ticking')
                 if (this.think_interval) { 
                     clearInterval(this.think_interval)
                     this.think_interval = null
                 }
             } else {
-                console.log('disk, start tick interval')
+                console.log('disk, start ticking')
                 if (! this.think_interval) {
                     this.think_interval = setInterval( this.checkBroken.bind(this), 35000 )
                 }
@@ -50,6 +51,7 @@ function Disk(opts) {
             // remove this.
             if (!entry) {
                 console.error('unable to restore entry - (was the folder removed?)', opts.id)
+                app.notify("Unable to load disk. Was it removed?")
                 var parts = opts.id.split(':')
                 parts.shift()
                 var folderName = parts.join(':')
@@ -82,7 +84,7 @@ function Disk(opts) {
 jstorrent.Disk = Disk
 Disk.prototype = {
     checkBroken: function(callback) {
-        console.log('checkBroken')
+        //console.log('checkBroken')
         var _this = this
         if (this.checkingBroken) { console.log('alreadycheckingbroken');return }
         this.checkingBroken = true
@@ -91,9 +93,14 @@ Disk.prototype = {
             this.checkingBroken = false
             this.concurrentBroken++
             console.error('disk seems definitely broken. needs restart?',this.concurrentBroken)
-            if (this.concurrentBroken > 1) {
+            if (this.concurrentBroken > 2) {
                 console.error('disk broken concurrently...',this.concurrentBroken)
                 app.notify("FATAL ERROR. Please restart the app",2)
+                if (! this.reportedBroken) {
+                    this.reportedBroken = true
+                    //app.analytics.sendEvent('DiskIO','JobBroken',JSON.stringify(this.diskio.items[0]._attributes))
+                    app.analytics.sendEvent('DiskIO','DiskBroken')
+                }
             }
             if (callback) { callback(true) }
         }.bind(this),30000)
@@ -102,7 +109,7 @@ Disk.prototype = {
             this.checkingBroken = false
             this.concurrentBroken = 0
             clearTimeout(this.checkBrokenTimeout)
-            console.log('notbroken')
+            //console.log('notbroken')
             //console.log('disk getMetadata',info)
         }.bind(this),
                                function(err) {

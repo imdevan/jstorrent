@@ -61,14 +61,14 @@ function UI(opts) {
             {id:'lasterror', width:400}
         ],
         'diskio':[
-            {id:'jobId'},
+            {id:'jobId', width:55},
             {id:'type', width:150},
-            {id:'state'},
-            {id:'pieceNum'},
-            {id:'fileNum'},
-            {id:'size'},
-            {id:'progress'},
-            {id:'fileOffset'},
+            {id:'state', width:120},
+            {id:'pieceNum', width:70},
+            {id:'fileNum', width:60},
+            {id:'size', width:80},
+            {id:'progress',width:65},
+            {id:'fileOffset', width:120},
             {id:'pieceOffset'},
             {id:'torrent'}
         ],
@@ -262,7 +262,7 @@ GeneralInfoView.prototype = {
 
             s += ('<li>' + _.escape('multifile') + ': ' + this.renderValue(this.torrent.multifile) + '</li>')
             s += ('<li>' + _.escape('private') + ': ' + this.renderValue(this.torrent.isPrivate()) + '</li>')
-            s += ('<li>' + _.escape('storage') + ': ' + this.renderValue(this.torrent.getStorage()) + '</li>')
+            s += ('<li>' + _.escape('storage') + ': ' + this.renderValue(this.torrent.getStorage().key + ', ' + (this.torrent.getStorage().entry ? this.torrent.getStorage().entry.name : 'noentry')) + '</li>')
             s += ('<li>' + _.escape('lasterror') + ': ' + this.renderValue(this.torrent.lasterror) + '</li>')
 
             s += '</ul></div>'

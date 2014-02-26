@@ -653,7 +653,7 @@ PeerConnection.prototype = {
     },
     handle_REQUEST: function(msg) {
         if (this.peerChoked) { 
-            console.log('wont handle request, peer is choked')
+            //console.log('wont handle request, peer is choked')
             // silently dont handle PIECE requests from choked peers.
             return 
         }

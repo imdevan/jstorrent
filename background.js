@@ -87,6 +87,8 @@ WindowManager.prototype = {
 }
 
 var windowManager = new WindowManager
+// if background page reloads, we lose reference to windowmanager main window...
+
 
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
     console.log('onLaunched with launchdata',launchData)

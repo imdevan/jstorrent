@@ -66,17 +66,21 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             if (state.timeoutHit) {
                 console.warn('timed out getentry, but it returned later')
             } else {
-                clearTimeout(state.timeoutId)
+                if (state.timeoutId) {
+                    clearTimeout(state.timeoutId)
+                }
                 state.returned=true
                 callback.apply(this,arguments)
             }
         }
+/* // we have a global job timeout now
         state.timeoutId = setTimeout( function() {
             state.timeoutHit=true
             console.assert(! state.returned)
             console.error("timeout with getentrywrite")
             callback({error:'timeout'})
-        }, 5000 )
+        }, DiskIO.getentrytimeout )
+*/
 
         function recurse(e) {
             if (path.length == 0) {
@@ -182,11 +186,16 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         this.set('jobId', DiskIO.jobctr++)
         this.filesSpanInfo = piece.getSpanningFilesInfo()
 
+        this._subjobs = []
+
         this.filesMetadataLength = 0
         this.filesMetadata = {}
         this.filesZeroInfo = {}
     }
     var PieceWriteJobProto = {
+        subjobcallback: function(job) {
+            this._subjobs.push(job)
+        },
         get_key: function() { return this.key },
         getSubjobs: function() {
             // 1. return all "collect metadata" jobs
@@ -226,6 +235,9 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
     }
     DiskIO.jobctr = 0
     DiskIO.debugtimeout = 1
+    DiskIO.allowedJobTime = 1000 // 30 seconds should be enough... ?
+    // writes after large truncates can take a long time, though.
+    //DiskIO.getentrytimeout = 5000
 
     var DiskIOProto = {
         doQueue: function() {
@@ -242,8 +254,20 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var job = this.get_at(0)
 
             if (job instanceof PieceWriteJob) {
-                job.set('state','done')
-                job.onfinished({piece:job.piece})
+                var haderror = []
+                for (var i=0; i<job._subjobs.length; i++) {
+                    var err = job._subjobs[i].get('error')
+                    if (err) {
+                        haderror.push(err)
+                    }
+                }
+                if (haderror.length>0) {
+                    job.set('state','error')
+                    job.onfinished({error:haderror.join(','), job:job})
+                } else {
+                    job.set('state','done')
+                    job.onfinished({piece:job.piece})
+                }
                 this.shift()
                 this.queueActive = false
                 this.doQueue()
@@ -291,7 +315,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         },
         doGetMetadata: function(opts, callback, job) {
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
             job.set('state','getentry') // XXX getting stuck here, even though sometimes
             recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
                 job.set('state','gotentry')
@@ -320,7 +344,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             this.addToQueue('doWriteWholeContents',arguments)
         },
         doWriteWholeContents: function(opts, callback, job) {
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path.slice()
             job.set('state','getentry')
 
@@ -334,18 +358,32 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                                 oncallback(evt2)
                             }
                             writer2.onerror = function(evt2) {
+                                job.set('state','writer2.onerror')
+                                job.set('error',evt2.target.error.name)
                                 console.error('writer error',evt2)
                                 debugger
                                 oncallback({error:evt2})
                             }
+                            writer2.onprogress = function(evt2) {
+                                //console.log('progress',evt)
+                                var pct = Math.floor( 50 * evt2.loaded / evt2.total )
+                                job.set('progress',50+pct)
+                            }
                             job.set('state','writing')
-                            setTimeout( function() {
+//                            setTimeout( function() {
                                 writer2.write(new Blob([opts.data]))
-                            }, DiskIO.debugtimeout)
+//                            }, DiskIO.debugtimeout)
                         })
+                    }
+                    writer.onprogress = function(evt) {
+                        //console.log('progress',evt)
+                        var pct = Math.floor( 50 * evt.loaded / evt.total )
+                        job.set('progress',pct)
                     }
                     writer.onerror = function(evt) {
                         console.error('truncate error',evt)
+                        job.set('state','write.truncate.error')
+                        job.set('error',evt.target.error.name)
                         debugger
                         oncallback({error:evt})
                     }
@@ -361,20 +399,54 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         getWholeContents: function() {
             this.addToQueue('doGetWholeContents',arguments)
         },
-        wrapCallback: function(callback, job) {
-            job.set('state','done')
+        createWrapCallback: function(callback, job) {
+            console.assert(callback)
+            console.assert(job)
 
-            var cargs = Array.prototype.slice.call(arguments,2)
+            var state = {
+                returned:false,
+                timedout:false
+            }
+            var theoncallback = _.bind(this.wrapCallback, this, callback, job, state)
+            state.timeoutId = setTimeout( function() {
+                if (state.returned) {
+                    console.assert(false)
+                }
+                state.timeoutId = null
+                state.timedout = true
+                theoncallback({error:'timeout',triggered:true})
+            }.bind(this), DiskIO.allowedJobTime )
+            // if no return in 30 seconds, 
+            return theoncallback
+        },
+        wrapCallback: function(callback, job, state) {
+            if (state.timeoutId) {
+                clearTimeout(state.timeoutId)
+                state.timeoutId = null
+            }
+            if (state.returned) {
+                return
+            }
 
-            setTimeout( function() {
+            var cargs = Array.prototype.slice.call(arguments,3)
+            if (cargs[0] && cargs[0].error) { // double triggering?
+                job.set('state','error')
+                job.set('error',cargs[0].error)
+                //job.set('haderror',true)
+            } else {
+                job.set('state','done')
+            }
+
+            state.returned = true
+//            setTimeout( function() {
                 this.shift()
                 if (callback){callback.apply(this,cargs)}
                 this.queueActive = false
                 this.doQueue()
-            }.bind(this), DiskIO.debugtimeout )
+//            }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
@@ -401,9 +473,9 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                             fr.onerror = onRead
                             var blobSlice = file.slice(opts.fileOffset, opts.fileOffset + opts.size)
                             job.set('state','reading')
-                            setTimeout( function() {
+//                            setTimeout( function() {
                                 fr.readAsArrayBuffer(blobSlice)
-                            }, DiskIO.debugtimeout)
+//                            }, DiskIO.debugtimeout)
                         }
                     }
                     job.set('state','getfile')
@@ -413,7 +485,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         },
         doGetWholeContents: function(opts, callback, job) {
             // gets whole contents for a file
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
@@ -437,9 +509,9 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                             fr.onload = onRead
                             fr.onerror = onRead
                             job.set('state','reading')
-                            setTimeout( function() {
+//                            setTimeout( function() {
                                 fr.readAsArrayBuffer(result)
-                            }, DiskIO.debugtimeout)
+//                            }, DiskIO.debugtimeout)
                         }
                     }
                     job.set('state','getfile')
@@ -469,7 +541,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         },
         doTruncate: function(opts, callback, job) {
             if (this.checkTorrentStopped(job)) return
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
             var piece = opts.piece
             var writeJob = opts.writeJob
             var fileNum = opts.fileNum
@@ -482,19 +554,26 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                     writer.onwrite = function(evt) {
                         oncallback(evt)
                     }
+                    writer.onprogress = function(evt) {
+                        //console.log('progress',evt)
+                        var pct = Math.floor( 100 * evt.loaded / evt.total )
+                        job.set('progress',pct)
+                    }
                     writer.onerror = function(evt) {
-                        console.error('writer error',evt)
-                        debugger
-                        oncallback({error:evt})
+                        console.error('truncate writer error, wanted',opts.size, evt.target.error.name,evt)
+                        job.set('state','truncate.writer.error')
+                        job.set('error',evt.target.error.name)
+                        oncallback({error:evt.target.error.name,evt:evt})
                     }
                     //console.log('writer.Write')
                     job.set('state','truncating')
-                    setTimeout( function() {
+//                    setTimeout( function() {
                         writer.truncate(opts.size)
-                    }, DiskIO.debugtimeout)
+//                    }, DiskIO.debugtimeout)
                 }.bind(this))
             }.bind(this))
         },
+/*
         doWriteZeroes: function(opts, callback, job) {
             if (this.checkTorrentStopped(job)) return
             job.set('state','preparebuffer')
@@ -503,7 +582,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var offset = opts.fileOffset
             var size = opts.size
 
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
 
             // do we have cached entry ready?
             if (zeroCache[size]) {
@@ -522,17 +601,17 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                     writer.onerror = function(evt) {
                         console.error('writer error',evt)
                         debugger
-
                         oncallback({error:evt})
                     }
                     writer.seek(offset)
                     job.set('state','writing')
-                    setTimeout( function() {
+//                    setTimeout( function() {
                         writer.write(new Blob([buftowrite]))
-                    }, DiskIO.debugtimeout)
+//                    }, DiskIO.debugtimeout)
                 }.bind(this))
             }.bind(this))
         },
+*/
         doReadPiece: function(opts, callback, job) {
             if (this.checkTorrentStopped(job)) return
             var piece = opts.piece
@@ -586,7 +665,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var pieceOffset = opts.pieceOffset
             var size = opts.size
 
-            var oncallback = _.bind(this.wrapCallback,this,callback,job)
+            var oncallback = this.createWrapCallback(callback,job)
 
             var piece = writeJob.piece
 
@@ -603,6 +682,11 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var path = piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
             this.getFileEntryWriteable( path, function(entry) {
+                if (entry.error) {
+                    job.set('state','timeout:getentry')
+                    oncallback(entry)
+                    return
+                }
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -610,6 +694,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                         oncallback(evt)
                     }
                     writer.onprogress = function(evt) {
+                        //console.log('progress',evt)
                         var pct = Math.floor( 100 * evt.loaded / evt.total )
                         job.set('progress',pct)
                     }
@@ -618,16 +703,16 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                     }
                     writer.onerror = function(evt) {
                         job.set('state','onwriteerror')
-                        console.error('writer error',evt)
-                        debugger
-                        oncallback({error:evt})
+                        job.set('error',evt.target.error.name)
+                        console.error('writer error',evt, evt.target.error.name)
+                        oncallback({error:evt.target.error.name,evt:evt})
                     }
                     writer.seek(fileOffset)
                     //console.log('writer.Write')
                     job.set('state','writing') // hangs in this state too!
-                    setTimeout( function() {
+//                    setTimeout( function() {
                         writer.write(new Blob([buftowrite]))
-                    }, DiskIO.debugtimeout )
+//                    }, DiskIO.debugtimeout )
                 }.bind(this))
             }.bind(this))
         },
@@ -653,7 +738,8 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                                                            torrent:writeJob.piece.torrent.hashhexlower,
                                                            fileNum:job.fileNum,
                                                            size:job.fileOffset,
-                                                           callback:null})
+                                                           callback:writeJob.subjobcallback})
+                        doWriteFileJob.opts.callback = _.bind(writeJob.subjobcallback,writeJob,doWriteFileJob)
                         newjobs.push(doWriteFileJob)
 
                     } else {
@@ -705,7 +791,9 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                                                    fileOffset:job.fileOffset,
                                                    pieceOffset:job.pieceOffset,
                                                    size:job.size,
-                                                   callback:null})
+                                                   callback:null}) // this can time out
+                doWriteFileJob.opts.callback = _.bind(writeJob.subjobcallback,writeJob,doWriteFileJob)
+                // if this "subjob" times out, we want to trigger the callback on the parent writejob...
                 newjobs.push(doWriteFileJob)
             }
             // newjobs all finished

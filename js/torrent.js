@@ -35,7 +35,7 @@ function Torrent(opts) {
 
     this.pieceLength = null
     this.multifile = null
-    this.fileOffsets = []
+    this.fileOffsets = null
     this.size = null
     this.numPieces = null
     this.numFiles = null
@@ -218,7 +218,7 @@ Torrent.prototype = {
 
     },
     initializeFromWeb: function(url, callback, opts) {
-        console.log('torrent initialize from web')
+        console.log('torrent initialize from web',url)
 
         if (url.length == 40) {
             // initialize from info infohash!
@@ -275,7 +275,7 @@ Torrent.prototype = {
         }
     },
     initializeFromBuffer: function(buffer, callback, opts) {
-        console.log('initializefrombuffer')
+        //console.log('initializefrombuffer')
         var _this = this
         function onHashResult(result) {
             var hash = result.hash
@@ -476,6 +476,7 @@ Torrent.prototype = {
         this.pieceLength = this.infodict['piece length']
 
         if (this.infodict.files) {
+            this.fileOffsets = []
             this.multifile = true
             this.numFiles = this.infodict.files.length
             this.size = 0
@@ -497,16 +498,21 @@ Torrent.prototype = {
             peer.sendExtensionHandshake()
             peer.newStateThink() // in case we dont send them extension handshake because they dont advertise the bit
         })
-        this.set('metadata',true)
-        this.set('complete', this.getPercentComplete())
-        this.save()
-        if (! opts ||
-            opts.needSave !== false) {
+
+        var onsaved = function() {
+            this.set('metadata',true)
+            this.set('complete', this.getPercentComplete())
+            this.save()
+            this.recalculatePieceBlacklist()
+            this.trigger('havemetadata')
+        }.bind(this)
+
+        if (! opts || opts.needSave !== false) {
             // XXX use savemetadata callback, it can take a while if its queued...
-            this.saveMetadata() // trackers maybe not initialized so they arent being saved...
+            this.saveMetadata(onsaved) // trackers maybe not initialized so they arent being saved...
+        } else {
+            onsaved()
         }
-        this.recalculatePieceBlacklist()
-        this.trigger('havemetadata')
         //this.recheckData() // only do this under what conditions?
     },
     getMetadataFilename: function() {
@@ -525,7 +531,7 @@ Torrent.prototype = {
         // xxx this is failing when disk is not attached!
         var _this = this
         if (this.get('metadata')) {
-            if (this.infodict) {
+            if (this.infodict && false) { // force load again for fun
                 callback({torrent:this})
             } else {
                 var storage = this.getStorage()
