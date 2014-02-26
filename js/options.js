@@ -89,9 +89,10 @@ function Options(opts) {
             'type':'bool'
         },
         'seed_public': {
-            'default':true,
+            'default':false,
             'name':'Enable seeding public torrents (BETA)',
-            'type':'bool'
+            'type':'bool',
+            'visible':false
         },
         'max_unflushed_piece_data': {
             //        'default': 16384 * 20, // needs to be much larger, or else we will get "stuck" a lot...

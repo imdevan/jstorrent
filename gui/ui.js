@@ -13,7 +13,7 @@ function UI(opts) {
     this.client = opts.client
 
     this.detailtable = null
-    var default_tab = 'diskio' // TODO -- remember last
+    var default_tab = 'peers' // TODO -- remember last
     this.detailtype = default_tab
 
     this.coldefs = {
