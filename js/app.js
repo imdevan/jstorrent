@@ -436,6 +436,7 @@ App.prototype = {
 
         //if (err === undefined) { debugger }
         this.createNotification({
+            message: torrent.get('name'),
             details: "Error with torrent: " + err,
             priority: 1
         })

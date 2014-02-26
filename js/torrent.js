@@ -529,9 +529,10 @@ Torrent.prototype = {
             } else {
                 var storage = this.getStorage()
                 if (storage) {
-                    storage.diskio.getWholeContents( {path:[this.getMetadataFilename()]}, function(result) {
+                    storage.diskio.getWholeContents( {torrent:this.hashhexlower, path:[this.getMetadataFilename()]}, function(result) {
                         if (result.error) {
-                            callback({error:"Cannot load torrent - " + result.error})
+                            console.warn(result)
+                            callback({error:"Cannot load torrent - " + result.error.name})
                         } else {
                             _this.initializeFromBuffer(result, callback, opts)
                         }
