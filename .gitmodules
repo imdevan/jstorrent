@@ -1,0 +1,3 @@
+[submodule "js/web-server-chrome"]
+	path = js/web-server-chrome
+	url = git@github.com:kzahel/web-server-chrome

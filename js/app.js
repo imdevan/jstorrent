@@ -16,6 +16,13 @@ function App() {
     this.help_window = null
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
 
+    var handlers = [
+        ['/favicon.ico',jstorrent.FavIconHandler],
+        ['.*', jstorrent.WebHandler]
+    ]
+    this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
+    this.webapp.start()
+
     this.analytics = new jstorrent.Analytics({app:this})
     this.entryCache = new jstorrent.EntryCache
 

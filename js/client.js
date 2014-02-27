@@ -26,6 +26,7 @@ function Client(opts) {
                                            client:this, 
                                            shouldPersist: true,
                                            itemClass: jstorrent.Disk})
+    this.disks.numLoaded = 0
     this.set('activeTorrents',{})
     this.set('numActiveTorrents',0)
     this.on('change', _.bind(this.onChange, this))
@@ -33,31 +34,38 @@ function Client(opts) {
         this.set('numActiveTorrents', _.keys(this.get('activeTorrents')).length)
     },this))
 
+    var loadTorrents =  function() {
+        this.torrents.fetch(_.bind(function() {
+            this.ready = true
+            this.trigger('ready')
+        },this))
+    }.bind(this)
+
+    var onDiskReady = function() {
+        this.disks.numLoaded++
+        if (this.disks.numLoaded == this.disks.length) {
+            loadTorrents()
+        }
+    }.bind(this)
+
     if (jstorrent.device.platform == 'Chrome') {
-        
         this.disks.fetch(_.bind(function() {
             if (this.disks.items.length == 0) {
                 console.log('disks length == 0')
                 this.app.notifyNeedDownloadDirectory()
             }
-            this.torrents.fetch(_.bind(function() {
-                this.ready = true
-                this.trigger('ready')
+            this.disks.on('ready', _.bind(function() {
+                onDiskReady()
             },this))
         },this))
     } else {
-
         // probably need to guard behind document.addEventListener('deviceready', callback, false)
-
         // phonegap/cordova port, we use HTML5 filesystem since it is not sandboxed :-)
         var disk = new jstorrent.Disk({key:'HTML5:persistent', client:this})
         this.disks.add(disk)
 
         this.disks.on('ready',_.bind(function(){
-            this.torrents.fetch(_.bind(function() {
-                this.ready = true
-                this.trigger('ready')
-            },this))
+            onDiskReady()
         },this))
     }
 

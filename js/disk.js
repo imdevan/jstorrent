@@ -30,7 +30,7 @@ function Disk(opts) {
     if (opts.key && opts.key == 'HTML5:persistent') {
         function ondir(result) {
             this.entry = result
-            this.trigger('ready')            
+            this.trigger('ready')
         }
 
         function onreq(result) {
@@ -46,7 +46,7 @@ function Disk(opts) {
         if (! this.key) {
             this.error = true
         }
-        //console.log('restoring disk with id',this.key)
+        console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
             // remove this.
             if (!entry) {
@@ -63,8 +63,7 @@ function Disk(opts) {
                     if (torrents.items[i].get('disk') == opts.id) {
                         torrents.items[i].stop()
                         torrents.items[i].invalidDisk = true
-                        torrents.items[i].set('state','error')
-                        
+                        torrents.items[i].set('state','error')                        
                     }
                 }
                 
@@ -90,6 +89,7 @@ Disk.prototype = {
             chrome.fileSystem.getDisplayPath(this.entry, function(displaypath) {
                 //console.log('got display path',displaypath)
                 this.set('entrydisplaypath',displaypath)
+                this.trigger('ready') // XXX only after ALL disks are ready
             }.bind(this))
         }
     },

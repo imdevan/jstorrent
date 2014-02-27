@@ -1,6 +1,7 @@
 (function() {
 /*
-
+// XXX -- createWriter has second argument error callback
+// XXX FileEntry.file() error callback, what is signature?
   we were using diskiosync.js but realized there is no FileWriterSync
 
 
@@ -44,7 +45,7 @@
             this.cache = {}
         },
         unset: function(k) {
-            delete this.cache[key]
+            delete this.cache[k]
         },
         set: function(k,v) {
             this.cache[k] = v
@@ -440,6 +441,10 @@
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
+                var oncreatewritererr = function(evt) {
+                    console.error('oncreatewritererr',evt)
+                    debugger
+                }
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
@@ -487,7 +492,7 @@
                     maybeTimeout( function() {
                         writer.truncate(0)
                     }, DiskIO.debugtimeout )
-                }.bind(this))
+                }.bind(this),oncreatewritererr)
             }.bind(this))
 
         },
@@ -565,7 +570,7 @@
                 } else {
                     var onFile = function(result) {
                         if (this.checkShouldBail(job)) return
-                        if (result.err) {
+                        if (result.err || result.type == 'error') {
                             oncallback({error:result.err.name,evt:result})
                         } else {
                             var file = result
@@ -607,7 +612,7 @@
                 } else {
                     var onFile = function(result) {
                         if (this.checkShouldBail(job)) return
-                        if (result.err) {
+                        if (result.err || result.type == 'error') {
                             oncallback({error:result.err,evt:result})
                         } else {
                             var fr = new FileReader
@@ -655,7 +660,8 @@
             this.addToQueue('doReadPiece',arguments)
         },
         checkShouldBail: function(job) {
-            var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
+            //var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
+            var shouldBail = this.checkJobTimeout(job)
             if (shouldBail) { console.warn('shouldbail!') }
             return shouldBail
         },
@@ -957,7 +963,9 @@
             this.doQueue()
         },
         cancelTorrentJobs: function(torrent, callback) {
+
             console.warn('cancelTorrentJobs')
+            return // is causing breakage...
             // cancel all active jobs for a give torrent
             var toremove = []
             for (var i=0; i<this.items.length; i++) {
