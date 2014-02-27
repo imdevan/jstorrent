@@ -18,10 +18,13 @@
         this.cache = {}
     }
     var EntryCacheprototype = {
-        clearTorrent: function(torrent) {
+        clearTorrent: function() {
+            // todo
+        },
+        clearKey: function(skey) {
             var todelete = []
             for (var key in this.cache) {
-                if (key.startsWith(torrent.hashhexlower)) {
+                if (key.startsWith(skey)) {
                     todelete.push(key)
                 }
             }
@@ -36,10 +39,10 @@
             delete this.cache[key]
         },
         set: function(k,v) {
-            this.cache[key] = v
+            this.cache[k] = v
         },
         get: function(k) {
-            return this.cache[key]
+            return this.cache[k]
         }
     }
     _.extend(EntryCache.prototype, EntryCacheprototype)
@@ -52,11 +55,12 @@
     }
     zeroCache[ Math.pow(2,22) ] = new Uint8Array(Math.pow(2,i))
 
-    function recursiveGetEntryReadOnly(torrent, filesystem, inpath, callback) {
-        console.assert(typeof torrent == 'string')
-        var cacheKey = torrent + '/' + inpath.join('/')
+    function recursiveGetEntryReadOnly(disk, inpath, callback) {
+        var cacheKey = disk.key + '/' + inpath.join('/')
         var inCache = app.entryCache.get(cacheKey)
         if (inCache) { callback(inCache); return }
+
+        var filesystem = disk.entry
 
     // XXX - this looks messy, refactor it
     var state = {e:filesystem}
@@ -96,16 +100,20 @@
     recurse(filesystem)
 }
 
-    function recursiveGetEntryWrite(torrent, filesystem, inpath, callback) {
-        console.assert(typeof torrent == 'string')
-        var cacheKey = torrent + '/' + inpath.join('/')
+    function recursiveGetEntryWrite(disk, inpath, callback) {
+        var cacheKey = disk.key + '/' + inpath.join('/')
         var inCache = app.entryCache.get(cacheKey)
         if (inCache) { callback(inCache); return }
 
+        var filesystem = disk.entry
+
         var path = inpath.slice()
+        var oncallback = callback
+/*
         var state = {callback:callback,
                      returned:false,
                      timeoutHit:false}
+
         var oncallback = function() {
             if (state.timeoutHit) {
                 console.warn('timed out getentry, but it returned later')
@@ -118,7 +126,7 @@
                 callback.apply(this,arguments)
             }
         }
-/* // we have a global job timeout now
+ // we have a global job timeout now
         state.timeoutId = setTimeout( function() {
             state.timeoutHit=true
             console.assert(! state.returned)
@@ -371,8 +379,8 @@
             this.addAt(job)
             this.doQueue()
         },
-        getFileEntryWriteable: function(torrent, path, callback) {
-            recursiveGetEntryWrite(torrent, this.disk.entry, path, function(entry) {
+        getFileEntryWriteable: function(disk, path, callback) {
+            recursiveGetEntryWrite(disk, path, function(entry) {
                 console.assert(entry)
                 if (entry.error) {
                     callback(entry)
@@ -388,7 +396,7 @@
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             var oncallback = this.createWrapCallback(callback,job)
             job.set('state','getentry') // XXX getting stuck here, even though sometimes
-            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 job.set('state','gotentry')
                 if (entry.error) {
                     if (entry.error.name == 'NotFoundError') {
@@ -419,7 +427,7 @@
             var path = opts.path.slice()
             job.set('state','getentry')
 
-            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
+            this.getFileEntryWriteable( this.disk, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -442,6 +450,8 @@
                             }
                             job.set('state','writing')
 //                            setTimeout( function() {
+                            writer2.seek(0) // need to do this?
+
                                 writer2.write(new Blob([opts.data]))
 //                            }, DiskIO.debugtimeout)
                         })
@@ -532,7 +542,7 @@
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
-            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (entry.error) {
                     oncallback({error:entry.error.name,evt:entry})
                 } else {
@@ -553,7 +563,7 @@
                             }
                             var fr = new FileReader
                             fr.onload = onRead
-                            fr.onerror = onRead
+                            fr.onerror = onRead // TODO make better
                             var blobSlice = file.slice(opts.fileOffset, opts.fileOffset + opts.size)
                             job.set('state','reading')
 //                            setTimeout( function() {
@@ -571,7 +581,7 @@
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path
             job.set('state','getentry')
-            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (entry.error) {
                     oncallback(entry)
                 } else {
@@ -579,18 +589,25 @@
                         if (result.err) {
                             oncallback({error:result.err,evt:result})
                         } else {
-                            function onRead(evt) {
-                                if (evt.target.result) {
-                                    oncallback(evt.target.result)
-                                } else {
-                                    console.error('reader error',evt)
-                                    debugger
-                                    oncallback({error:'error on read',evt:evt})
-                                }
-                            }
                             var fr = new FileReader
-                            fr.onload = onRead
-                            fr.onerror = onRead
+                            fr.onload = function(evt) {
+                                oncallback(evt.target.result)
+                            }
+                            fr.onprogress = function(evt) {
+                                //console.log('progress',evt)
+                                var pct = Math.floor( 100 * evt.loaded / evt.total )
+                                job.set('progress',pct)
+                            }
+                            fr.onloadend = function(evt) {
+                                job.set('state','onloadend')
+                            }
+                            fr.onerror = function(evt) {
+                                job.set('state','onreaderror')
+                                job.set('error',evt.target.error.name)
+                                console.error('reader error',evt, evt.target.error.name)
+                                oncallback({error:evt.target.error.name,evt:evt})
+                            }
+
                             job.set('state','reading')
 //                            setTimeout( function() {
                                 fr.readAsArrayBuffer(result)
@@ -640,7 +657,7 @@
             var size = opts.size
             var path = piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
+            this.getFileEntryWriteable( this.disk, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -684,7 +701,7 @@
             }
             var path = writeJob.piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
+            this.getFileEntryWriteable( this.disk, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -783,7 +800,7 @@
 
             var path = piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
+            this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (entry.error) {
                     job.set('state','timeout:getentry')
                     oncallback(entry)
@@ -830,7 +847,7 @@
                 var metaData = writeJob.filesMetadata[job.fileNum]
 
                 if (job.fileOffset > metaData.size) {
-                    var useTruncate = false
+                    var useTruncate = true
                     if (useTruncate) {
                         // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',

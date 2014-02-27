@@ -173,9 +173,12 @@ Client.prototype = {
                                                if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
                                                    this.torrents.add(result.torrent)
                                                    this.app.highlightTorrent(result.torrent.hashhexlower)
-                                                   result.torrent.save()
-                                                   result.torrent.saveMetadata()
-                                                   this.torrents.save()
+
+                                                   result.torrent.saveMetadata( function() {
+                                                       result.torrent.save()
+                                                       this.torrents.save()
+                                                   }.bind(this))
+
                                                } else {
                                                    this.app.highlightTorrent(result.torrent.hashhexlower)
                                                    this.trigger('error','already had this torrent',result.torrent.hashhexlower)

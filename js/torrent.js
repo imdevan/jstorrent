@@ -294,6 +294,10 @@ Torrent.prototype = {
         }
         try {
             // try to make this utf-8 aware...
+            if (buffer.byteLength > Math.pow(2,25)) { // 32 megs 
+                callback({error:"Torrent file too large: " + buffer.byteLength})
+                return
+            }
             this.metadata = bdecode(ui82str(new Uint8Array(buffer)))
         } catch(e) {
             callback({error:"Invalid torrent file"})
@@ -553,6 +557,7 @@ Torrent.prototype = {
         }
     },
     saveMetadata: function(callback) {
+        console.log('saving torrent metadata',this)
         var filename = this.getMetadataFilename()
         // save metadata (i.e. .torrent file) to disk
         var storage = this.getStorage()
