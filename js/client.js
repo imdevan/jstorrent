@@ -124,11 +124,14 @@ Client.prototype = {
         console.log('onBatchTimeout',keys)
     },
     onTorrentAdd: function(torrent) {
+        // cant do this, because metadata has not been saved yet... (when loading torrent from launch entry)
+
         if (this.app.options.get('new_torrents_auto_start')) { // only for NEW torrents, dummy
             if (torrent._opts.initializedBy != 'collection.fetch') {
                 torrent.start()
             }
         }
+
     },
     onReady: function() {
         var item
@@ -171,10 +174,9 @@ Client.prototype = {
                                        callback: _.bind(function(result) {
                                            if (result.torrent) {
                                                if (! this.torrents.containsKey(result.torrent.hashhexlower)) {
-                                                   this.torrents.add(result.torrent)
-                                                   this.app.highlightTorrent(result.torrent.hashhexlower)
-
                                                    result.torrent.saveMetadata( function() {
+                                                       this.torrents.add(result.torrent)
+                                                       this.app.highlightTorrent(result.torrent.hashhexlower)
                                                        result.torrent.save()
                                                        this.torrents.save()
                                                    }.bind(this))

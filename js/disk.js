@@ -6,19 +6,19 @@ function Disk(opts) {
     this.concurrentBroken = 0
     this.think_interval = null
     this.client.on('activeTorrentsChange', _.bind(function(){
-        return // use job timeouts instead
+
         _.delay(function() {
             var numActive = this.client.get('numActiveTorrents')
 
-            if (numActive == 0) {
-                console.log('disk, stop ticking')
+            if (numActive == 0 && false) {
+                console.log('disk, stop ticking') // dont stop ticking... hrm.
                 if (this.think_interval) { 
                     clearInterval(this.think_interval)
                     this.think_interval = null
                 }
             } else {
-                console.log('disk, start ticking')
                 if (! this.think_interval) {
+                    console.log('disk, start ticking')
                     this.think_interval = setInterval( this.checkBroken.bind(this), 35000 )
                 }
             }
@@ -105,7 +105,7 @@ Disk.prototype = {
             console.error('disk seems definitely broken. needs restart?',this.concurrentBroken)
             if (this.concurrentBroken > 2) {
                 console.error('disk broken concurrently...',this.concurrentBroken)
-                app.notify("FATAL ERROR. Please restart the app",2)
+                app.notify("FATAL DISK ERROR. Please restart the app",2)
                 if (! this.reportedBroken) {
                     this.reportedBroken = true
                     //app.analytics.sendEvent('DiskIO','JobBroken',JSON.stringify(this.diskio.items[0]._attributes))

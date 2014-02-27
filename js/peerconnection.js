@@ -671,6 +671,7 @@ PeerConnection.prototype = {
         if (this.torrent.has_infodict() && this.torrent._attributes.bitfield[pieceNum]) {
             this.torrent.registerPieceRequested(this, pieceNum, offset, size)            
         } else {
+            // my bitfield may be one off...
             this.sendMessage("REJECT_REQUEST", msg.payload) 
         }
 
@@ -899,6 +900,7 @@ PeerConnection.prototype = {
         this.updatePercentComplete()
     },
     sendBitfield: function() {
+        // XXX this may have some errors... seems to be off by one?
         this.sentBitfield = true
         var maxi = Math.ceil(this.torrent.numPieces/8)
         var arr = []
@@ -914,6 +916,7 @@ PeerConnection.prototype = {
                     curByte = (curByte | (this.torrent._attributes.bitfield[idx] << j))
                 }
             }
+            //console.assert(curByte >= 0 && curByte < 256)
             arr.push(curByte)
         }
         this.sendMessage('BITFIELD',[new Uint8Array(arr).buffer])

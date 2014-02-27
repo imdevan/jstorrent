@@ -201,6 +201,7 @@ App.prototype = {
                                  id:'storage-missing'})
     },
     notifyWantToAddPublicTrackers: function(torrent) {
+        if (! app.client.torrents.contains(torrent)) { return }
         function onclick(idx) {
             if (idx == 1) {
                 
@@ -431,10 +432,10 @@ App.prototype = {
         // TODO -- we are handling torrent error notificationsin too many places!
 
         if (err == 'Disk Missing') {
-            err = 'Disk Missing. Choose a download directory in the options.'
+            err = 'Disk Missing. Choose a download directory in the options. Or remove it and add it again.'
         }
 
-        console.log('onTorrentError',arguments)
+        console.error('onTorrentError',arguments)
 
         //if (err === undefined) { debugger }
         this.createNotification({
@@ -445,8 +446,11 @@ App.prototype = {
 
 
         if (this.options.get('restart_torrent_on_error')) {
-            if (! seedingError && torrent.stopinfo && torrent.stopinfo.reason == 'error') {
-                _.delay( function() { torrent.start() } )
+            if (err == 'error persisting piece: timeout') {
+                // other types of errors, dont restart
+                if (! seedingError && torrent.stopinfo && torrent.stopinfo.reason == 'error') {
+                    _.delay( function() { torrent.start() } )
+                }
             }
         }
         // option to re-start on an error!
@@ -558,7 +562,7 @@ App.prototype = {
         app.analytics.sendEvent("Toolbar", "Click", "Stop")
         var torrents = this.UI.get_selected_torrents()
         for (var i=0; i<torrents.length; i++) {
-            torrents[i].stop()
+            torrents[i].stop({reason:'toolbar'})
         }
     },
     toolbar_remove: function() {

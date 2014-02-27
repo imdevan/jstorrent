@@ -85,7 +85,7 @@ function Options(opts) {
         },
         'restart_torrent_on_error': {
             'default':true,
-            'name':'Restart Torrent when error occurs',
+            'name':'Restart Torrent if an error occurs',
             'type':'bool'
         },
         'seed_public': {

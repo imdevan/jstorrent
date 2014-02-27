@@ -14,6 +14,14 @@
 
 */
 
+    function maybeTimeout(fn, t) {
+        if (false) {
+            setTimeout(fn, t)
+        } else {
+            fn()
+        }
+    }
+
     function EntryCache() {
         this.cache = {}
     }
@@ -292,9 +300,8 @@
         jstorrent.BasicCollection.apply(this, arguments)
     }
     DiskIO.jobctr = 0
-    DiskIO.debugtimeout = 1
-    DiskIO.allowedJobTime = 60000 // 30 seconds should be enough... ?
-    //DiskIO.allowedJobTime = 500 // 30 seconds should be enough... ?
+    DiskIO.debugtimeout = 100
+    DiskIO.allowedJobTime = 30000 // 30 seconds should be enough... ?
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
 
@@ -393,10 +400,12 @@
             this.addToQueue('doGetMetadata',arguments)
         },
         doGetMetadata: function(opts, callback, job) {
+            if (this.checkShouldBail(job)) return
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             var oncallback = this.createWrapCallback(callback,job)
             job.set('state','getentry') // XXX getting stuck here, even though sometimes
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 job.set('state','gotentry')
                 if (entry.error) {
                     if (entry.error.name == 'NotFoundError') {
@@ -417,22 +426,27 @@
                     job.set('state','getmetadata')
                     entry.getMetadata(onMetadata, onMetadata)
                 }
-            })
+            }.bind(this))
         },
         writeWholeContents: function() {
             this.addToQueue('doWriteWholeContents',arguments)
         },
         doWriteWholeContents: function(opts, callback, job) {
+            if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path.slice()
             job.set('state','getentry')
 
             this.getFileEntryWriteable( this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
+                    if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
+                        if (this.checkShouldBail(job)) return
                         job.set('state','createwriter2')
                         entry.createWriter( function(writer2) {
+                            if (this.checkShouldBail(job)) { writer2.abort(); return }
                             writer2.onwrite = function(evt2) {
                                 oncallback(evt2)
                             }
@@ -449,13 +463,13 @@
                                 job.set('progress',50+pct)
                             }
                             job.set('state','writing')
-//                            setTimeout( function() {
-                            writer2.seek(0) // need to do this?
+                            maybeTimeout( function() {
+//                            writer2.seek(0) // need to do this?
 
                                 writer2.write(new Blob([opts.data]))
-//                            }, DiskIO.debugtimeout)
-                        })
-                    }
+                            }, DiskIO.debugtimeout)
+                        }.bind(this))
+                    }.bind(this)
                     writer.onprogress = function(evt) {
                         //console.log('progress',evt)
                         var pct = Math.floor( 50 * evt.loaded / evt.total )
@@ -470,7 +484,7 @@
                     }
                     //console.log('writer.Write')
                     job.set('state','truncating')
-                    setTimeout( function() {
+                    maybeTimeout( function() {
                         writer.truncate(0)
                     }, DiskIO.debugtimeout )
                 }.bind(this))
@@ -484,7 +498,8 @@
             if (err.metajob) {
                 // subjob reports us
             } else {
-                console.log('report job error')
+                console.log('report job error',err)
+                app.analytics.sendEvent('DiskIO','JobError')
                 //console.log("Report job error:",err, evt)
             }
         },
@@ -531,22 +546,25 @@
             }
 
             state.returned = true
-//            setTimeout( function() {
+            maybeTimeout( function() {
                 this.shift()
                 if (callback){callback.apply(this,cargs)}
                 this.queueActive = false
                 this.doQueue()
-//            }.bind(this), DiskIO.debugtimeout )
+            }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
+            if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 if (entry.error) {
                     oncallback({error:entry.error.name,evt:entry})
                 } else {
-                    function onFile(result) {
+                    var onFile = function(result) {
+                        if (this.checkShouldBail(job)) return
                         if (result.err) {
                             oncallback({error:result.err.name,evt:result})
                         } else {
@@ -566,26 +584,29 @@
                             fr.onerror = onRead // TODO make better
                             var blobSlice = file.slice(opts.fileOffset, opts.fileOffset + opts.size)
                             job.set('state','reading')
-//                            setTimeout( function() {
+                            maybeTimeout( function() {
                                 fr.readAsArrayBuffer(blobSlice)
-//                            }, DiskIO.debugtimeout)
+                            }, DiskIO.debugtimeout)
                         }
-                    }
+                    }.bind(this)
                     job.set('state','getfile')
                     entry.file(onFile, onFile)
                 }
-            })
+            }.bind(this))
         },
         doGetWholeContents: function(opts, callback, job) {
+            if (this.checkShouldBail(job)) return
             // gets whole contents for a file
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 if (entry.error) {
                     oncallback(entry)
                 } else {
-                    function onFile(result) {
+                    var onFile = function(result) {
+                        if (this.checkShouldBail(job)) return
                         if (result.err) {
                             oncallback({error:result.err,evt:result})
                         } else {
@@ -609,15 +630,15 @@
                             }
 
                             job.set('state','reading')
-//                            setTimeout( function() {
+                            maybeTimeout( function() {
                                 fr.readAsArrayBuffer(result)
-//                            }, DiskIO.debugtimeout)
+                            }, DiskIO.debugtimeout)
                         }
-                    }
+                    }.bind(this)
                     job.set('state','getfile')
                     entry.file(onFile, onFile)
                 }
-            })
+            }.bind(this))
         },
         writePiece: function() {
             // find a better place to insert this
@@ -634,7 +655,9 @@
             this.addToQueue('doReadPiece',arguments)
         },
         checkShouldBail: function(job) {
-            return this.checkTorrentStopped(job) || this.checkJobTimeout(job)
+            var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
+            if (shouldBail) { console.warn('shouldbail!') }
+            return shouldBail
         },
         checkJobTimeout: function(job) {
             if (job.get('error')) {
@@ -643,7 +666,8 @@
             return false
         },
         checkTorrentStopped: function(job) {
-            if (app.client.torrents.get(job.opts.torrent).get('state') != 'started') {
+            var ctor = app.client.torrents.get(job.opts.torrent)
+            if (ctor && ctor.get('state') == 'stopped') {
                 return true
             }
             return false
@@ -658,8 +682,10 @@
             var path = piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
+                    if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
                         oncallback(evt)
                     }
@@ -676,9 +702,9 @@
                     }
                     //console.log('writer.Write')
                     job.set('state','truncating')
-//                    setTimeout( function() {
+                    maybeTimeout( function() {
                         writer.truncate(opts.size)
-//                    }, DiskIO.debugtimeout)
+                    }, DiskIO.debugtimeout)
                 }.bind(this))
             }.bind(this))
         },
@@ -702,8 +728,10 @@
             var path = writeJob.piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
+                    if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
                         oncallback(evt)
                     }
@@ -723,9 +751,9 @@
                     }
                     writer.seek(offset)
                     job.set('state','writing')
-//                    setTimeout( function() {
+                    maybeTimeout( function() {
                         writer.write(new Blob([buftowrite]))
-//                    }, DiskIO.debugtimeout)
+                    }, DiskIO.debugtimeout)
                 }.bind(this))
             }.bind(this))
         },
@@ -801,6 +829,7 @@
             var path = piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
+                if (this.checkShouldBail(job)) return
                 if (entry.error) {
                     job.set('state','timeout:getentry')
                     oncallback(entry)
@@ -808,6 +837,7 @@
                 }
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
+                    if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
                         job.set('state','onwrite')
                         oncallback(evt)
@@ -829,9 +859,9 @@
                     writer.seek(fileOffset)
                     //console.log('writer.Write')
                     job.set('state','writing') // hangs in this state too!
-//                    setTimeout( function() {
+                    maybeTimeout( function() {
                         writer.write(new Blob([buftowrite]))
-//                    }, DiskIO.debugtimeout )
+                    }, DiskIO.debugtimeout )
                 }.bind(this))
             }.bind(this))
         },
@@ -932,9 +962,12 @@
             var toremove = []
             for (var i=0; i<this.items.length; i++) {
                 var job = this.items[i]
-                console.assert(job.opts.torrent)
-                if (job.get('state') == 'idle') {
-                    toremove.push(job)
+                if (job.opts.torrent) {
+                    if (job.opts.torrent == torrent.hashhexlower) {
+                        if (job.get('state') == 'idle') {
+                            toremove.push(job)
+                        }
+                    }
                 }
             }
             var cur

@@ -133,7 +133,7 @@ Torrent.prototype = {
             this.remove( function() {
                 console.log('removed, adding')
                 client.add_from_url(url)
-            })
+            }, {dontannounce:true})
         } else {
             app.createNotification({details:"Sorry. Unable to reset state for this torrent. Please remove the torrent and re-add it",
                                     priority:2})
@@ -1028,7 +1028,6 @@ Torrent.prototype = {
         }
     },
     start: function(reallyStart) {
-        this.stopinfo = null
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         this.set('state','starting')
@@ -1183,6 +1182,9 @@ Torrent.prototype = {
         this.client.set('activeTorrents', a)
         this.client.trigger('activeTorrentsChange')
 
+        if (this.stopinfo && this.stopinfo.dontannounce) {
+            return
+        }
         for (var i=0; i<this.trackers.length; i++) {
             this.trackers.get_at(i).announce('stopped')
         }
@@ -1197,10 +1199,7 @@ Torrent.prototype = {
         })
     },
     stop: function(info) {
-        if (info !== undefined) {
-            this.stopinfo = info
-        }
-
+        this.stopinfo = info
         this.starting = false
         this.isEndgame = false
         if (this.get('state') == 'stopped') { return }
@@ -1237,9 +1236,9 @@ Torrent.prototype = {
         this.unflushedPieceDataSize = 0
         this.save()
     },
-    remove: function(callback) {
+    remove: function(callback, opts) {
         var _this = this
-        this.stop()
+        this.stop(opts)
         this.set('state','removing')
 
         // maybe do some other async stuff? clean socket shutdown? what?

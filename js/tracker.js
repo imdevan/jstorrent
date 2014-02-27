@@ -1,3 +1,6 @@
+// TODO -- figure out how udp connection re-use is supposed to work
+// TODO -- add retry logic
+
 function Tracker(opts) {
     // TODO -- make sure we are destroying sockets and there aren't
     // double error conditions with timeouts and socket reads
@@ -27,7 +30,7 @@ function Tracker(opts) {
     this.announceInterval = null
     this.announceMinInterval = null
 }
-Tracker.announce_timeout = 30000 // 20 seconds should be enough
+Tracker.announce_timeout = 20000 // 20 seconds should be enough
 jstorrent.Tracker = Tracker;
 
 Tracker.prototype = {

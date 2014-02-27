@@ -264,11 +264,15 @@ GeneralInfoView.prototype = {
 
             s += ('<li>' + _.escape('multifile') + ': ' + this.renderValue(this.torrent.multifile) + '</li>')
             s += ('<li>' + _.escape('private') + ': ' + this.renderValue(this.torrent.isPrivate()) + '</li>')
+            if (this.torrent.getStorage()) {
             s += ('<li>' + _.escape('storage') + ': ' + 
                   this.renderValue(this.torrent.getStorage().key + ', ' +
 //                                   (this.torrent.getStorage().entry ? this.torrent.getStorage().entry.name : 'noentry') +
                                    (this.torrent.getStorage().get('entrydisplaypath') ? this.torrent.getStorage().get('entrydisplaypath') : '')) +
                   '</li>')
+            } else {
+                s += ('<li>storage: null</li>')
+            }
             s += ('<li>' + _.escape('lasterror') + ': ' + this.renderValue(this.torrent.lasterror) + '</li>')
 
             s += '</ul></div>'
