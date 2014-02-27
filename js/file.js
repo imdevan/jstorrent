@@ -100,6 +100,7 @@ File.prototype = {
         return this.num
     },
     getEntryFile: function(callback) {
+        console.assert(false) // dont call this
         // XXX -- cache this for read events and have it get wiped out after a write event
         var fd = {}
         var filesystem = this.torrent.getStorage().entry

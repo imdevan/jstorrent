@@ -14,12 +14,50 @@
 
 */
 
+    function EntryCache() {
+        this.cache = {}
+    }
+    var EntryCacheprototype = {
+        clearTorrent: function(torrent) {
+            var todelete = []
+            for (var key in this.cache) {
+                if (key.startsWith(torrent.hashhexlower)) {
+                    todelete.push(key)
+                }
+            }
+            for (var i=0; i<todelete.length; i++) {
+                delete this.cache[todelete[i]]
+            }
+        },
+        clear: function() {
+            this.cache = {}
+        },
+        unset: function(k) {
+            delete this.cache[key]
+        },
+        set: function(k,v) {
+            this.cache[key] = v
+        },
+        get: function(k) {
+            return this.cache[key]
+        }
+    }
+    _.extend(EntryCache.prototype, EntryCacheprototype)
+    jstorrent.EntryCache = EntryCache
+
+
     zeroCache = {} // store a cache of "zero" arrays, see if it improves speed
-    for (var i=14; i<=20; i++) {
+    for (var i=14; i<=14; i++) {
         zeroCache[ Math.pow(2,i) ] = new Uint8Array(Math.pow(2,i))
     }
+    zeroCache[ Math.pow(2,22) ] = new Uint8Array(Math.pow(2,i))
 
-function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
+    function recursiveGetEntryReadOnly(torrent, filesystem, inpath, callback) {
+        console.assert(typeof torrent == 'string')
+        var cacheKey = torrent + '/' + inpath.join('/')
+        var inCache = app.entryCache.get(cacheKey)
+        if (inCache) { callback(inCache); return }
+
     // XXX - this looks messy, refactor it
     var state = {e:filesystem}
     var path = inpath.slice()
@@ -31,6 +69,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             } else if (e.name == 'NotFoundError') {
                 callback({error:e})
             } else if (e.isFile) {
+                app.entryCache.set(cacheKey, e)
                 callback(e)
             } else if (e.isDirectory) {
                 callback(e)
@@ -57,7 +96,12 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
     recurse(filesystem)
 }
 
-    function recursiveGetEntryWrite(filesystem, inpath, callback) {
+    function recursiveGetEntryWrite(torrent, filesystem, inpath, callback) {
+        console.assert(typeof torrent == 'string')
+        var cacheKey = torrent + '/' + inpath.join('/')
+        var inCache = app.entryCache.get(cacheKey)
+        if (inCache) { callback(inCache); return }
+
         var path = inpath.slice()
         var state = {callback:callback,
                      returned:false,
@@ -70,6 +114,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                     clearTimeout(state.timeoutId)
                 }
                 state.returned=true
+                debugger
                 callback.apply(this,arguments)
             }
         }
@@ -85,6 +130,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
         function recurse(e) {
             if (path.length == 0) {
                 if (e.isFile) {
+                    app.entryCache.set(cacheKey, e)
                     oncallback(e)
                 } else {
                     oncallback({error:'file exists'})
@@ -325,8 +371,8 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             this.addAt(job)
             this.doQueue()
         },
-        getFileEntryWriteable: function(path, callback) {
-            recursiveGetEntryWrite(this.disk.entry, path, function(entry) {
+        getFileEntryWriteable: function(torrent, path, callback) {
+            recursiveGetEntryWrite(torrent, this.disk.entry, path, function(entry) {
                 console.assert(entry)
                 if (entry.error) {
                     callback(entry)
@@ -342,7 +388,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             var oncallback = this.createWrapCallback(callback,job)
             job.set('state','getentry') // XXX getting stuck here, even though sometimes
-            recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
                 job.set('state','gotentry')
                 if (entry.error) {
                     if (entry.error.name == 'NotFoundError') {
@@ -373,7 +419,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var path = opts.path.slice()
             job.set('state','getentry')
 
-            this.getFileEntryWriteable( path, function(entry) {
+            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -486,7 +532,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
-            recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
                 if (entry.error) {
                     oncallback({error:entry.error.name,evt:entry})
                 } else {
@@ -525,7 +571,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var oncallback = this.createWrapCallback(callback,job)
             var path = opts.path
             job.set('state','getentry')
-            recursiveGetEntryReadOnly(this.disk.entry, path, function(entry) {
+            recursiveGetEntryReadOnly(job.opts.torrent, this.disk.entry, path, function(entry) {
                 if (entry.error) {
                     oncallback(entry)
                 } else {
@@ -594,7 +640,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             var size = opts.size
             var path = piece.torrent.getFile(opts.fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( path, function(entry) {
+            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -638,7 +684,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
             }
             var path = writeJob.piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( path, function(entry) {
+            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
                 job.set('state','createwriter')
                 entry.createWriter( function(writer) {
                     writer.onwrite = function(evt) {
@@ -737,7 +783,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
 
             var path = piece.torrent.getFile(fileNum).path.slice()
             job.set('state','getentry')
-            this.getFileEntryWriteable( path, function(entry) {
+            this.getFileEntryWriteable( job.opts.torrent, path, function(entry) {
                 if (entry.error) {
                     job.set('state','timeout:getentry')
                     oncallback(entry)
@@ -803,7 +849,8 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                         var numZeroes = job.fileOffset - metaData.size
 
                         var writtenSoFar = 0
-                        var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
+                        //var limitPerStep = 1048576 // only allow writing a certain number of zeros at a time
+                        var limitPerStep = Math.pow(2,22)
                         //var limitPerStep = Math.pow(2,15)
 
                         var zeroJobData = []

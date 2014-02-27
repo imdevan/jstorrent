@@ -1195,6 +1195,7 @@ Torrent.prototype = {
         if (info !== undefined) {
             this.stopinfo = info
         }
+
         this.starting = false
         this.isEndgame = false
         if (this.get('state') == 'stopped') { return }
@@ -1227,6 +1228,7 @@ Torrent.prototype = {
         }
 
         this.pieces.clear()
+        app.entryCache.clearTorrent(this)
         this.unflushedPieceDataSize = 0
         this.save()
     },

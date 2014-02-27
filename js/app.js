@@ -17,6 +17,7 @@ function App() {
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
 
     this.analytics = new jstorrent.Analytics({app:this})
+    this.entryCache = new jstorrent.EntryCache
 
     // need to store a bunch of notifications keyed by either torrents or other things...
     this.notificationCounter = 0
