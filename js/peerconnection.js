@@ -864,7 +864,7 @@ PeerConnection.prototype = {
 
         if (ui82str(receivedInfodictHash) == ui82str(this.torrent.hashbytes)) {
             console.log("%c Received valid infodict!", 'background:#3f3; color:#fff')
-            this.torrent.infodict_buffer = b
+            this.torrent.infodict_buffer = b.buffer
             this.torrent.infodict = infodict
             this.torrent.metadata.info = infodict
             this.torrent.metadataPresentInitialize()
