@@ -74,7 +74,7 @@ jstorrent.App = App
 
 App.prototype = {
     onContextMenu: function(grid, item, evt) {
-        console.log('oncontextmenu',item)
+        //console.log('oncontextmenu',item)
         if (item.itemClass == jstorrent.Torrent) {
             if (jstorrent.options.allow_report_torrent_bug) {
 

@@ -87,7 +87,9 @@ function UI(opts) {
             },
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
             {id:'complete', name:"Complete", formatVal: fracToPercent},
-            {name:"Action" , displayFunc: fileAction}
+            {name:"Action" , displayFunc: fileAction},
+            {id:'leftPiece'},
+            {id:'rightPiece'}
         ],
         'pieces':[
             {attr:'num'},

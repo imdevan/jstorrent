@@ -463,7 +463,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
 
             var cargs = Array.prototype.slice.call(arguments,3)
             if (cargs[0] && cargs[0].error) { // double triggering?
-                job.set('state','error')
+                //job.set('state','error')
                 job.set('error',cargs[0].error)
                 job._error_all = cargs
 
@@ -619,7 +619,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                 }.bind(this))
             }.bind(this))
         },
-/*
+
         doWriteZeroes: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return
             job.set('state','preparebuffer')
@@ -644,10 +644,19 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                     writer.onwrite = function(evt) {
                         oncallback(evt)
                     }
+                    writer.onprogress = function(evt) {
+                        //console.log('progress',evt)
+                        var pct = Math.floor( 100 * evt.loaded / evt.total )
+                        job.set('progress',pct)
+                    }
+                    writer.onwriteend = function(evt) {
+                        job.set('state','onwriteend')
+                    }
                     writer.onerror = function(evt) {
-                        console.error('writer error',evt)
-                        debugger
-                        oncallback({error:evt})
+                        job.set('state','onzerowriteerror')
+                        job.set('error',evt.target.error.name)
+                        console.error('zerowriter error',evt, evt.target.error.name)
+                        oncallback({error:evt.target.error.name,evt:evt})
                     }
                     writer.seek(offset)
                     job.set('state','writing')
@@ -657,7 +666,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                 }.bind(this))
             }.bind(this))
         },
-*/
+
         doReadPiece: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return
             var piece = opts.piece
@@ -775,7 +784,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                 var metaData = writeJob.filesMetadata[job.fileNum]
 
                 if (job.fileOffset > metaData.size) {
-                    var useTruncate = true
+                    var useTruncate = false
                     if (useTruncate) {
                         // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',
@@ -825,6 +834,7 @@ function recursiveGetEntryReadOnly(filesystem, inpath, callback) {
                                                       zeroJob.callback = cb
                             */
                             var zeroJobObj = new BasicJob(zeroJob)
+                            zeroJobObj.opts.callback = _.bind(writeJob.subjobcallback,writeJob,zeroJobObj)
                             newjobs.push(zeroJobObj)
                         }
                     }

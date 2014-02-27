@@ -31,6 +31,9 @@ function File(opts) {
     this.set('downloaded',this.getDownloaded()) // not zero! need to get our spanning pieces and add up the components...
     this.set('complete',this.get('downloaded')/this.size)
     this.set('priority',this.getPriority())
+    this.set('leftPiece', Math.floor(this.startByte / this.torrent.pieceLength))
+    this.set('rightPiece', Math.ceil(this.endByte / this.torrent.pieceLength))
+
     //this.on('change', _.bind(this.priorityChanged,this)) // NO, we use contextmenu now
 }
 File.getStoragePath = function(torrent) {

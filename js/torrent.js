@@ -526,7 +526,6 @@ Torrent.prototype = {
         //this.loadMetadataTimeout = setTimeout( function() {
         //},1000)
         
-
         var opts = {needSave:false}
         
         // xxx this is failing when disk is not attached!
@@ -552,8 +551,6 @@ Torrent.prototype = {
         } else {
             callback({error:'have no metadata'})
         }
-    },
-    onLoadedMetadata: function(callback, data) {
     },
     saveMetadata: function(callback) {
         var filename = this.getMetadataFilename()
@@ -616,6 +613,7 @@ Torrent.prototype = {
 
                     var chokers = _.filter( connected, function(p) { 
                         return (p.amChoked &&
+                                p.peer.host != '127.0.0.1' &&
                                 now - p.connectedWhen > 10000)
                     } )
 
@@ -1025,6 +1023,7 @@ Torrent.prototype = {
         }
     },
     start: function(reallyStart) {
+        this.stopinfo = null
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         this.set('state','starting')
@@ -1193,7 +1192,9 @@ Torrent.prototype = {
         })
     },
     stop: function(info) {
-        this.stopinfo = info
+        if (info !== undefined) {
+            this.stopinfo = info
+        }
         this.starting = false
         this.isEndgame = false
         if (this.get('state') == 'stopped') { return }
