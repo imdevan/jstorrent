@@ -60,6 +60,7 @@ File.prototype = {
         var ext = this.name.toLowerCase()
         return (ext.endsWith('.mp4') ||
                 ext.endsWith('.mp3') ||
+                ext.endsWith('.avi') ||
                 ext.endsWith('.mkv'))
     },
     readBytes: function(start, end, callback) {
