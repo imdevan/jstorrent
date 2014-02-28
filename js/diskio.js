@@ -573,6 +573,7 @@
                     oncallback({error:entry.error.name,evt:entry})
                 } else {
                     var onFile = function(result) {
+                        job.set('state','gotfile')
                         if (this.checkShouldBail(job)) return
                         if (result.err || result.type == 'error') {
                             oncallback({error:result.err.name,evt:result})
@@ -618,6 +619,7 @@
                     oncallback(entry)
                 } else {
                     var onFile = function(result) {
+                        job.set('state','gotfile')
                         if (this.checkShouldBail(job)) return
                         if (result.err || result.type == 'error') {
                             oncallback({error:result.err,evt:result})

@@ -93,7 +93,7 @@ function UI(opts) {
              name:'Priority',*/
             },
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
-            {id:'complete', name:"Complete", formatVal: fracToPercent},
+            {id:'complete', name:"Complete", formatVal: fracToPercent, sortable:true},
             {name:"Action" , displayFunc: fileAction},
             {id:'leftPiece'},
             {id:'rightPiece'}

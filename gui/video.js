@@ -47,10 +47,10 @@ function showranges(canvas, vid) {
 
         setTimeout(loop, 29);
     }
-    play.addEventListener('click', function () {
+    document.getElementById('play').addEventListener('click', function () {
         vid.play()
     }, false);
-    pause.addEventListener('click', function () {
+    document.getElementById('pause').addEventListener('click', function () {
         vid.pause()
     }, false);
 }
