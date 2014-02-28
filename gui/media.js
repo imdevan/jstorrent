@@ -73,7 +73,7 @@ function onload() {
         if (d.file === undefined) { d.file = 0 }
 
         if (d.hash) {
-            var streamurl = '/proxy?hash=' + d.hash + '&file=' + d.file
+            var streamurl = '/stream?hash=' + d.hash + '&file=' + d.file
             var video = document.createElement('video')
             //video.preload = 'none'
             //video.preload = 'metadata'

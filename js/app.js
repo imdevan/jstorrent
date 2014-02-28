@@ -18,9 +18,9 @@ function App() {
 
     var handlers = [
         ['/favicon.ico',jstorrent.FavIconHandler],
-        ['/proxy.*',jstorrent.ProxyHandler],
-        ['/package/(.*)',jstorrent.PackageHandler],
-        ['.*', jstorrent.WebHandler]
+        ['/stream.*',jstorrent.StreamHandler],
+        ['/package/(.*)',jstorrent.PackageHandler]
+//        ['.*', jstorrent.WebHandler]
     ]
     this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
 

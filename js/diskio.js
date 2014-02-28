@@ -417,6 +417,7 @@
                     }
                 } else {
                     function onMetadata(result) {
+                        job.set('state','gotmetadata')
                         if (result.err) { // XXX correct signature?
                             oncallback({error:result.err})
                             debugger
@@ -445,6 +446,7 @@
                 if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
                 var oncreatewritererr = function(evt) {
+                    job.set('state','createwritererr')
                     console.error('oncreatewritererr',evt)
                     debugger
                 }
@@ -453,6 +455,13 @@
                     writer.onwrite = function(evt) {
                         if (this.checkShouldBail(job)) return
                         job.set('state','createwriter2')
+
+                        var oncreatewriter2err = function(evt) {
+                            job.set('state','createwriter2err')
+                            console.error('oncreatewriter2err',evt)
+                            debugger
+                        }
+
                         entry.createWriter( function(writer2) {
                             if (this.checkShouldBail(job)) { writer2.abort(); return }
                             writer2.onwrite = function(evt2) {
@@ -476,7 +485,7 @@
 
                                 writer2.write(new Blob([opts.data]))
                             }, DiskIO.debugtimeout)
-                        }.bind(this))
+                        }.bind(this), oncreatewriter2err)
                     }.bind(this)
                     writer.onprogress = function(evt) {
                         //console.log('progress',evt)
@@ -562,11 +571,13 @@
             }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
+            console.assert(opts.fileOffset + opts.size <= opts.file.size)
             if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
             var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
             var path = file.path.slice()
             job.set('state','getentry')
+
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
                 if (entry.error) {
@@ -581,11 +592,17 @@
                             var file = result
                             function onRead(evt) {
                                 if (evt.target.result) {
-                                    // if part of multi job...
-                                    if (job.opts.readJob) {
-                                        job.opts.readJob.readData[opts.fileNum] = evt.target.result
+                                    if (evt.target.result.byteLength == opts.size) {
+
+                                        // if part of multi job...
+                                        if (job.opts.readJob) {
+                                            job.opts.readJob.readData[opts.fileNum] = evt.target.result
+                                        }
+                                        oncallback(evt.target.result)
+                                    } else {
+                                        debugger
+                                        oncallback({error:'data too small!', evt:evt})
                                     }
-                                    oncallback(evt.target.result)
                                 } else {
                                     console.error('reader error',evt)
                                     debugger
@@ -595,6 +612,7 @@
                             var fr = new FileReader
                             fr.onload = onRead
                             fr.onerror = onRead // TODO make better
+
                             var blobSlice = file.slice(opts.fileOffset, opts.fileOffset + opts.size)
                             job.set('state','reading')
                             maybeTimeout( function() {
@@ -699,10 +717,29 @@
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
+
+                var oncreatewritererr = function(evt) {
+                    job.set('state','createwritererr')
+                    console.error('oncreatewritererr',evt)
+                    debugger
+                }
+
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
-                        oncallback(evt)
+                        // VERIFY it
+
+
+                        entry.getMetadata( function(meta) {
+                            if (meta.size == opts.size) {
+                                oncallback(evt)
+                            } else {
+                                oncallback({error:'truncate did not work',evt:evt,meta:meta})
+                            }
+                        }, function(err) {
+                            oncallback({error:'couldnt get metadata',evt:evt})
+                        })
+
                     }
                     writer.onprogress = function(evt) {
                         //console.log('progress',evt)
@@ -720,7 +757,7 @@
                     maybeTimeout( function() {
                         writer.truncate(opts.size)
                     }, DiskIO.debugtimeout)
-                }.bind(this))
+                }.bind(this), oncreatewritererr)
             }.bind(this))
         },
 
@@ -745,6 +782,13 @@
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
                 job.set('state','createwriter')
+
+                var oncreatewritererr = function(evt) {
+                    job.set('state','createwritererr')
+                    console.error('oncreatewritererr',evt)
+                    debugger
+                }
+
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
@@ -769,7 +813,7 @@
                     maybeTimeout( function() {
                         writer.write(new Blob([buftowrite]))
                     }, DiskIO.debugtimeout)
-                }.bind(this))
+                }.bind(this), oncreatewritererr)
             }.bind(this))
         },
 
@@ -828,9 +872,11 @@
             var size = opts.size
 
             var oncallback = this.createWrapCallback(callback,job)
-
             var piece = writeJob.piece
-
+            if (! piece.data) {
+                oncallback({error:'piece data missing'})
+                return
+            }
             var bufslice = new Uint8Array(piece.data, pieceOffset, size)
 
             if (pieceOffset == 0 && size == piece.data.byteLength) {
@@ -851,6 +897,12 @@
                     return
                 }
                 job.set('state','createwriter')
+                var oncreatewritererr = function(evt) {
+                    job.set('state','createwritererr')
+                    console.error('oncreatewritererr',evt)
+                    debugger
+                }
+
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
@@ -877,7 +929,7 @@
                     maybeTimeout( function() {
                         writer.write(new Blob([buftowrite]))
                     }, DiskIO.debugtimeout )
-                }.bind(this))
+                }.bind(this), oncreatewritererr)
             }.bind(this))
         },
         onWritePieceCollected: function(writeJob) {
@@ -892,8 +944,9 @@
                 var metaData = writeJob.filesMetadata[job.fileNum]
 
                 if (job.fileOffset > metaData.size) {
-                    var useTruncate = false
+                    var useTruncate = true
                     if (useTruncate) {
+                        console.log("TRUNCATE JOB")
                         // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',
                                                            writeJob:writeJob,
@@ -905,7 +958,6 @@
                                                            callback:writeJob.subjobcallback})
                         doWriteFileJob.opts.callback = _.bind(writeJob.subjobcallback,writeJob,doWriteFileJob)
                         newjobs.push(doWriteFileJob)
-
                     } else {
                         // create a bunch of extra small pad jobs
                         var numZeroes = job.fileOffset - metaData.size

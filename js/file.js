@@ -45,6 +45,9 @@ File.getStoragePath = function(torrent) {
 }
 jstorrent.File = File
 File.prototype = {
+    isComplete: function() {
+        return this.get('complete') == 1
+    },
     priorityChanged: function(file,newVal,oldVal,attrName) {
         if (oldVal === undefined) { oldVal = 1 } // default value is "1" - Normal priority
         if (attrName != 'priority') { return }
@@ -69,12 +72,12 @@ File.prototype = {
             }
         }
     },
-    readBytes: function(start, end, callback) {
+    readBytes: function(start, size, callback) {
         var storage = this.torrent.getStorage()
         storage.diskio.getContentRange({file:this,
                                         fileNum:this.num,
                                         fileOffset:start,
-                                        size:(end-start+1),
+                                        size:size,
                                         torrent:this.torrent.hashhexlower
                                        },
                                        callback)

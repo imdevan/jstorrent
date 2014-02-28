@@ -83,6 +83,7 @@ function UI(opts) {
             {attr:'num', name:"Number", sortable:true},
             {attr:'name', name:"Name", width:400, sortable:true},
             {attr:'size', name:"Size", formatVal:byteUnits, width:100, sortable:true},
+            {name:"Action" , displayFunc: fileAction},
             {id:"priority", formatVal: priority
 /*
   ,editor: Slick.Editors.SelectCellEditor,
@@ -94,7 +95,7 @@ function UI(opts) {
             },
             {id:'downloaded', name:"Downloaded", formatVal:byteUnits, width:100},
             {id:'complete', name:"Complete", formatVal: fracToPercent, sortable:true},
-            {name:"Action" , displayFunc: fileAction},
+            {id:'streaming'},
             {id:'leftPiece'},
             {id:'rightPiece'}
         ],

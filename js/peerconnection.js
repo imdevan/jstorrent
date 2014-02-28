@@ -408,14 +408,11 @@ PeerConnection.prototype = {
         var curPiece, payloads
         var allPayloads = []
 
-
-        if (_.keys(this.torrent.bridges).length > 0) {
-            for (var key in this.torrent.bridges) {
-                var curbridge = this.torrent.bridges[key]
-                break
-            }
+        var bridgekeys = _.keys(this.torrent.bridges)
+        if (bridgekeys.length > 0) {
+            var bridgeidx = Math.floor(Math.random() * bridgekeys.length) 
+            var curbridge = this.torrent.bridges[ bridgekeys[bridgeidx] ]
             var startAtPiece = curbridge.startPiece // TODO -- update startpiece as we go along
-            // TODO multiple bridges?
         } else {
             var startAtPiece = this.torrent.bitfieldFirstMissing
         }

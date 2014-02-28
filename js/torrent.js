@@ -5,24 +5,29 @@ function Bridge(opts) {
     console.log(this.id,'new bridge with startpiece',this.startPiece)
     this.end = opts.end
     this.handler = opts.handler
+    this.file = opts.file
+    this.file.set('streaming','init')
     this.torrent = opts.torrent
     this.ondata = null
 }
 Bridge.ctr = 0
 var Bridgeproto = {
     onhandlerclose: function() {
+        this.file.set('streaming',false)
         console.warn("REMOVE BRIDGE",this.id)
         // called when the handler connection is closed
         //debugger
         delete this.torrent.bridges[this.id]
     },
     requestfinished: function() {
+        this.file.set('streaming',false)
         console.warn("REMOVE BRIDGE",this.id)
         this.handler.request.connection.stream.onclose = null // only if current?
         delete this.torrent.bridges[this.id]
         // remove "onclose"
     },
     newPiece: function(piece) {
+        this.file.set('streaming','now'+piece.num)
         // a new piece is available
         this.ondata()
     }
@@ -394,23 +399,25 @@ Torrent.prototype = {
         return piece
     },
     registerRangeRequest: function(range, handler) {
-        var bridge = new Bridge({start:range[0],end:range[1],handler:handler,torrent:this})
+        var bridge = new Bridge({start:range[0],end:range[1],handler:handler,torrent:this,file:handler.file})
         this.bridges[bridge.id] = bridge
         if (this.get('state') == 'stopped') { this.start() }
         return bridge
     },
     getCompleteDataWindow: function(byteStart, byteEnd) {
         // returns 
+
         var pieceLeft = Math.floor(  byteStart / this.pieceLength )
         var pieceRight = Math.ceil( byteEnd / this.pieceLength)
+        console.assert(this._attributes.bitfield[pieceLeft])
         var start = null
         var end = null
+        start = byteStart
+        end = Math.min((pieceLeft+1) * this.pieceLength-1, byteEnd)
+
         for (var i=pieceLeft; i<=pieceRight; i++) {
             if (this._attributes.bitfield[i]) {
-                if (start === null) {
-                    start = this.pieceLength * i
-                }
-                end = Math.min(this.pieceLength * (i+1)-1, this.size - 1, byteEnd)
+                end = Math.min(this.pieceLength * (i+1)-1, byteEnd)
                 if (end == byteEnd) { break }
             } else {
                 break
@@ -1102,7 +1109,7 @@ Torrent.prototype = {
             }
         }
     },
-    start: function(reallyStart) {
+    start: function(reallyStart, opts) {
         //if (reallyStart === undefined) { return }
         if (this.started || this.starting) { return } // some kind of edge case where starting is true... and everything locked up. hmm
         this.set('state','starting')
