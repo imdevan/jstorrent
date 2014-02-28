@@ -7,7 +7,14 @@ function UI(opts) {
         return val == 0 ? 'Skip' : ''
     }
     function fileAction(val) {
-        return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
+        //return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
+
+        if (val.streamable()) {
+
+            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
+        } else {
+            return ''
+        }
     }
 
     this.client = opts.client
@@ -235,6 +242,9 @@ GeneralInfoView.prototype = {
             s += '<label>Links</label>'
             s += ('<li>magnet link: <a target="_blank" href="'+magnet+'">' + _.escape(magnet) +  '</a></li>')
             s += ('<li>share link: <a target="_blank" href="'+this.torrent.getShareLink()+'">JSTorrent.com web link for sharing</a></li>')
+            if (false && app.options.get('enable_webserver')) {
+                s += ('<li>share link: <a target="_blank" href="'+this.torrent.getPlayerURL()+'">Video Player</a></li>') // now in files tab
+            }
 
             //var attr_includes = ['added']
             var attr_includes = this.torrent._attributes

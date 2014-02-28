@@ -54,7 +54,8 @@
       "ids": [ "bnceafpojmnimbnhamaeedgomdcgnbjk" ],
       "matches": [
           "*://*.jstorrent.com/*",
-          "*://jstorrent.com/*"
+          "*://jstorrent.com/*",
+          "http://127.0.0.1/*"
       ]
     },
     "icons": { 

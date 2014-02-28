@@ -56,6 +56,22 @@ File.prototype = {
         }
         this.torrent.setFilePriority(this.num,priority,oldVal)
     },
+    streamable: function() {
+        var ext = this.name.toLowerCase()
+        return (ext.endsWith('.mp4') ||
+                ext.endsWith('.mp3') ||
+                ext.endsWith('.mkv'))
+    },
+    readBytes: function(start, end, callback) {
+        var storage = this.torrent.getStorage()
+        storage.diskio.getContentRange({file:this,
+                                        fileNum:this.num,
+                                        fileOffset:start,
+                                        size:(end-start+1),
+                                        torrent:this.torrent.hashhexlower
+                                       },
+                                       callback)
+    },
     getSpanningPiecesInfo: function() { // similar to piece.getSpanningFilesInfo
         var leftPiece = Math.floor(this.startByte / this.torrent.pieceLength)
         var rightPiece = Math.ceil(this.endByte / this.torrent.pieceLength)

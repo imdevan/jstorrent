@@ -1,3 +1,34 @@
+function Bridge(opts) {
+    this.id = Bridge.ctr++
+    this.start = opts.start
+    this.startPiece = Math.floor( opts.start / opts.torrent.pieceLength )
+    console.log(this.id,'new bridge with startpiece',this.startPiece)
+    this.end = opts.end
+    this.handler = opts.handler
+    this.torrent = opts.torrent
+    this.ondata = null
+}
+Bridge.ctr = 0
+var Bridgeproto = {
+    onhandlerclose: function() {
+        console.warn("REMOVE BRIDGE",this.id)
+        // called when the handler connection is closed
+        //debugger
+        delete this.torrent.bridges[this.id]
+    },
+    requestfinished: function() {
+        console.warn("REMOVE BRIDGE",this.id)
+        this.handler.request.connection.stream.onclose = null // only if current?
+        delete this.torrent.bridges[this.id]
+        // remove "onclose"
+    },
+    newPiece: function(piece) {
+        // a new piece is available
+        this.ondata()
+    }
+}
+_.extend(Bridge.prototype, Bridgeproto)
+
 function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
     this.__name__ = arguments.callee.name
@@ -5,6 +36,7 @@ function Torrent(opts) {
     console.assert(this.client)
     this.hashhexlower = null
     this.hashbytes = null
+    this.bridges = {}
     this.magnet_info = null
     // the idea behind endgame is that when we are very near to
     // torrent completion, requests made to slow peers prevent us from
@@ -361,7 +393,39 @@ Torrent.prototype = {
         }
         return piece
     },
+    registerRangeRequest: function(range, handler) {
+        var bridge = new Bridge({start:range[0],end:range[1],handler:handler,torrent:this})
+        this.bridges[bridge.id] = bridge
+        if (this.get('state') == 'stopped') { this.start() }
+        return bridge
+    },
+    getCompleteDataWindow: function(byteStart, byteEnd) {
+        // returns 
+        var pieceLeft = Math.floor(  byteStart / this.pieceLength )
+        var pieceRight = Math.ceil( byteEnd / this.pieceLength)
+        var start = null
+        var end = null
+        for (var i=pieceLeft; i<=pieceRight; i++) {
+            if (this._attributes.bitfield[i]) {
+                if (start === null) {
+                    start = this.pieceLength * i
+                }
+                end = Math.min(this.pieceLength * (i+1)-1, this.size - 1, byteEnd)
+                if (end == byteEnd) { break }
+            } else {
+                break
+            }
+        }
+        return [start,end]
+    },
+    haveAnyDataAt: function(byteStart) {
+        var pieceNum = Math.floor( byteStart / this.pieceLength )
+        if (this._attributes.bitfield[pieceNum]) {
+            return true
+        }
+    },
     getFile: function(num) {
+        if (num >= this.numFiles) { return }
         var file = this.files.get(num)
         if (! file) {
             file = new jstorrent.File({itemClass:jstorrent.File,torrent:this, shouldPersist:false, num:num})
@@ -523,6 +587,13 @@ Torrent.prototype = {
     getMetadataFilename: function() {
         return this.get('name') + '.torrent'
     },
+    ensureLoaded: function(callback) {
+        if (this.infodict) { 
+            callback({torrent:this}) 
+        } else {
+            this.loadMetadata(callback)
+        }
+    },
     loadMetadata: function(callback) {
         // TODO -- better yet, have this use disk i/o queue
 
@@ -680,6 +751,10 @@ Torrent.prototype = {
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
             this._attributes.bitfield[result.piece.num] = 1
+
+            for (var key in this.bridges) {
+                _.defer( function() { this.bridges[key].newPiece(result.piece) }.bind(this) )
+            }
 
             // TODO -- move below into checkDone() method
             foundmissing = false
@@ -1319,6 +1394,16 @@ Torrent.prototype = {
     },
     getMaxConns: function() {
         return this.get('maxconns') || this.client.app.options.get('maxconns')
+    },
+    getPlayerURL: function(filenum) {
+        var url = 'http://127.0.0.1:' + this.client.app.webapp.port + '/package/gui/video.html?hash=' + this.hashhexlower
+        if (filenum !== undefined) {
+            url += '&file=' + filenum
+        }
+        return url
+    },
+    getProxyURL: function() {
+        return 'http://127.0.0.1:' + this.client.app.webapp.port + '/proxy?hash=' + this.hashhexlower
     },
     getShareLink: function() {
         var url = 'http://jstorrent.com/share/#hash=' + this.hashhexlower + '&dn=' + encodeURIComponent(this.get('name')) + '&magnet_uri=' + encodeURIComponent(this.getMagnetLink())

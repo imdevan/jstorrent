@@ -21,6 +21,17 @@ function Client(opts) {
                                               itemClass: jstorrent.Torrent})
     this.torrents.on('add', _.bind(this.onTorrentAdd, this))
 
+    this.packageEntry = null
+    this.packageDisk = null
+    if (chrome.runtime.getPackageDirectoryEntry) {
+        chrome.runtime.getPackageDirectoryEntry( function(entry) { 
+            this.packageEntry = entry
+            this.packageDisk = new jstorrent.Disk({entry:entry, 
+                                                   client:this,
+                                                  })
+        }.bind(this) )
+    }
+
     this.disks = new jstorrent.Collection({__name__: 'Disks', 
                                            parent:this, 
                                            client:this, 

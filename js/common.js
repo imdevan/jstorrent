@@ -40,6 +40,7 @@ jstorrent.options = {
     add_torrents_on_start: false,
     run_unit_tests: true,
     disable_trackers: false,
+    slow_diskio: false,
     seed_public_torrents: false, // default off
     allow_report_torrent_bug: false,
     manual_peer_connect_on_start: {

@@ -101,6 +101,12 @@ function Options(opts) {
             // i.e. store up to 4 complete pieces in RAM
             // this actually needs to be a multiple of each piece chunk size..
             'type': 'int'
+        },
+
+        'web_server_enable': {
+            'default': true,
+            'type': 'bool',
+            'name': 'Enable web server (port 8543)'
         }
         
     }

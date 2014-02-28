@@ -16,7 +16,7 @@
 */
 
     function maybeTimeout(fn, t) {
-        if (false) {
+        if (jstorrent.options.slow_diskio) {
             setTimeout(fn, t)
         } else {
             fn()
@@ -301,8 +301,8 @@
         jstorrent.BasicCollection.apply(this, arguments)
     }
     DiskIO.jobctr = 0
-    DiskIO.debugtimeout = 100
-    DiskIO.allowedJobTime = 30000 // 30 seconds should be enough... ?
+    DiskIO.debugtimeout = 200
+    DiskIO.allowedJobTime = 60000 // 30 seconds should be enough... ?
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
 
@@ -431,6 +431,9 @@
         },
         writeWholeContents: function() {
             this.addToQueue('doWriteWholeContents',arguments)
+        },
+        getContentRange: function() {
+            this.addToQueue('doGetContentRange',arguments)
         },
         doWriteWholeContents: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return
@@ -561,7 +564,8 @@
         doGetContentRange: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
-            var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
+            var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
+            var path = file.path.slice()
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
@@ -576,7 +580,10 @@
                             var file = result
                             function onRead(evt) {
                                 if (evt.target.result) {
-                                    job.opts.readJob.readData[opts.fileNum] = evt.target.result
+                                    // if part of multi job...
+                                    if (job.opts.readJob) {
+                                        job.opts.readJob.readData[opts.fileNum] = evt.target.result
+                                    }
                                     oncallback(evt.target.result)
                                 } else {
                                     console.error('reader error',evt)
@@ -883,7 +890,7 @@
                 var metaData = writeJob.filesMetadata[job.fileNum]
 
                 if (job.fileOffset > metaData.size) {
-                    var useTruncate = true
+                    var useTruncate = false
                     if (useTruncate) {
                         // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',

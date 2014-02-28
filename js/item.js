@@ -117,6 +117,7 @@ Item.prototype = {
         return attrs
     },
     save: function(callback) {
+        //if (this.itemClass == jstorrent.Torrent && this.get('state') == 'loading') { debugger } // XXX dont save in "loading" state.. cuz thats weird
         // this function is dubiously error free?
 
         //console.log(this.get_key(),'.save()')

@@ -3,6 +3,7 @@ function Disk(opts) {
 
     this.diskio = new jstorrent.DiskIO({disk:this})
     this.client = opts.client || opts.parent.parent
+    this.app = opts.app
     this.concurrentBroken = 0
     this.think_interval = null
     this.client.on('activeTorrentsChange', _.bind(function(){

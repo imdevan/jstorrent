@@ -18,10 +18,11 @@ function App() {
 
     var handlers = [
         ['/favicon.ico',jstorrent.FavIconHandler],
+        ['/proxy.*',jstorrent.ProxyHandler],
+        ['/package/(.*)',jstorrent.PackageHandler],
         ['.*', jstorrent.WebHandler]
     ]
     this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
-    this.webapp.start()
 
     this.analytics = new jstorrent.Analytics({app:this})
     this.entryCache = new jstorrent.EntryCache
@@ -81,6 +82,11 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    on_options_loaded: function() {
+        if (this.options.get('web_server_enable')) {
+            this.webapp.start()
+        }
+    },
     onContextMenu: function(grid, item, evt) {
         //console.log('oncontextmenu',item)
         if (item.itemClass == jstorrent.Torrent) {
@@ -798,6 +804,7 @@ App.prototype = {
     },
     initialize: function(callback) {
         this.options.load( _.bind(function() {
+            this.on_options_loaded()
             this.initialize_client()
             this.client.on('ready', function() {
                 callback()
