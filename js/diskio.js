@@ -571,10 +571,10 @@
             }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
-            console.assert(opts.fileOffset + opts.size <= opts.file.size)
             if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
             var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
+            console.assert(opts.fileOffset + opts.size <= opts.file.size)
             var path = file.path.slice()
             job.set('state','getentry')
 
