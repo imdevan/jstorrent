@@ -210,3 +210,30 @@ chrome.runtime.onMessageExternal.addListener(function(request, sender, sendRespo
     }
 });
 }
+
+if (chrome.runtime.onConnectExternal) {
+    chrome.runtime.onConnectExternal.addListener( function(port) {
+        console.log('port',port)
+        window.mediaPort = port
+        port.onMessage.addListener( function(msg) {
+            console.log('external onmessage',msg)
+        })
+        port.onDisconnect.addListener( function(msg) {
+            console.log('external ondisconnect',msg)
+        })
+        port.postMessage({text:"OK"})
+    })
+}
+
+chrome.runtime.onStartup.addListener( function(evt) {
+    console.log('onStartup',evt)
+})
+chrome.runtime.onSuspend.addListener( function(evt) {
+    console.log('onSuspend',evt)
+})
+chrome.runtime.onInstalled.addListener( function(evt) {
+    console.log('onInstalled',evt)
+})
+chrome.runtime.onSuspendCanceled.addListener( function(evt) {
+    console.log('onSuspendCanceled',evt)
+})

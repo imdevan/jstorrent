@@ -59,6 +59,8 @@ function showranges(canvas, vid) {
 function onload() {
     console.log('loaded')
 
+
+
     if (window.location.search) {
         var s = window.location.search.slice(1,window.location.search.length)
         var parts = s.split('&')
@@ -92,6 +94,16 @@ function onload() {
             document.getElementById('container').innerText = 'invalid URL'
 
         }
+
+        window.token = d.token
+        window.port = chrome.runtime.connect(d.id)
+        port.onMessage.addListener( function(msg) {
+            console.log('onmessage',msg)
+        })
+        port.onDisconnect.addListener( function(msg) {
+            console.log('ondisconnect',msg)
+        })
+        port.postMessage({token:token, command:'hello'})
     }
     
     
