@@ -58,10 +58,16 @@ File.prototype = {
     },
     streamable: function() {
         var ext = this.name.toLowerCase()
-        return (ext.endsWith('.mp4') ||
-                ext.endsWith('.mp3') ||
-                ext.endsWith('.avi') ||
-                ext.endsWith('.mkv'))
+        for (var i=0; i<MIMECATEGORIES.video.length; i++) {
+            if (ext.endsWith('.' + MIMECATEGORIES.video[i])) {
+                return {type:'video'}
+            }
+        }
+        for (var i=0; i<MIMECATEGORIES.audio.length; i++) {
+            if (ext.endsWith('.' + MIMECATEGORIES.audio[i])) {
+                return {type:'audio'}
+            }
+        }
     },
     readBytes: function(start, end, callback) {
         var storage = this.torrent.getStorage()

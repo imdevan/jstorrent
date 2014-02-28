@@ -1395,10 +1395,13 @@ Torrent.prototype = {
     getMaxConns: function() {
         return this.get('maxconns') || this.client.app.options.get('maxconns')
     },
-    getPlayerURL: function(filenum) {
-        var url = 'http://127.0.0.1:' + this.client.app.webapp.port + '/package/gui/video.html?hash=' + this.hashhexlower
+    getPlayerURL: function(filenum, streamable) {
+        var url = 'http://127.0.0.1:' + this.client.app.webapp.port + '/package/gui/media.html?hash=' + this.hashhexlower
         if (filenum !== undefined) {
             url += '&file=' + filenum
+        }
+        if (streamable && streamable.type) {
+            url += '&type=' + streamable.type
         }
         return url
     },

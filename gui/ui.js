@@ -9,9 +9,9 @@ function UI(opts) {
     function fileAction(val) {
         //return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
 
-        if (val.streamable()) {
-
-            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
+        var streamable = val.streamable()
+        if (streamable) {
+            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
         } else {
             return ''
         }
