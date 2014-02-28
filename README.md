@@ -33,6 +33,7 @@ source too.
 * Click "load unpacked extension"
 * Browse to the unzipped file then press "Open"
 * You're done! (Note that you will not get updates this way, you will need to manually update)
+* NOTE: This project now uses a submodule "web-server-chrome" (https://github.com/kzahel/web-server-chrome) so you probably have to download that project separately and put it in the "js" folder.
 
 Websites:
 ----
