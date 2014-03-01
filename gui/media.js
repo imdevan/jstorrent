@@ -1,5 +1,4 @@
 function fillinrange(canvas, range, total, opt_color, animate) {
-
     // make it fancy pantsy
     if (opt_color === undefined) { opt_color = [0,170,0,255] }
     var ctx = canvas.getContext('2d');
@@ -8,7 +7,7 @@ function fillinrange(canvas, range, total, opt_color, animate) {
     var x1 = w * range[0] / total
     var x2 = w * (range[1] + 1) / total
 
-    if (animate) {
+    if (animate && false) {
         var steps = 50
         var it = 1
         while (it < steps) {
@@ -16,7 +15,7 @@ function fillinrange(canvas, range, total, opt_color, animate) {
                 ctx.fillStyle = '#000';
                 ctx.fillRect(x1, 0, x2 - x1, h);
                 var alph = i / steps
-                var fillstr = 'rgba(' + opt_color.join(',') + ',' + alph + ')'
+                var fillstr = 'rgba(' + opt_color.slice(0,3).join(',') + ',' + alph + ')'
                 ctx.fillStyle = fillstr
                 ctx.fillRect(x1, 0, x2 - x1, h);
             }, this, it), it * 12)
@@ -134,8 +133,13 @@ function onload() {
         window.token = d.token
         window.port = chrome.runtime.connect(d.id)
         port.onMessage.addListener( function(msg) {
+
             console.log('onmessage',msg)
             if (msg.type == 'requestfileinfo') {
+                var mq = document.getElementById('marquee')
+                mq.innerText = 'initialized'
+
+
                 //document.getElementById('fileinfo').innerText = JSON.stringify( msg )
                 document.getElementById('fileinfo').innerText = msg.file.path + ', ' + msg.file.size + ' bytes.'
                 document.getElementById('ranges').innerText = JSON.stringify(msg.fileranges)
@@ -145,7 +149,7 @@ function onload() {
                     fillinrange(rangecanvas, msg.fileranges[i], msg.file.size)
                 }
             } else if (msg.type == 'newfilerange') {
-                fillinrange(rangecanvas, msg.newfilerange, msg.file.size, [0,255,16], true)
+                fillinrange(rangecanvas, msg.newfilerange, msg.file.size, [0,255,16,255], true)
             }
         })
         port.onDisconnect.addListener( function(msg) {
@@ -161,33 +165,73 @@ function onload() {
     
 }
 
+function handleerror(evt) {
+    var errors = {
+        1: 'MEDIA_ERR_ABORTED',
+        2: 'MEDIA_ERR_NETWORK',
+        3: 'MEDIA_ERR_DECODE',
+        4: 'MEDIA_ERR_NOT_SUPPORTED'
+    }
+    var errtxt = errors[evt.target.error.code]
+
+    document.getElementById('error').innerText = errtxt
+    document.getElementById('error').style.display = 'block'
+}
+
 document.addEventListener("DOMContentLoaded", function(){
     onload()
 })
 
 function reload() { window.location.reload() }
 function addevents(video) {
+    var mq = document.getElementById('marquee')
+    var state = {}
+    state.lastrepeated = 0
 
-    video.addEventListener("readystatechange", function(evt) { console.log('readystatechange'); } );
-    video.addEventListener("stalled", function(evt) { console.log("stalled",evt); } );
-    video.addEventListener("durationchange", function(evt) { console.log('durationchange',evt); } );
-    video.addEventListener("loadstart", function(evt) { console.log("load start",evt); } );
-    video.addEventListener("abort", function(evt) { console.log("abort",evt); } );
-    video.addEventListener("loadedmetadata", function(evt) { console.log("got metadata",evt); } );
-    video.addEventListener("error", function(evt) { console.log("got error",evt); 
-                                                    console.log('video state: ',video.readyState);
-                                                  } );
-    video.addEventListener("canplay", function(evt) { console.log('canplay',evt); } );
-    video.addEventListener("progress", function(evt) { console.log("progress"); } );
-    video.addEventListener("seek", function(evt) { console.log('seek',evt); } );
-    video.addEventListener("seeked", function(evt) { console.log('seeked',evt); } );
-    video.addEventListener("ended", function(evt) { console.log('ended',evt); } );
-    //video.addEventListener("timeupdate", function(evt) { console.log('timeupdate',evt); } );
-    video.addEventListener("pause", function(evt) { console.log('pause',evt); } );
-    video.addEventListener("play", function(evt) { console.log('play',evt); } );
-    video.addEventListener("suspend", function(evt) {
-        //            console.log('suspend event',evt);
-    });
+    function onevent(evt) {
+        if (evt.type == state.lastmsg) {
+            state.lastrepeated++
+        } else {
+            state.lastrepeated = 0
+        }
+
+        if (evt.type == 'progress') {
+            if (state.lastrepeated > 20) {
+                mq.innerText = ''
+            } else {
+
+                mq.innerText = 'progress' + '+++'.slice(0,state.lastrepeated%4)
+            }
+        } else {
+            mq.innerText = evt.type
+        }
+        
+        state.lastmsg = evt.type
+        console.log(evt.type)
+
+        if (evt.type == 'error') {
+            handleerror(evt)
+        }
+    }
+
+    if (true) {
+        video.addEventListener("readystatechange", onevent);
+        video.addEventListener("stalled", onevent);
+        video.addEventListener("durationchange", onevent);
+        video.addEventListener("loadstart", onevent);
+        video.addEventListener("abort", onevent);
+        video.addEventListener("loadedmetadata", onevent);
+        video.addEventListener("error", onevent);
+        video.addEventListener("canplay", onevent);
+        video.addEventListener("progress", onevent);
+        video.addEventListener("seek", onevent);
+        video.addEventListener("seeked", onevent);
+        video.addEventListener("ended", onevent );
+        //video.addEventListener("timeupdate", function(evt) { console.log('timeupdate',evt); } );
+        video.addEventListener("pause", onevent);
+        video.addEventListener("play", onevent );
+        //video.addEventListener("suspend", onevent);
+    }
 
 
 }

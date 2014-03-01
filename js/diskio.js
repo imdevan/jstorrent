@@ -532,7 +532,7 @@
                         report.push( keys[i] + '=' + data[keys[i]] )
                     }
                     var reportstr = report.join(',')
-                    app.analytics.sendEvent('DiskIO','JobError',reportstr)
+                    app.analytics.sendEvent('DiskIO','JobError',reportstr, evt.get('size'))
                 } else {
                     app.analytics.sendEvent('DiskIO','JobError',JSON.stringify(err))
                 }

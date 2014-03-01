@@ -7,8 +7,14 @@
 <div id="container"></div>
 <script src="/package/js/deps/underscore.js"></script>
 <script src="media.js"></script>
+<div id="error" style="display:none"></div>
 <button id="play">Play</button><button id="pause">Pause</button>
 <span id="fileinfo"></span>
+<div id="marquee-container" style="width:200px; height:25px; border:1px solid black">
+  <marquee id="marquee" behavior="alternate">
+    initiating
+  </marquee>
+</div>
 <br />
 complete ranges: <span id="ranges"></span>
 <p>If you seek to a portion of the file that is not yet downloaded, it will prioritize downloading from that area.</p>

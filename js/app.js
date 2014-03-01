@@ -82,6 +82,9 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    runtimeMessage: function(msg) {
+        console.warn('runtime message!',msg)
+    },
     on_options_loaded: function() {
         if (this.options.get('web_server_enable')) {
             this.webapp.start()

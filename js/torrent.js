@@ -14,6 +14,7 @@ Bridge.ctr = 0
 var Bridgeproto = {
     notneeded: function() {
         console.log('bridge.notneeded')
+        this.handler.request.connection.stream.onclose = null
         delete this.torrent.bridges[this.id]
     },
     onhandlerclose: function() {
@@ -414,6 +415,7 @@ Torrent.prototype = {
     getCompleteDataWindow: function(byteStart, byteEnd) {
         // returns first complete subset window that's complete starting at byteStart
         console.assert(byteStart < byteEnd)
+        console.assert(byteEnd < this.size)
         var pieceLeft = Math.floor(  byteStart / this.pieceLength )
         var pieceRight = Math.ceil( byteEnd / this.pieceLength)
         console.assert(this._attributes.bitfield[pieceLeft])
@@ -432,6 +434,7 @@ Torrent.prototype = {
         }
         console.assert(start < end)
         console.assert((end - start) <= (byteEnd - byteStart))
+        console.assert(end < this.size)
         return [start,end]
     },
     haveAnyDataAt: function(byteStart) {
