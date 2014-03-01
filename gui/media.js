@@ -1,3 +1,20 @@
+function fillinrange(canvas, range, total, opt_color) {
+    if (opt_color === undefined) { opt_color = '#0d0' }
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width
+    var h = canvas.height
+    ctx.fillStyle = opt_color;
+    var x1 = w * range[0] / total
+    var x2 = w * (range[1] + 1) / total
+    ctx.fillRect(x1, 0, x2 - x1, h);
+}
+function clearcanvas(canvas) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width
+    var h = canvas.height
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+}
 
 function showranges(canvas, vid) {
     // from http://jsfiddle.net/AbdiasSoftware/Drw6M/
@@ -56,10 +73,9 @@ function showranges(canvas, vid) {
 }
 
 
+
 function onload() {
     console.log('loaded')
-
-
 
     if (window.location.search) {
         var s = window.location.search.slice(1,window.location.search.length)
@@ -95,15 +111,32 @@ function onload() {
 
         }
 
+        var rangecanvas = document.getElementById('rangecanvas')
         window.token = d.token
         window.port = chrome.runtime.connect(d.id)
         port.onMessage.addListener( function(msg) {
             console.log('onmessage',msg)
+            if (msg.type == 'requestfileinfo') {
+                //document.getElementById('fileinfo').innerText = JSON.stringify( msg )
+                document.getElementById('fileinfo').innerText = msg.file.path + ', ' + msg.file.size + ' bytes.'
+                document.getElementById('ranges').innerText = JSON.stringify(msg.fileranges)
+
+                clearcanvas(rangecanvas)
+                for (var i=0; i<msg.fileranges.length; i++) {
+                    fillinrange(rangecanvas, msg.fileranges[i], msg.file.size)
+                }
+            } else if (msg.type == 'newfilerange') {
+                fillinrange(rangecanvas, msg.newfilerange, msg.file.size, '#0f3')
+            }
         })
         port.onDisconnect.addListener( function(msg) {
             console.log('ondisconnect',msg)
         })
-        port.postMessage({token:token, command:'hello'})
+        port.postMessage({token:token, 
+                          command:'requestfileinfo',
+                          hash:d.hash,
+                          file:d.file
+                         })
     }
     
     

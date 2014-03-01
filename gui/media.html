@@ -1,9 +1,16 @@
 <html><head><title>JSTorrent Media Player</title></head>
 <body>
-<canvas id="canvas" width="500" height="16"></canvas>
+<p>JSTorrent Streaming Media Player (beta)</p>
+<canvas id="canvas" width="720" height="16"></canvas>
+<canvas id="rangecanvas" width="720" height="16"></canvas>
 <br />
 <div id="container"></div>
+<script src="/package/js/deps/underscore.js"></script>
 <script src="media.js"></script>
 <button id="play">Play</button><button id="pause">Pause</button>
+<span id="fileinfo"></span>
+<br />
+complete ranges: <span id="ranges"></span>
+<p>If you seek to a portion of the file that is not yet downloaded, it will prioritize downloading from that area.</p>
 </body>
 </html>

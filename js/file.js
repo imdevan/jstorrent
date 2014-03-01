@@ -1,5 +1,6 @@
 function File(opts) {
     jstorrent.Item.apply(this, arguments)
+    console.assert(typeof opts.num == 'number')
     this.torrent = opts.torrent
     this.num = opts.num
 
@@ -19,7 +20,7 @@ function File(opts) {
         this.name = this.torrent.infodict.name
         this.size = this.torrent.size
     }
-
+    console.assert(!isNaN(this.size) && typeof this.size == 'number')
 
     this.startByte = this.torrent.fileOffsets[this.num]
     if (this.num == this.torrent.numFiles - 1) {
@@ -33,7 +34,9 @@ function File(opts) {
     this.set('priority',this.getPriority())
     this.set('leftPiece', Math.floor(this.startByte / this.torrent.pieceLength))
     this.set('rightPiece', Math.ceil(this.endByte / this.torrent.pieceLength))
-
+    this.set('name',this.name)
+    this.set('size',this.size)
+    this.set('path',this.path.join('/'))
     //this.on('change', _.bind(this.priorityChanged,this)) // NO, we use contextmenu now
 }
 File.getStoragePath = function(torrent) {
@@ -45,6 +48,42 @@ File.getStoragePath = function(torrent) {
 }
 jstorrent.File = File
 File.prototype = {
+    intersectsPiece: function(piece) {
+        var intersection = intersect(piece.startByte,
+                                     piece.endByte,
+                                     this.startByte,
+                                     this.endByte)
+        return intersection
+    },
+    getCompleteRanges: function() {
+        // returns all the filled in ranges for this file.
+        var intervals = []
+        var infos = this.getSpanningPiecesInfo()
+
+        var start = null
+        var end = null
+
+        for (var i=0; i<infos.length; i++) {
+            var info = infos[i]
+            if (this.torrent._attributes.bitfield[info.pieceNum]) {
+                if (start === null) {
+                    start = info.fileOffset
+                }
+                end = info.fileOffset + this.torrent.getPieceSize(info.pieceNum) - 1
+            } else {
+                // piece is dead, and we had market a beginning
+                if (start !== null) {
+                    intervals.push( [start, end] )
+                    start = null
+                    end = null
+                }
+            }
+        }
+        if (start !== null && end !== null) {
+            intervals.push( [start, end ] )
+        }
+        return intervals
+    },
     isComplete: function() {
         return this.get('complete') == 1
     },

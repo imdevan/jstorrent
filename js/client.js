@@ -92,9 +92,56 @@ function Client(opts) {
 
     this.on('error', _.bind(this.onError, this))
     this.on('ready', _.bind(this.onReady, this))
+
+    this.ports = {}
+    this.portCtr = 0
 }
 
 Client.prototype = {
+    notifyPiecePersisted: function(piece) {
+        var portinfo 
+        for (var key in this.ports) {
+            portinfo = this.ports[key]
+            var file = portinfo.file
+            if (portinfo.file.intersectsPiece(piece)) {
+                portinfo.port.postMessage({
+                    type:'newfilerange',
+                    hash:file.torrent.hashhexlower,
+                    file:file._attributes,
+                    newfilerange:[
+                        piece.startByte - file.startByte,
+                        piece.endByte - file.startByte
+                    ]
+                })
+            }
+        }
+    },
+    handleExternalMessage: function(msg,port) {
+        console.log('handle external message',msg.command,'with token',msg.token)
+        var portId = this.portCtr++
+
+        if (msg.command == 'requestfileinfo') {
+            var torrent = this.torrents.get(msg.hash)
+            torrent.ensureLoaded( function() {
+                var file = torrent.getFile(parseInt(msg.file))
+
+                this.ports[portId] = { port: port,
+                                       file: file }
+                port.onDisconnect.addListener( _.bind(function(portId,evt) {
+                    delete this.ports[portId]
+                },this,portId) )
+
+                data = {
+                    type:msg.command,
+                    torrent:torrent._attributes,
+                    fileranges:file.getCompleteRanges(),
+                    file:file._attributes}
+                port.postMessage(data)
+            }.bind(this))
+        } else {
+            console.warn('unhandled message', msg)
+        }
+    },
     setPeerIdBytes: function(spoofing) {
         this.peeridbytes = []
         this.peeridbytes_spoof = []

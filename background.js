@@ -3,6 +3,10 @@ console.log('background page loaded')
 // the browser extension that adds a context menu
 var extensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
 
+function app() {
+    return chrome.app.window.get('mainWindow').contentWindow.app
+}
+
 function WindowManager() {
     // TODO -- if we add "id" to this, then chrome.app.window.create
     // won't create it twice.  plus, then its size and positioning
@@ -209,15 +213,20 @@ chrome.runtime.onMessageExternal.addListener(function(request, sender, sendRespo
 
 if (chrome.runtime.onConnectExternal) {
     chrome.runtime.onConnectExternal.addListener( function(port) {
-        console.log('port',port)
-        window.mediaPort = port
-        port.onMessage.addListener( function(msg) {
-            console.log('external onmessage',msg)
-        })
-        port.onDisconnect.addListener( function(msg) {
-            console.log('external ondisconnect',msg)
-        })
-        port.postMessage({text:"OK"})
+        if (port.sender.url.startsWith('http://127.0.0.1:' + app().webapp.port)) {
+            console.log('received authorized port',port)
+            window.mediaPort = port
+            port.onMessage.addListener( function(msg) {
+                app().client.handleExternalMessage(msg, port)
+                console.log('external onmessage',msg)
+            })
+            port.onDisconnect.addListener( function(msg) {
+                console.log('external ondisconnect',msg)
+            })
+            port.postMessage({text:"OK"})
+        } else {
+            console.error('unauthorized port',port)
+        }
     })
 }
 

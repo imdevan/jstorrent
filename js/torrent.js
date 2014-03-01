@@ -761,6 +761,7 @@ Torrent.prototype = {
             //console.log('report bad job',result.job)
         } else {
             // clean up all registered chunk requests
+            this.client.notifyPiecePersisted(result.piece)
             result.piece.notifyPiecePersisted()
             this.pieceDoneUpdateFileComplete(result.piece)
             //console.log('persisted piece!')

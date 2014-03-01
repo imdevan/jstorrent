@@ -3,6 +3,8 @@ function Piece(opts) {
     this.torrent = opts.torrent
     this.num = opts.num
     this.size = this.torrent.getPieceSize(this.num)
+    this.startByte = this.torrent.pieceLength * this.num
+    this.endByte = this.startByte + this.size - 1
     this.numChunks = Math.ceil(this.size / jstorrent.protocol.chunkSize)
     this.set('requests', 0)
     this.set('responses', 0)
