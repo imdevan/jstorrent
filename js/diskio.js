@@ -220,6 +220,7 @@
             var jobs = []
             for (var i=0; i<this.filesSpanInfo.length; i++) {
                 var info = this.filesSpanInfo[i]
+                console.assert(info.size > 0)
                 var cur = new BasicJob({type:'doGetContentRange',
                                         readJob: this,
                                         size:info.size,
@@ -515,8 +516,26 @@
             if (err.metajob) {
                 // subjob reports us
             } else {
-                console.log('report job error',err)
-                app.analytics.sendEvent('DiskIO','JobError')
+                console.log('report job error',err,evt)
+
+                if (evt instanceof BasicJob) {
+                    var job = evt
+                    var data = {
+                        type: evt.get('type'),
+                        error: evt.get('error'),
+                        state: evt.get('state')
+                    }
+                    var keys = _.keys(data)
+                    keys.sort()
+                    var report = []
+                    for (var i=0; i<keys.length; i++) {
+                        report.push( keys[i] + '=' + data[keys[i]] )
+                    }
+                    var reportstr = report.join(',')
+                    app.analytics.sendEvent('DiskIO','JobError',reportstr)
+                } else {
+                    app.analytics.sendEvent('DiskIO','JobError',JSON.stringify(err))
+                }
                 //console.log("Report job error:",err, evt)
             }
         },
@@ -571,10 +590,11 @@
             }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
+            console.assert(opts.size > 0)
             if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)
             var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
-            console.assert(opts.fileOffset + opts.size <= opts.file.size)
+            console.assert(opts.fileOffset + opts.size <= file.size)
             var path = file.path.slice()
             job.set('state','getentry')
 
@@ -946,7 +966,7 @@
                 if (job.fileOffset > metaData.size) {
                     var useTruncate = true
                     if (useTruncate) {
-                        console.log("TRUNCATE JOB")
+                        //console.log("TRUNCATE JOB")
                         // truncate is faster than writezeroes!
                         var doWriteFileJob = new BasicJob({type:'doTruncate',
                                                            writeJob:writeJob,

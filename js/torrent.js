@@ -12,7 +12,12 @@ function Bridge(opts) {
 }
 Bridge.ctr = 0
 var Bridgeproto = {
+    notneeded: function() {
+        console.log('bridge.notneeded')
+        delete this.torrent.bridges[this.id]
+    },
     onhandlerclose: function() {
+        console.log('bridge.onhandlerclose')
         this.file.set('streaming',false)
         console.warn("REMOVE BRIDGE",this.id)
         // called when the handler connection is closed
@@ -20,6 +25,7 @@ var Bridgeproto = {
         delete this.torrent.bridges[this.id]
     },
     requestfinished: function() {
+        console.log('bridge.requestfinished')
         this.file.set('streaming',false)
         console.warn("REMOVE BRIDGE",this.id)
         this.handler.request.connection.stream.onclose = null // only if current?
@@ -401,12 +407,13 @@ Torrent.prototype = {
     registerRangeRequest: function(range, handler) {
         var bridge = new Bridge({start:range[0],end:range[1],handler:handler,torrent:this,file:handler.file})
         this.bridges[bridge.id] = bridge
+        console.log('bridges now',this.bridges)
         if (this.get('state') == 'stopped') { this.start() }
         return bridge
     },
     getCompleteDataWindow: function(byteStart, byteEnd) {
-        // returns 
-
+        // returns first complete subset window that's complete starting at byteStart
+        console.assert(byteStart < byteEnd)
         var pieceLeft = Math.floor(  byteStart / this.pieceLength )
         var pieceRight = Math.ceil( byteEnd / this.pieceLength)
         console.assert(this._attributes.bitfield[pieceLeft])
@@ -423,6 +430,8 @@ Torrent.prototype = {
                 break
             }
         }
+        console.assert(start < end)
+        console.assert((end - start) <= (byteEnd - byteStart))
         return [start,end]
     },
     haveAnyDataAt: function(byteStart) {
@@ -759,9 +768,11 @@ Torrent.prototype = {
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
             this._attributes.bitfield[result.piece.num] = 1
 
-            for (var key in this.bridges) {
-                _.defer( function() { this.bridges[key].newPiece(result.piece) }.bind(this) )
-            }
+            _.defer( function() { 
+                for (var key in this.bridges) {
+                    this.bridges[key].newPiece(result.piece)
+                }
+            }.bind(this))
 
             // TODO -- move below into checkDone() method
             foundmissing = false

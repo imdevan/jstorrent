@@ -65,9 +65,8 @@ function Client(opts) {
                 console.log('disks length == 0')
                 this.app.notifyNeedDownloadDirectory()
             }
-            this.disks.on('ready', _.bind(function() {
-                onDiskReady()
-            },this))
+            // XXX - install a timeout ??
+            this.disks.on('ready', onDiskReady)
         },this))
     } else {
         // probably need to guard behind document.addEventListener('deviceready', callback, false)

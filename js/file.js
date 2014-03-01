@@ -74,6 +74,7 @@ File.prototype = {
     },
     readBytes: function(start, size, callback) {
         var storage = this.torrent.getStorage()
+        console.assert(size > 0)
         storage.diskio.getContentRange({file:this,
                                         fileNum:this.num,
                                         fileOffset:start,

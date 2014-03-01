@@ -49,6 +49,7 @@ function Disk(opts) {
         }
         console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
+            console.log('restored',this.key)
             // remove this.
             if (!entry) {
                 console.error('unable to restore entry - (was the folder removed?)', opts.id)

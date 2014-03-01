@@ -137,10 +137,6 @@ if (chrome.runtime.setUninstallUrl) {
                                   )
 }
 
-chrome.runtime.onStartup.addListener(function() {
-    console.log('onStartup')
-})
-
 chrome.runtime.onInstalled.addListener(function(details) {
     var sk = 'onInstalledInfo'
     chrome.storage.sync.get(sk, function(resp) {
@@ -231,9 +227,9 @@ chrome.runtime.onStartup.addListener( function(evt) {
 chrome.runtime.onSuspend.addListener( function(evt) {
     console.log('onSuspend',evt)
 })
-chrome.runtime.onInstalled.addListener( function(evt) {
-    console.log('onInstalled',evt)
-})
 chrome.runtime.onSuspendCanceled.addListener( function(evt) {
     console.log('onSuspendCanceled',evt)
+})
+chrome.app.runtime.onRestarted.addListener( function(evt) {
+    console.log('app onRestarted',evt)
 })

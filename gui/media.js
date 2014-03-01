@@ -33,13 +33,13 @@ function showranges(canvas, vid) {
         ctx.fillStyle = '#fff';
 
         x1 = vid.currentTime / vl * w;
-        ctx.textBaseline = 'top';
-        ctx.textAlign = 'left';
+        //ctx.textBaseline = 'top';
+        //ctx.textAlign = 'left';
 
-        ctx.fillText(vid.currentTime.toFixed(1), 4, 4);
+        //ctx.fillText(vid.currentTime.toFixed(1), 4, 4);
 
-        ctx.textAlign = 'right';
-        ctx.fillText(vl.toFixed(1), w - 4, 4);
+        //ctx.textAlign = 'right';
+        //ctx.fillText(vl.toFixed(1), w - 4, 4);
 
         ctx.beginPath();
         ctx.arc(x1, h * 0.5, 7, 0, 2 * Math.PI);
