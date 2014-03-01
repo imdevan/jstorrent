@@ -138,6 +138,8 @@ Client.prototype = {
                     file:file._attributes}
                 port.postMessage(data)
             }.bind(this))
+        } else if (msg.type == "playerevent") {
+            app.analytics.sendEvent("Player","Event",msg.event)
         } else {
             console.warn('unhandled message', msg)
         }

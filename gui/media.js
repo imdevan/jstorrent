@@ -134,15 +134,17 @@ function onload() {
         window.port = chrome.runtime.connect(d.id)
         port.onMessage.addListener( function(msg) {
 
-            console.log('onmessage',msg)
+            //console.log('onmessage',msg)
             if (msg.type == 'requestfileinfo') {
                 var mq = document.getElementById('marquee')
                 mq.innerText = 'initialized'
 
+                sendport({type:'playerevent',
+                          event:'initialized'})
 
                 //document.getElementById('fileinfo').innerText = JSON.stringify( msg )
                 document.getElementById('fileinfo').innerText = msg.file.path + ', ' + msg.file.size + ' bytes.'
-                document.getElementById('ranges').innerText = JSON.stringify(msg.fileranges)
+                //document.getElementById('ranges').innerText = JSON.stringify(msg.fileranges)
 
                 clearcanvas(rangecanvas)
                 for (var i=0; i<msg.fileranges.length; i++) {
@@ -154,6 +156,9 @@ function onload() {
         })
         port.onDisconnect.addListener( function(msg) {
             console.log('ondisconnect',msg)
+            // xxx try to reconnect?
+            window.port = null
+
         })
         port.postMessage({token:token, 
                           command:'requestfileinfo',
@@ -161,8 +166,10 @@ function onload() {
                           file:d.file
                          })
     }
-    
-    
+}
+
+function sendport(msg) {
+    if (window.port) { window.port.postMessage(msg) }
 }
 
 function handleerror(evt) {
@@ -186,6 +193,7 @@ function reload() { window.location.reload() }
 function addevents(video) {
     var mq = document.getElementById('marquee')
     var state = {}
+    state.sentplaying = false
     state.lastrepeated = 0
 
     function onevent(evt) {
@@ -198,19 +206,40 @@ function addevents(video) {
         if (evt.type == 'progress') {
             if (state.lastrepeated > 20) {
                 mq.innerText = ''
+                state.playing = true
+                if (! state.sentplaying) {
+                    sendport({type:'playerevent',
+                              event:'aplayworked'})
+                    state.sentplaying = true
+                }
             } else {
-
                 mq.innerText = 'progress' + '+++'.slice(0,state.lastrepeated%4)
             }
         } else {
+            state.playing = false
             mq.innerText = evt.type
+        }
+
+        if (evt.type == 'play') {
+            sendport({type:'playerevent',
+                      event:'clickplay'})
+        } else if (evt.type == 'pause') {
+            sendport({type:'playerevent',
+                      event:'clickpause'})
+        } else if (evt.type == 'seeked') {
+            sendport({type:'playerevent',
+                      event:'seeked'})
         }
         
         state.lastmsg = evt.type
         console.log(evt.type)
 
         if (evt.type == 'error') {
+            sendport({type:'playerevent',
+                      event:'error'})
             handleerror(evt)
+        } else {
+            document.getElementById('error').style.display = 'none'
         }
     }
 
