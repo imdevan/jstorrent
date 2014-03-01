@@ -1,12 +1,31 @@
-function fillinrange(canvas, range, total, opt_color) {
-    if (opt_color === undefined) { opt_color = '#0d0' }
+function fillinrange(canvas, range, total, opt_color, animate) {
+
+    // make it fancy pantsy
+    if (opt_color === undefined) { opt_color = [0,170,0,255] }
     var ctx = canvas.getContext('2d');
     var w = canvas.width
     var h = canvas.height
-    ctx.fillStyle = opt_color;
     var x1 = w * range[0] / total
     var x2 = w * (range[1] + 1) / total
-    ctx.fillRect(x1, 0, x2 - x1, h);
+
+    if (animate) {
+        var steps = 50
+        var it = 1
+        while (it < steps) {
+            setTimeout( _.bind(function(i) {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x1, 0, x2 - x1, h);
+                var alph = i / steps
+                var fillstr = 'rgba(' + opt_color.join(',') + ',' + alph + ')'
+                ctx.fillStyle = fillstr
+                ctx.fillRect(x1, 0, x2 - x1, h);
+            }, this, it), it * 12)
+            it++
+        }
+    } else {
+        ctx.fillStyle = 'rgba(' + opt_color.join(',') + ')'
+        ctx.fillRect(x1, 0, x2 - x1, h);
+    }
 }
 function clearcanvas(canvas) {
     var ctx = canvas.getContext('2d');
@@ -126,7 +145,7 @@ function onload() {
                     fillinrange(rangecanvas, msg.fileranges[i], msg.file.size)
                 }
             } else if (msg.type == 'newfilerange') {
-                fillinrange(rangecanvas, msg.newfilerange, msg.file.size, '#0f3')
+                fillinrange(rangecanvas, msg.newfilerange, msg.file.size, [0,255,16], true)
             }
         })
         port.onDisconnect.addListener( function(msg) {
