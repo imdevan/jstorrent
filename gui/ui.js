@@ -161,6 +161,20 @@ UI.prototype = {
         var torrent = this.client.torrents.get_at(idx)
         return torrent
     },
+    set_detail_webserver: function() {
+        this.detailtype = 'diskio'
+        if (this.detailtable) {
+            this.detailtable.destroy()
+            this.detailtable = null
+        }
+        var domid = 'detailGrid'
+
+        this.detailtable = new SlickCollectionTable({collection: app.client.packageDisk.diskio,
+                                                     domid: domid,
+                                                     columns: this.coldefs['diskio']
+                                                    });
+
+    },
     set_detail: function(type, torrent) {
         //console.log('set detail',type,torrent)
         this.detailtype = type

@@ -29,6 +29,7 @@ function Client(opts) {
             this.packageDisk = new jstorrent.Disk({entry:entry, 
                                                    client:this,
                                                   })
+            this.packageDisk.key = 'package'
         }.bind(this) )
     }
 
@@ -117,7 +118,8 @@ Client.prototype = {
         }
     },
     handleExternalMessage: function(msg,port) {
-        console.log('handle external message',msg.command,'with token',msg.token)
+        // todo -- validate token
+        //console.log('handle external message',msg,msg.command,'with token',msg.token)
         var portId = this.portCtr++
 
         if (msg.command == 'requestfileinfo') {

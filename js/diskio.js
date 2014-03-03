@@ -67,8 +67,13 @@
     function recursiveGetEntryReadOnly(disk, inpath, callback) {
         var cacheKey = disk.key + '/' + inpath.join('/')
         var inCache = app.entryCache.get(cacheKey)
-        if (inCache) { callback(inCache); return }
-
+        if (inCache) { 
+            //console.log('cachehit',cacheKey)
+            callback(inCache); 
+            return
+        } else {
+            //console.log('cachemiss',cacheKey)
+        }
         var filesystem = disk.entry
 
     // XXX - this looks messy, refactor it
@@ -303,7 +308,7 @@
     }
     DiskIO.jobctr = 0
     DiskIO.debugtimeout = 200
-    DiskIO.allowedJobTime = 60000 // 30 seconds should be enough... ?
+    DiskIO.allowedJobTime = 90000 // 30 seconds should be enough... ?
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
 
@@ -516,24 +521,35 @@
             if (err.metajob) {
                 // subjob reports us
             } else {
-                console.log('report job error',err,evt)
 
                 if (evt instanceof BasicJob) {
-                    var job = evt
-                    var data = {
-                        type: evt.get('type'),
-                        error: evt.get('error'),
-                        state: evt.get('state')
+
+                    if (err.error && err.error.name) {
+                        console.log('report job err',err.error.name)
+                        app.analytics.sendEvent('DiskIO','JobError',err.error.name)
+                    } else {
+                        console.log('report basic job error',err,evt)
+                        var job = evt
+                        var errattr = evt.get('error')
+                        if (errattr.name) {
+                            errattr = errattr.name
+                        }
+                        var data = {
+                            type: evt.get('type'),
+                            error: errattr,
+                            state: evt.get('state')
+                        }
+                        var keys = _.keys(data)
+                        keys.sort()
+                        var report = []
+                        for (var i=0; i<keys.length; i++) {
+                            report.push( keys[i] + '=' + data[keys[i]] )
+                        }
+                        var reportstr = report.join(',')
+                        app.analytics.sendEvent('DiskIO','JobError',reportstr, evt.get('size'))
                     }
-                    var keys = _.keys(data)
-                    keys.sort()
-                    var report = []
-                    for (var i=0; i<keys.length; i++) {
-                        report.push( keys[i] + '=' + data[keys[i]] )
-                    }
-                    var reportstr = report.join(',')
-                    app.analytics.sendEvent('DiskIO','JobError',reportstr, evt.get('size'))
                 } else {
+                    console.log('report job error',err,evt)
                     app.analytics.sendEvent('DiskIO','JobError',JSON.stringify(err))
                 }
                 //console.log("Report job error:",err, evt)
@@ -653,7 +669,9 @@
             job.set('state','getentry')
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
-                if (entry.error) {
+                if (entry.isDirectory) {
+                    oncallback({error:"entry is a directory"})
+                } else if (entry.error) {
                     oncallback(entry)
                 } else {
                     var onFile = function(result) {

@@ -183,6 +183,7 @@ function handleerror(evt) {
 
     document.getElementById('error').innerText = errtxt
     document.getElementById('error').style.display = 'block'
+    return errtxt
 }
 
 document.addEventListener("DOMContentLoaded", function(){
@@ -204,7 +205,7 @@ function addevents(video) {
         }
 
         if (evt.type == 'progress') {
-            if (state.lastrepeated > 20) {
+            if (state.lastrepeated > 40) {
                 mq.innerText = ''
                 state.playing = true
                 if (! state.sentplaying) {
@@ -235,9 +236,10 @@ function addevents(video) {
         console.log(evt.type)
 
         if (evt.type == 'error') {
+            var errtxt = handleerror(evt)
             sendport({type:'playerevent',
-                      event:'error'})
-            handleerror(evt)
+                      event:errtxt})
+
         } else {
             document.getElementById('error').style.display = 'none'
         }
@@ -260,6 +262,28 @@ function addevents(video) {
         video.addEventListener("pause", onevent);
         video.addEventListener("play", onevent );
         //video.addEventListener("suspend", onevent);
+/*
+        window.onkeydown = function(evt) {
+            console.log('onkeydown',evt.keyCode)
+        }*/
+
+        var keys = {37:'left',
+                    39:'right',
+                    38:'up',
+                    40:'down'}
+        document.documentElement.addEventListener('keydown', function(evt) {
+            var keystr = keys[evt.keyCode]
+            if (keystr == 'right') {
+                video.currentTime = video.currentTime + 5
+            } else if (keystr == 'left') {
+                video.currentTime = video.currentTime - 5
+            } else if (keystr == 'up') {
+                video.currentTime = video.currentTime + 15
+            } else if (keystr == 'down') {
+                video.currentTime = video.currentTime - 15
+            }
+        })
+
     }
 
 

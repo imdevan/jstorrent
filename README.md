@@ -12,10 +12,19 @@ torrents. It stands for "JavaScript Torrent." It is perfect for cheap
 ARM chromebooks when you need to torrent some stuff, but also very
 convenient for high end Chromebooks as well.
 
-My goal is to get it nearly as fast as the other clients. The main
-bottleneck at this point seems to be SHA1 hashing as well as
-suboptimal peer selection. And I can move sha1 hashing to pNaCl or
-look into finding a speedier emscripten'ified SHA1.
+I don't frequently keep this readme very up to date. You can find the
+actual changelogs in the [https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghaligalgb](chrome web store).
+
+One of my main goals with this project is to get it nearly as fast as
+the other clients. Some bottlenecks at this point include SHA1 hashing
+as well as suboptimal peer selection. And I can move sha1 hashing to
+pNaCl or look into finding a speedier emscripten'ified SHA1. There's a
+tradeoff there since using NaCL means copying buffers into another
+process, where keeping it in javascript we can use transferable
+objects to web workers.
+
+I am frequently adding features and improvements to this project, and
+welcome user feedback, as it directs the future growth of the program.
 
 This software was totally rewritten from scratch (Dec 2013). This is
 about the third time I've written a torrent client, so it should be
@@ -27,13 +36,13 @@ Installation:
 ====
 Most people would usually install by the Chrome Web Store ([https://chrome.google.com/webstore/detail/jstorrent/anhdpjpojoipgpmfanmedjghaligalgb](link)) but you can install from 
 source too.
-* Click the "Download ZIP" button on the sidebar.
+* Click the "Download ZIP" button on the sidebar.***
 * Unzip it.
 * Visit "chrome://extensions"
 * Click "load unpacked extension"
 * Browse to the unzipped file then press "Open"
 * You're done! (Note that you will not get updates this way, you will need to manually update)
-* NOTE: This project now uses a submodule "web-server-chrome" (https://github.com/kzahel/web-server-chrome) so you probably have to download that project separately and put it in the "js" folder.
+* NOTE***: This project now uses a submodule "web-server-chrome" (https://github.com/kzahel/web-server-chrome) so you probably have to download that project separately and put it in the "js" folder.
 
 Websites:
 ----
@@ -54,7 +63,7 @@ Special New Features
   - multiple download directories
 - Unlimited size downloads (multi gigabyte torrents)
 
-Private tracker support
+Private tracker support notes for site admins
 =======
 
 Typically trackers will employ a "whitelist" and only allow certain
@@ -72,24 +81,15 @@ Otherwise, you may try enabling "spoofing" in the options. Use at your own risk.
 Todo
 =======
 - lots of things...
-- figure out why getting so many disk write timeout events
+- figure out chrome.fileSystem getting in broken state bugs
+- smarter disk cache
 - implement i8n
-- pNaCL sha1 hashing
+- pNaCL sha1 hashing benchmark vs native JS
 - use chrome.identity and GCM for remote control (pushMessaging)
-- use chrome.socket.getInfo to get host info when connected by host name
-- use chrome.system.power to add option to prevent standby mode
-- use chrome.system.storage to detect external media detach/attach events
 - DHT
-- uPNP
-- bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
+- uPNP+bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
 
 [Donate to this project using bitcoin](https://coinbase.com/checkouts/0d6e86a8aebda055fb5697a5b397ba7d)
-
-Ideas
-=======
-- disk cache for serving torrent data (seeding)
-- run everything in background process, so it can run in background
-- dont use any timers, only edge triggered events
 
 Credits
 =======

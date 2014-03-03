@@ -20,7 +20,7 @@ function Disk(opts) {
             } else {
                 if (! this.think_interval) {
                     console.log('disk, start ticking')
-                    this.think_interval = setInterval( this.checkBroken.bind(this), 35000 )
+                    this.think_interval = setInterval( this.checkBroken.bind(this), 60000 )
                 }
             }
 
@@ -127,8 +127,12 @@ Disk.prototype = {
                                function(err) {
                                    this.checkingBroken = false
                                    clearTimeout(this.checkBrokenTimeout)
-                                   debugger
                                    console.log('disk getMetadata err',err)
+                                   if (err.name == 'NotFoundError') {
+                                       // this can happen when we suspend and external storage hasnt yet attached
+                                   } else {
+                                       debugger
+                                   }
                                }.bind(this)
                               )
     },
