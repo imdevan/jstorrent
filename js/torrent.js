@@ -1254,7 +1254,7 @@ Torrent.prototype = {
             app.analytics.sendEvent("Torrent", tstr,"SwarmSize(<="+bucket+")")
         }
         // called after all tracker announce responses
-        if (this.haveNoSeeders()) {
+        if (this.haveNoSeeders() && ! jstorrent.options.disable_trackers) {
             //this.error("No peers were received from any trackers. Unable to download. Try a more popular torrent or a different torrent site")
             app.notifyWantToAddPublicTrackers(this)
             //this.addPublicTrackers()

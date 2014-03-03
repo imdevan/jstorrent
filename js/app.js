@@ -26,6 +26,7 @@ function App() {
 
     this.analytics = new jstorrent.Analytics({app:this})
     this.entryCache = new jstorrent.EntryCache
+    this.fileMetadataCache = new jstorrent.FileMetadataCache
 
     // need to store a bunch of notifications keyed by either torrents or other things...
     this.notificationCounter = 0
@@ -263,6 +264,19 @@ App.prototype = {
         if (type == 'peers') {
             if (item) {
                 item.close('user click')
+            }
+        } else if (type == 'swarm') {
+            if (item) {
+                var peer = item
+                var torrent = peer.torrent
+                var peerconn = new jstorrent.PeerConnection({peer:peer})
+                //console.log('should add peer!', idx, peer)
+                if (! torrent.peers.contains(peerconn)) {
+                    torrent.peers.add( peerconn )
+                    torrent.set('numpeers',torrent.peers.items.length)
+                    peerconn.connect()
+                }
+
             }
         }
     },

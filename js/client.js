@@ -124,7 +124,11 @@ Client.prototype = {
 
         if (msg.command == 'requestfileinfo') {
             var torrent = this.torrents.get(msg.hash)
-            torrent.ensureLoaded( function() {
+            torrent.ensureLoaded( function(result) {
+                if (result.error) {
+                    port.postMessage(result)
+                    return
+                }
                 var file = torrent.getFile(parseInt(msg.file))
 
                 this.ports[portId] = { port: port,

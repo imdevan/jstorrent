@@ -115,6 +115,7 @@ HTTPTracker.prototype = {
         return app.options.get('report_to_trackers_override') && this.torrent.isPrivate()
     },
     announce: function(event, callback) {
+        if (jstorrent.options.disable_trackers) { return }
         if (this.shouldSpoof()) {
             console.warn('spoofing announce')
             var peeridbytes = this.torrent.client.peeridbytes_spoof
@@ -241,6 +242,7 @@ UDPTracker.prototype = {
         if (callback) { callback(countPeers) }
     },
     announce: function(event, callback) {
+        if (jstorrent.options.disable_trackers) { return }
         if (this.announcing) { return }
         event = event || 'started'
         this.set('announces',this.get('announces')+1)

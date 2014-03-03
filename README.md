@@ -80,14 +80,18 @@ Otherwise, you may try enabling "spoofing" in the options. Use at your own risk.
 
 Todo
 =======
-- lots of things...
+- too many things
 - figure out chrome.fileSystem getting in broken state bugs
+- implement cache for FileEntry and metadata to reduce chrome.fileSystem calls
 - smarter disk cache
+- better seeding disk access / read entire piece at a time
 - implement i8n
 - pNaCL sha1 hashing benchmark vs native JS
 - use chrome.identity and GCM for remote control (pushMessaging)
 - DHT
 - uPNP+bind/listen TCP - blocked on issue https://code.google.com/p/chromium/issues/detail?id=233052
+- SOCKS5 proxy support
+- headless operation
 
 [Donate to this project using bitcoin](https://coinbase.com/checkouts/0d6e86a8aebda055fb5697a5b397ba7d)
 

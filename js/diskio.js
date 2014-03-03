@@ -23,9 +23,66 @@
         }
     }
 
+    function FileMetadataCache() {
+        // store file sizes and stuff so we dont have to constantly call .getMetadata()
+        this.cache = {}
+    }
+    var FileMetadataCacheprototype = {
+        updateEntryManual: function(root, path, meta) {
+            var cacheKey = root.filesystem.name + root.fullPath + '/' + path.join('/')
+            this.cache[cacheKey] = meta
+        },
+        updateEntry: function(entry, metadata) {
+            var cacheKey = entry.filesystem.name + entry.fullPath
+            this.cache[cacheKey] = { size: metadata.size,
+                                     modificationTime: metadata.modificationTime }
+        },
+        updateSizeExact: function(entry, newsz) {
+            this.updateSize(entry, newsz, true)
+        },
+        invalidate: function(entry) {
+            var cacheKey = entry.filesystem.name + entry.fullPath
+            delete this.cache[cacheKey]
+        },
+        updateSize: function(entry, newsz, is_exact) {
+            var cacheKey = entry.filesystem.name + entry.fullPath
+            var cacheEntry = this.cache[cacheKey]
+
+            if (cacheEntry) {
+                var oldsz = cacheEntry.size
+                if (is_exact) {
+                    cacheEntry.size = newsz
+                } else {
+                    cacheEntry.size = Math.max(newsz, cacheEntry.size)
+                }
+                cacheEntry.modificationTime = new Date
+                //console.log('updated sz',oldsz,newsz)
+            } else {
+                if (is_exact) {
+                    this.cache[cacheKey] = { size: newsz,
+                                             modificationTime: new Date }
+                } else {
+                    // not a bad cache state actually
+                    // getmetadata returns {exists:false, size:0}
+                    console.error("bad cache state!")
+                    debugger
+                }
+            }
+        },
+        get: function(entry) {
+            var cacheKey = entry.filesystem.name + entry.fullPath
+            var cacheEntry = this.cache[cacheKey]
+            if (cacheEntry) { return cacheEntry }
+        }
+    }
+    _.extend(FileMetadataCache.prototype, FileMetadataCacheprototype)
+    jstorrent.FileMetadataCache = FileMetadataCache
+
+
     function EntryCache() {
         this.cache = {}
     }
+
     var EntryCacheprototype = {
         clearTorrent: function() {
             // todo
@@ -307,8 +364,8 @@
         jstorrent.BasicCollection.apply(this, arguments)
     }
     DiskIO.jobctr = 0
-    DiskIO.debugtimeout = 200
-    DiskIO.allowedJobTime = 90000 // 30 seconds should be enough... ?
+    DiskIO.debugtimeout = 1000
+    DiskIO.allowedJobTime = 60000 * 5 // 30 seconds should be enough... ? // 5 minutes
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
 
@@ -416,6 +473,7 @@
                 job.set('state','gotentry')
                 if (entry.error) {
                     if (entry.error.name == 'NotFoundError') {
+                        app.fileMetadataCache.updateEntryManual(this.disk.entry, path, {size:0})
                         oncallback({size:0,exists:false})
                     } else {
                         oncallback(entry)
@@ -425,14 +483,28 @@
                     function onMetadata(result) {
                         job.set('state','gotmetadata')
                         if (result.err) { // XXX correct signature?
+                            app.fileMetadataCache.invalidate(entry)
                             oncallback({error:result.err})
                             debugger
                         } else {
+                            // check matches
+                            var cachedMetadata = app.fileMetadataCache.get(entry)
+                            if (cachedMetadata) {
+                                console.assert(cachedMetadata.size == result.size)
+                            }
+
+                            app.fileMetadataCache.updateEntry(entry, result)
                             oncallback(result)
                         }
                     }
                     job.set('state','getmetadata')
-                    entry.getMetadata(onMetadata, onMetadata)
+
+                    var cachedMetadata = app.fileMetadataCache.get(entry)
+                    if (cachedMetadata) {
+                        onMetadata(cachedMetadata)
+                    } else {
+                        entry.getMetadata(onMetadata, onMetadata)
+                    }
                 }
             }.bind(this))
         },
@@ -459,6 +531,7 @@
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
+                        app.fileMetadataCache.updateSizeExact(entry, 0)
                         if (this.checkShouldBail(job)) return
                         job.set('state','createwriter2')
 
@@ -471,9 +544,11 @@
                         entry.createWriter( function(writer2) {
                             if (this.checkShouldBail(job)) { writer2.abort(); return }
                             writer2.onwrite = function(evt2) {
+                                app.fileMetadataCache.updateSize(entry, opts.data.byteLength)
                                 oncallback(evt2)
                             }
                             writer2.onerror = function(evt2) {
+                                app.fileMetadataCache.invalidate(entry)
                                 job.set('state','writer2.onerror')
                                 job.set('error',evt2.target.error.name)
                                 console.error('writer error',evt2)
@@ -499,6 +574,7 @@
                         job.set('progress',pct)
                     }
                     writer.onerror = function(evt) {
+                        app.fileMetadataCache.invalidate(entry)
                         console.error('truncate error',evt)
                         job.set('state','write.truncate.error')
                         job.set('error',evt.target.error.name)
@@ -649,6 +725,11 @@
                             fr.onload = onRead
                             fr.onerror = onRead // TODO make better
 
+                            var cachedMeta = app.fileMetadataCache.get(entry)
+                            if (cachedMeta) {
+                                console.assert(cachedMeta.size == file.size)
+                            }
+
                             var blobSlice = file.slice(opts.fileOffset, opts.fileOffset + opts.size)
                             job.set('state','reading')
                             maybeTimeout( function() {
@@ -725,8 +806,12 @@
             this.addToQueue('doReadPiece',arguments)
         },
         checkShouldBail: function(job) {
-            //var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
-            var shouldBail = this.checkJobTimeout(job)
+            if (job.opts.type == 'doGetWholeContents') {
+                // getting torrent metadata
+                return false
+            }
+            var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
+            //var shouldBail = this.checkJobTimeout(job)
             if (shouldBail) { console.warn('shouldbail!') }
             return shouldBail
         },
@@ -766,12 +851,14 @@
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
                         // VERIFY it
-
+                        //app.fileMetadataCache.updateSize(entry, )
 
                         entry.getMetadata( function(meta) {
                             if (meta.size == opts.size) {
+                                app.fileMetadataCache.updateSize(entry, opts.size)
                                 oncallback(evt)
                             } else {
+                                debugger
                                 oncallback({error:'truncate did not work',evt:evt,meta:meta})
                             }
                         }, function(err) {
@@ -780,11 +867,12 @@
 
                     }
                     writer.onprogress = function(evt) {
-                        //console.log('progress',evt)
+                        console.log('truncate progress',evt)
                         var pct = Math.floor( 100 * evt.loaded / evt.total )
                         job.set('progress',pct)
                     }
                     writer.onerror = function(evt) {
+                        app.fileMetadataCache.invalidate(entry)
                         console.error('truncate writer error, wanted',opts.size, evt.target.error.name,evt)
                         job.set('state','truncate.writer.error')
                         job.set('error',evt.target.error.name)
@@ -830,6 +918,7 @@
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
+                        app.fileMetadataCache.updateSize(entry, offset + buftowrite.byteLength)
                         oncallback(evt)
                     }
                     writer.onprogress = function(evt) {
@@ -841,6 +930,7 @@
                         job.set('state','onwriteend')
                     }
                     writer.onerror = function(evt) {
+                        app.fileMetadataCache.invalidate(entry)
                         job.set('state','onzerowriteerror')
                         job.set('error',evt.target.error.name)
                         console.error('zerowriter error',evt, evt.target.error.name)
@@ -944,6 +1034,7 @@
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
+                        app.fileMetadataCache.updateSize(entry, fileOffset + buftowrite.byteLength)
                         job.set('state','onwrite')
                         oncallback(evt)
                     }
@@ -956,6 +1047,7 @@
                         job.set('state','onwriteend')
                     }
                     writer.onerror = function(evt) {
+                        app.fileMetadataCache.invalidate(entry)
                         job.set('state','onwriteerror')
                         job.set('error',evt.target.error.name)
                         console.error('writer error',evt, evt.target.error.name)
@@ -980,9 +1072,12 @@
 
                 var job = writeJob.filesSpanInfo[i]
                 var metaData = writeJob.filesMetadata[job.fileNum]
+                if (metaData.exists === false) {
+                    //debugger
+                }
 
                 if (job.fileOffset > metaData.size) {
-                    var useTruncate = true
+                    var useTruncate = true // XXX if NOT use truncate, zero write does not update entry.getFile in time
                     if (useTruncate) {
                         //console.log("TRUNCATE JOB")
                         // truncate is faster than writezeroes!
@@ -1006,7 +1101,6 @@
                         //var limitPerStep = Math.pow(2,15)
 
                         var zeroJobData = []
-
                         while (writtenSoFar < numZeroes) {
                             var curZeroes = Math.min(limitPerStep, (numZeroes - writtenSoFar))
                             zeroJobData.push( {type:'doWriteZeroes',
@@ -1064,7 +1158,6 @@
         cancelTorrentJobs: function(torrent, callback) {
 
             console.warn('cancelTorrentJobs')
-            return // is causing breakage...
             // cancel all active jobs for a give torrent
             var toremove = []
             for (var i=0; i<this.items.length; i++) {

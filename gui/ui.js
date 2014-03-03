@@ -226,6 +226,8 @@ UI.prototype = {
                     }
                 } else if (this.detailtype == 'peers') {
                     this.detailtable.grid.onDblClick.subscribe( _.bind(app.handle_dblclick, app, 'peers', torrent[type]) )
+                } else if (this.detailtype == 'swarm') {
+                    this.detailtable.grid.onDblClick.subscribe( _.bind(app.handle_dblclick, app, 'swarm', torrent[type]) )
                 }
             }
         }
