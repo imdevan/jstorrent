@@ -2,6 +2,9 @@
 window['jstorrent'] = window['jstorrent'] || {}
 jstorrent.device = window.device || { platform: "Chrome" };
 jstorrent.constants = {
+    PIECE_ON_DISK: 1, // internal bitfield constants
+    PIECE_IN_MEMORY: 2, // means this piece has been downloaded but not written to disk
+    PIECE_NOT_PRESENT: 0,
     cws_jstorrent: "anhdpjpojoipgpmfanmedjghaligalgb",
     cws_jstorrent_lite: "abmohcnlldaiaodkpacnldcdnjjgldfh",
     cws_jstorrent_extension: "bnceafpojmnimbnhamaeedgomdcgnbjk",
@@ -39,7 +42,7 @@ jstorrent.options = {
     load_options_on_start: false,
     add_torrents_on_start: false,
     run_unit_tests: true,
-    disable_trackers: true,
+    disable_trackers: false,
     slow_diskio: false,
     seed_public_torrents: false, // default off
     allow_report_torrent_bug: false,

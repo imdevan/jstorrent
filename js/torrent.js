@@ -854,6 +854,15 @@ Torrent.prototype = {
     isPrivate: function() {
         return this.infodict && this.infodict.private
     },
+    maybePersistPiece: function(piece) {
+        // if this piece is way at the end of the file, e.g. it would
+        // require writing tons of zeros using a truncate call, which
+        // would be very expensive, simply don't persist it. This is
+        // an important edge case that's worth handling separately,
+        // even though it adds complexity.
+
+        this.persistPiece(piece)
+    },
     persistPiece: function(piece) {
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()

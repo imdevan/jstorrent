@@ -159,32 +159,7 @@ Piece.prototype = {
                     }
 
                     if (valid) {
-                        if (this.torrent.get('state') != 'started') { return }
-
-                        //console.log('hashchecked valid piece',this.num)
-                        // perhaps also place in disk cache?
-
-                        this.data = new Uint8Array(this.size)
-                        var curData, curOffset=0
-
-                        if (jstorrent.options.transferable_objects && this.roundTripChunks) {
-                            // chunkResponsesChosen were nulled out when they were transfered to the worker thread
-                            for (var i=0; i<this.roundTripChunks.length; i++) {
-                                curData = this.roundTripChunks[i]
-                                this.data.set(curData, curOffset)
-                                curOffset += curData.length
-                            }
-                        } else {
-                            for (var i=0; i<this.chunkResponsesChosen.length; i++) {
-                                curData = this.chunkResponsesChosen[i].data
-                                this.data.set(curData, curOffset)
-                                curOffset += curData.length
-                            }
-                        }
-                        this.data = this.data.buffer
-                        this.haveData = true
-                        this.checkDataSanity()
-                        this.torrent.persistPiece(this)
+                        this.onValidPieceInMemory()
                     } else {
                         console.error('either unable to hash piece due to worker error, or hash mismatch')
                         console.warn('resetting piece data, not punishing peers...')
@@ -203,6 +178,35 @@ Piece.prototype = {
             //console.log(this.num,'got unexpected chunk',peerconn.get('address'), chunkNum) // likely timeout
             // request had timed out
         }
+    },
+    onValidPieceInMemory: function() {
+        if (this.torrent.get('state') != 'started') { return }
+
+        //console.log('hashchecked valid piece',this.num)
+        // perhaps also place in disk cache?
+
+        this.data = new Uint8Array(this.size)
+        var curData, curOffset=0
+
+        if (jstorrent.options.transferable_objects && this.roundTripChunks) {
+            // chunkResponsesChosen were nulled out when they were transfered to the worker thread
+            for (var i=0; i<this.roundTripChunks.length; i++) {
+                curData = this.roundTripChunks[i]
+                this.data.set(curData, curOffset)
+                curOffset += curData.length
+            }
+        } else {
+            for (var i=0; i<this.chunkResponsesChosen.length; i++) {
+                curData = this.chunkResponsesChosen[i].data
+                this.data.set(curData, curOffset)
+                curOffset += curData.length
+            }
+        }
+        this.data = this.data.buffer
+        this.haveData = true
+        this.checkDataSanity()
+        this.torrent.maybePersistPiece(this)
+        //this.torrent.persistPiece(this)
     },
     notifyPiecePersisted: function() {
         // maybe do some other stuff, like send CANCEL message to any other peers

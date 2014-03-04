@@ -768,10 +768,10 @@ PeerConnection.prototype = {
             } else if (extMsgType == 'ut_pex') {
                 this.handle_UTORRENT_MSG_ut_pex(msg)
             } else {
-                debugger
+                //debugger
             }
         } else {
-            debugger
+            //debugger
         }
         
     },
@@ -846,7 +846,7 @@ PeerConnection.prototype = {
                               new Uint8Array(bencode(d)).buffer,
                               newbuf.buffer])
         } else {
-            debugger
+            //debugger
         }
     },
     sendPEX: function(data) {
@@ -960,7 +960,7 @@ PeerConnection.prototype = {
     },
     unhandledMessage: function(msg) {
         console.error('unhandled message',msg.type)
-        debugger
+        //debugger
     }
 }
 
