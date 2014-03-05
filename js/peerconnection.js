@@ -424,7 +424,7 @@ PeerConnection.prototype = {
 
 
         for (var pieceNum=startAtPiece; pieceNum<this.torrent.numPieces; pieceNum++) {
-            if (this.peerBitfield[pieceNum] && ! this.torrent._attributes.bitfield[pieceNum]) {
+            if (this.peerBitfield[pieceNum] && ! this.torrent.havePieceData(pieceNum)) {
                 if (this.torrent.pieceBlacklist[pieceNum]) { continue }
                 curPiece = this.torrent.getPiece(pieceNum)
                 if (curPiece.haveData) { continue } // we have the data for this piece, we just havent hashed and persisted it yet
@@ -683,7 +683,7 @@ PeerConnection.prototype = {
         var pieceNum = header.getUint32(0)
         var offset = header.getUint32(4)
         var size = header.getUint32(8)
-        if (this.torrent.has_infodict() && this.torrent._attributes.bitfield[pieceNum]) {
+        if (this.torrent.has_infodict() && this.torrent.havePieceData(pieceNum)) {
             this.torrent.registerPieceRequested(this, pieceNum, offset, size)            
         } else {
             // my bitfield may be one off...
@@ -693,7 +693,7 @@ PeerConnection.prototype = {
     },
     handle_SUGGEST_PIECE: function(msg) {
         var pieceNum = new DataView(msg.payload, 5, 4).getUint32(0)
-        var bit = this.torrent._attributes.bitfield[pieceNum]
+        var bit = this.torrent.havePieceData(pieceNum)
         console.log('why are they suggesting piece?',pieceNum,'our bitmask says', bit)
         if (bit == 1) {
             var payload = new Uint8Array(4)
@@ -928,7 +928,7 @@ PeerConnection.prototype = {
             for (var j=7; j>=0; j--) {
                 idx++
                 if (idx < this.torrent.numPieces) {
-                    curByte = (curByte | (this.torrent._attributes.bitfield[idx] << j))
+                    curByte = (curByte | (this.torrent.havePieceData(idx) << j))
                 }
             }
             //console.assert(curByte >= 0 && curByte < 256)

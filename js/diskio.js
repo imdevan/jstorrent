@@ -789,8 +789,11 @@
                     var onFile = function(result) {
                         job.set('state','gotfile')
                         if (this.checkShouldBail(job)) return
-                        if (result.err || result.type == 'error') {
-                            oncallback({error:result.err,evt:result})
+                        if (result.err || // also no
+                            result.type == 'error' || // doesnt happen this way i dont think
+                            result.code !== undefined && result.name && result.message
+                           ) {
+                            oncallback({error:result,evt:result})
                         } else {
                             var fr = new FileReader
                             fr.onload = function(evt) {

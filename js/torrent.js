@@ -789,6 +789,7 @@ Torrent.prototype = {
             //console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
             //console.log('--decrement unflushedPieceDataSize', this.unflushedPieceDataSize)
+            this.maybePersistPieceCache()
             this._attributes.bitfield[result.piece.num] = 1
 
             _.defer( function() { 
@@ -873,7 +874,27 @@ Torrent.prototype = {
     isPrivate: function() {
         return this.infodict && this.infodict.private
     },
+    maybePersistPieceCache: function() {
+        // check if it makes sense now to persist a piece
+        for (var pieceNum in this.pieceCache.cache) {
+            if (! this._attributes.bitfield[pieceNum]) {
+                var piece = this.getPiece(pieceNum)
+                // only works cuz diskio only does one job at a time, otherwise this would have race condition
+                debugger
+                this.maybePersistPiece(piece)
+            }
+        }
+    },
     maybePersistPiece: function(piece) {
+        this.shouldPersistPiece(piece, function(shouldPersist) {
+            if (shouldPersist) {
+                this.persistPiece(piece)
+            } else {
+                this.persistPieceLater(piece)
+            }
+        }.bind(this))
+    },
+    shouldPersistPiece: function(piece, callback) {
         // if this piece is way at the end of the file, e.g. it would
         // require writing tons of zeros using a truncate call, which
         // would be very expensive, simply don't persist it. This is
@@ -885,7 +906,6 @@ Torrent.prototype = {
         for (var i=0; i<filesinfo.length; i++) {
             files.push( this.getFile(filesinfo[i].fileNum) )
         }
-
         this.getStorage().ensureFilesMetadata(files, function() {
 
             var persistNow = true
@@ -896,6 +916,7 @@ Torrent.prototype = {
                 //console.log('maybepersistpiece, meta',file.num,meta)
 
                 if (files[i].size / filesinfo[i].fileOffset > 0.9 &&
+                    _.keys(this.bridges).length > 0 && // using a bridge!
                     filesinfo[i].fileOffset - meta.size > Math.pow(2,25)) {
                     // 32 megs need to be written, plus fileoffset is 90% at the end of the file
                     persistNow = false
@@ -904,14 +925,14 @@ Torrent.prototype = {
                 }
             }
             if (persistNow) {
-                this.persistPiece(piece)
+                callback(true)
             } else {
-                this.persistPieceLater(piece)
+                callback(false)
             }
         }.bind(this))
     },
     persistPiece: function(piece) {
-        console.log('persistPiece (now)',piece.num)
+        //console.log('persistPiece (now)',piece.num)
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
         if (storage) {

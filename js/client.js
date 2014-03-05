@@ -104,16 +104,20 @@ Client.prototype = {
         for (var key in this.ports) {
             portinfo = this.ports[key]
             var file = portinfo.file
-            if (portinfo.file.intersectsPiece(piece)) {
-                portinfo.port.postMessage({
-                    type:'newfilerange',
-                    hash:file.torrent.hashhexlower,
-                    file:file._attributes,
-                    newfilerange:[
-                        piece.startByte - file.startByte,
-                        piece.endByte - file.startByte
-                    ]
-                })
+            if (portinfo.torrenthash == piece.torrent.hashhexlower) {
+                // make sure to only send this to ports with the correct torrent
+
+                if (portinfo.file.intersectsPiece(piece)) {
+                    portinfo.port.postMessage({
+                        type:'newfilerange',
+                        hash:file.torrent.hashhexlower,
+                        file:file._attributes,
+                        newfilerange:[
+                            piece.startByte - file.startByte,
+                            piece.endByte - file.startByte
+                        ]
+                    })
+                }
             }
         }
     },
@@ -132,6 +136,7 @@ Client.prototype = {
                 var file = torrent.getFile(parseInt(msg.file))
 
                 this.ports[portId] = { port: port,
+                                       torrenthash: file.torrent.hashhexlower,
                                        file: file }
                 port.onDisconnect.addListener( _.bind(function(portId,evt) {
                     delete this.ports[portId]
