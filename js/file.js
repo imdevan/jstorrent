@@ -127,15 +127,22 @@ File.prototype = {
         if (endByte === undefined) { endByte = this.endByte }
 
         var leftPiece = Math.floor(startByte / this.torrent.pieceLength)
-        var rightPiece = Math.ceil(endByte / this.torrent.pieceLength)
+        var rightPiece = Math.min(Math.floor(endByte / this.torrent.pieceLength), // XXX changed from ceil to floor
+                                  this.torrent.numPieces - 1)
 
         var allInfos = []
         var curInfos
 
         var curPiece
-        for (var i=leftPiece; i<rightPiece; i++) {
+        for (var i=leftPiece; i<=rightPiece; i++) {
             //curPiece = this.torrent.getPiece(i)
+            // also takes piece offset and piece size parameters
+            var fileOffset = startByte
+            var fileSize = endByte - startByte + 1
+            // XXX no way to pass in exact ranges and get offsets etc
             curInfos = Piece.getSpanningFilesInfo(this.torrent, i, this.torrent.getPieceSize(i))
+            console.assert(curInfos.length > 0)
+
             for (var j=0; j<curInfos.length; j++) {
                 if (curInfos[j].fileNum == this.num) {
                     curInfos[j].pieceNum = i
@@ -170,17 +177,45 @@ File.prototype = {
     },
     getCachedData: function(offset, size) {
         // if data is in piece cache, return it
-        var pieceinfos = this.getSpanningPiecesInfo(this.startByte + offset, this.startByte + offset + size)
-        console.assert(pieceinfos.length == 1)
+        var pieceinfos = this.getSpanningPiecesInfo(this.startByte + offset, this.startByte + offset + size - 1)
+        console.assert(pieceinfos.length > 0)
 
+        var haveAllCached = true
         for (var i=0; i<pieceinfos.length; i++) {
-            var pieceNum = pieceinfos[i].pieceNum
-            var cacheData = this.torrent.pieceCache.get(pieceNum)
-            if (cacheData) {
-                var toret = cacheData.slice(pieceinfos[i].pieceOffset, pieceinfos[i].pieceOffset+size)
-                return toret
+            var cacheData = this.torrent.pieceCache.get(pieceinfos[i].pieceNum)
+            if (! cacheData) {
+                haveAllCached = false
+                break
             }
         }
+        
+        if (haveAllCached) {
+            var szLeft = size
+            var consumed = 0
+
+            var toret = new Uint8Array(size)
+
+            for (var i=0; i<pieceinfos.length; i++) {
+                var pieceinfo = pieceinfos[i]
+                if (i == 0) {
+                    var a = offset - pieceinfo.fileOffset
+                } else {
+                    var a = 0
+                }
+                var curSz = Math.min( pieceinfo.size - a,
+                                      szLeft )
+                var b = a + curSz
+                var cacheData = this.torrent.pieceCache.get(pieceinfo.pieceNum)
+                console.assert(a > 0)
+                console.assert(b <= cacheData.byteLength)
+                szLeft -= curSz
+                var buf = cacheData.slice(a,b)
+                toret.set( buf, consumed)
+                consumed += curSz
+            }
+            return toret.buffer
+        }
+
     },
     getCachedEntry: function() {
         return this.torrent.client.app.entryCache.getByFile(this)

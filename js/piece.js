@@ -20,6 +20,7 @@ function Piece(opts) {
 jstorrent.Piece = Piece
 
 Piece.getSpanningFilesInfo = function(this_torrent, this_num, this_size, offset, size) {
+    console.assert(this_num < this_torrent.numPieces)
     if (offset === undefined) { offset = 0 }
     if (size === undefined) { size = this_size }
 
@@ -207,8 +208,8 @@ Piece.prototype = {
         this.data = this.data.buffer
         this.haveData = true
         this.checkDataSanity()
-        //this.torrent.maybePersistPiece(this)
-        this.torrent.persistPiece(this)
+        this.torrent.maybePersistPiece(this)
+        //this.torrent.persistPiece(this)
     },
     destroy: function() {
         // maybe do some other stuff, like send CANCEL message to any other peers

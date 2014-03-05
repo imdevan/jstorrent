@@ -703,6 +703,8 @@
             }.bind(this), DiskIO.debugtimeout )
         },
         doGetContentRange: function(opts, callback, job) {
+            // this is specific to a FILE
+
             console.assert(opts.size > 0)
             if (this.checkShouldBail(job)) return
             var oncallback = this.createWrapCallback(callback,job)

@@ -399,6 +399,7 @@ Torrent.prototype = {
         }
     },
     getPiece: function(num) {
+        console.assert(num < this.numPieces)
         var piece = this.pieces.get(num)
         if (! piece) {
             piece = new jstorrent.Piece({torrent:this, shouldPersist:false, num:num})
@@ -547,6 +548,7 @@ Torrent.prototype = {
         }
     },
     getPieceSize: function(num) {
+        console.assert(num < this.numPieces)
         if (num == this.numPieces - 1) {
             return this.size - this.pieceLength * num
         } else {
