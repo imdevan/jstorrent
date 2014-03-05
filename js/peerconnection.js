@@ -413,6 +413,11 @@ PeerConnection.prototype = {
             var bridgeidx = Math.floor(Math.random() * bridgekeys.length) 
             var curbridge = this.torrent.bridges[ bridgekeys[bridgeidx] ]
             var startAtPiece = curbridge.startPiece // TODO -- update startpiece as we go along
+
+            // TODO -- we can make an educated guess that the bridge
+            // is at the end of the file (say in the last 2%, which
+            // means that it is to complete the metadata, and so
+            // temporarily turn on endgame for these bridge pieces...
         } else {
             var startAtPiece = this.torrent.bitfieldFirstMissing
         }

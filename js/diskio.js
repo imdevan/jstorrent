@@ -69,6 +69,11 @@
                 }
             }
         },
+        getByFile: function(file) {
+            var entry = file.torrent.getStorage().entry
+            var cacheKey = entry.filesystem.name + entry.fullPath + '/' + file.path.join('/')
+            return this.cache[cacheKey]
+        },
         get: function(entry) {
             var cacheKey = entry.filesystem.name + entry.fullPath
             var cacheEntry = this.cache[cacheKey]
@@ -109,6 +114,12 @@
         },
         get: function(k) {
             return this.cache[k]
+        },
+        getByFile: function(file) {
+            debugger
+            var disk = file.torrent.getStorage()
+            var cacheKey = disk.key + '/' + file.path.join('/')
+            return this.get(cacheKey)
         }
     }
     _.extend(EntryCache.prototype, EntryCacheprototype)
@@ -365,6 +376,8 @@
     }
     DiskIO.jobctr = 0
     DiskIO.debugtimeout = 1000
+    DiskIO.allowedJobTimeShort = 2000 // most jobs dont need much time
+
     DiskIO.allowedJobTime = 60000 * 5 // 30 seconds should be enough... ? // 5 minutes
     // writes after large truncates can take a long time, though.
     //DiskIO.getentrytimeout = 5000
@@ -465,7 +478,8 @@
         },
         doGetMetadata: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return
-            var path = opts.piece.torrent.getFile(opts.fileNum).path.slice()
+            var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
+            var path = file.path.slice()
             var oncallback = this.createWrapCallback(callback,job)
             job.set('state','getentry') // XXX getting stuck here, even though sometimes
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
@@ -640,6 +654,13 @@
                 timedout:false
             }
             var theoncallback = _.bind(this.wrapCallback, this, callback, job, state)
+            
+            var allowedTime = DiskIO.allowedJobTime
+            if (_.contains(['doWriteWholeContents','doGetWholeContents'],
+                           job.get('type'))) {
+                allowedTime = DiskIO.allowedJobTimeShort
+            }
+
             state.timeoutId = setTimeout( function() {
                 if (state.returned) {
                     console.assert(false)
@@ -690,6 +711,14 @@
             var path = file.path.slice()
             job.set('state','getentry')
 
+            var cacheData = file.getCachedData(opts.fileOffset, opts.size)
+            if (cacheData) {
+                console.assert(cacheData.byteLength == opts.size)
+                oncallback(cacheData)
+                return
+            }
+
+            // XXX - BROKEN - this needs to get split into subjobs
             recursiveGetEntryReadOnly(this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
                 if (entry.error) {
@@ -824,7 +853,9 @@
         checkTorrentStopped: function(job) {
             var ctor = app.client.torrents.get(job.opts.torrent)
             if (ctor && ctor.get('state') == 'stopped') {
-                return true
+                if (! ctor.isComplete()) {
+                    return true
+                }
             }
             return false
         },

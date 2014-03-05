@@ -95,6 +95,7 @@ Piece.prototype = {
         // haveData is not the same as having written the data to disk... ?
         this.haveDataPersisted = false
         // this means we actually successfully wrote it to disk
+        this.haveDataCached = false
     },
     get_key: function() {
         return this.num
@@ -180,6 +181,7 @@ Piece.prototype = {
         }
     },
     onValidPieceInMemory: function() {
+        // TODO do we need to create a flat array with all the data? seems unnecessary. profile this...
         if (this.torrent.get('state') != 'started') { return }
 
         //console.log('hashchecked valid piece',this.num)
@@ -205,10 +207,10 @@ Piece.prototype = {
         this.data = this.data.buffer
         this.haveData = true
         this.checkDataSanity()
-        this.torrent.maybePersistPiece(this)
-        //this.torrent.persistPiece(this)
+        //this.torrent.maybePersistPiece(this)
+        this.torrent.persistPiece(this)
     },
-    notifyPiecePersisted: function() {
+    destroy: function() {
         // maybe do some other stuff, like send CANCEL message to any other peers
         // now destroy my data
         this.resetData()
@@ -220,6 +222,11 @@ Piece.prototype = {
             // might not contain it if we stopped the torrent and the data still was persisted
             this.torrent.pieces.remove(this)
         }
+    },
+    notifyPiecePersisted: function() {
+        this.destroy()
+        this.haveDataPersisted = false
+        this.haveDataCached = true
     },
     checkDataSanity: function() {
         // make sure transferable objects or whatever worked ok
@@ -557,6 +564,14 @@ debugger
     getSpanningFilesInfo: function(offset, size) {
         // if offset, size arguments ommitted, they have defaults
         return Piece.getSpanningFilesInfo(this.torrent, this.num, this.size, offset, size)
+    },
+    getSpanningFiles: function() {
+        var infos = Piece.getSpanningFilesInfo(this.torrent, this.num, this.size)
+        var files = []
+        for (var i=0; i<infos.length; i++) {
+            files.push( this.torrent.getFile(infos[i].fileNum) )
+        }
+        return files
     }
 }
 for (var method in jstorrent.Item.prototype) {

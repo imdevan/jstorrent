@@ -144,6 +144,29 @@ Disk.prototype = {
             this.key = chrome.fileSystem.retainEntry(this.entry)
         }
         return this.key
+    },
+    ensureFilesMetadata: function(files,callback) {
+        // ensures a list of files have metadata in cache
+        var need = []
+        var state = {responses:0}
+        var onresponse = function(result) {
+            state.responses++
+            if (state.responses == need.length) {
+                callback()
+            }
+        }
+
+        for (var i=0; i<files.length; i++) {
+            var file = files[i]
+            if (! file.getCachedMetadata()) {
+                need.push(file)
+                this.diskio.getMetadata({file:file},
+                                        onresponse)
+            }
+        }
+        if (need.length == 0) {
+            callback()
+        }
     }
 }
 

@@ -122,9 +122,12 @@ File.prototype = {
                                        },
                                        callback)
     },
-    getSpanningPiecesInfo: function() { // similar to piece.getSpanningFilesInfo
-        var leftPiece = Math.floor(this.startByte / this.torrent.pieceLength)
-        var rightPiece = Math.ceil(this.endByte / this.torrent.pieceLength)
+    getSpanningPiecesInfo: function(startByte, endByte) { // similar to piece.getSpanningFilesInfo
+        if (startByte === undefined) { startByte = this.startByte }
+        if (endByte === undefined) { endByte = this.endByte }
+
+        var leftPiece = Math.floor(startByte / this.torrent.pieceLength)
+        var rightPiece = Math.ceil(endByte / this.torrent.pieceLength)
 
         var allInfos = []
         var curInfos
@@ -164,6 +167,26 @@ File.prototype = {
     },
     get_key: function() {
         return this.num
+    },
+    getCachedData: function(offset, size) {
+        // if data is in piece cache, return it
+        var pieceinfos = this.getSpanningPiecesInfo(this.startByte + offset, this.startByte + offset + size)
+        console.assert(pieceinfos.length == 1)
+
+        for (var i=0; i<pieceinfos.length; i++) {
+            var pieceNum = pieceinfos[i].pieceNum
+            var cacheData = this.torrent.pieceCache.get(pieceNum)
+            if (cacheData) {
+                var toret = cacheData.slice(pieceinfos[i].pieceOffset, pieceinfos[i].pieceOffset+size)
+                return toret
+            }
+        }
+    },
+    getCachedEntry: function() {
+        return this.torrent.client.app.entryCache.getByFile(this)
+    },
+    getCachedMetadata: function() {
+        return this.torrent.client.app.fileMetadataCache.getByFile(this)
     },
     getEntryFile: function(callback) {
         console.assert(false) // dont call this

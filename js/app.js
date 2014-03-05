@@ -651,6 +651,7 @@ App.prototype = {
                                        this.on_select_torrent.bind(this) )
     },
     on_select_torrent: function(result) {
+        // XXX - sometimes not working???
         if (result) {
             var entry = result[0]
             this.client.addTorrentFromEntry(entry)

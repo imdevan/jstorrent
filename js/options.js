@@ -103,6 +103,16 @@ function Options(opts) {
             'type': 'int'
         },
 
+        'socks5_proxy': {
+            'default':'192.168.43.1:8080',
+            'type':'string',
+            'name':'SOCKS5 Proxy server address'
+        },
+        'socks5_proxy_enabled': {
+            'default': false,
+            'type': 'bool',
+            'name': 'Use SOCKS5 proxy server'
+        },
         'web_server_enable': {
             'default': true,
             'type': 'bool',

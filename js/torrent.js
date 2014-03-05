@@ -33,8 +33,8 @@ var Bridgeproto = {
         delete this.torrent.bridges[this.id]
         // remove "onclose"
     },
-    newPiece: function(piece) {
-        this.file.set('streaming','now'+piece.num)
+    newPiece: function(pieceNum) {
+        this.file.set('streaming','now'+pieceNum)
         // a new piece is available
         this.ondata()
     }
@@ -95,6 +95,7 @@ function Torrent(opts) {
     this.peers = new jstorrent.PeerConnections({torrent:this, itemClass:jstorrent.PeerConnection})
     this.pieces = new jstorrent.Collection({torrent:this, itemClass:jstorrent.Piece})
     this.files = new jstorrent.Collection({torrent:this, itemClass:jstorrent.File})
+    this.pieceCache = new jstorrent.PieceCache({torrent:this})
 
     this.connectionsServingInfodict = [] // maybe use a collection class for this instead
     this.connectionsServingInfodictLimit = 3 // only request concurrently infodict from 3 peers
@@ -418,14 +419,14 @@ Torrent.prototype = {
         console.assert(byteEnd < this.size)
         var pieceLeft = Math.floor(  byteStart / this.pieceLength )
         var pieceRight = Math.ceil( byteEnd / this.pieceLength)
-        console.assert(this._attributes.bitfield[pieceLeft])
+        console.assert(this.havePieceData(pieceLeft))
         var start = null
         var end = null
         start = byteStart
         end = Math.min((pieceLeft+1) * this.pieceLength-1, byteEnd)
 
         for (var i=pieceLeft; i<=pieceRight; i++) {
-            if (this._attributes.bitfield[i]) {
+            if (this.havePieceData(i)) {
                 end = Math.min(this.pieceLength * (i+1)-1, byteEnd)
                 if (end == byteEnd) { break }
             } else {
@@ -437,9 +438,12 @@ Torrent.prototype = {
         console.assert(end < this.size)
         return [start,end]
     },
+    havePieceData: function(pieceNum) {
+        return this._attributes.bitfield[pieceNum] || this.pieceCache.get(pieceNum)
+    },
     haveAnyDataAt: function(byteStart) {
         var pieceNum = Math.floor( byteStart / this.pieceLength )
-        if (this._attributes.bitfield[pieceNum]) {
+        if (this.havePieceData(pieceNum)) {
             return true
         }
     },
@@ -756,6 +760,19 @@ Torrent.prototype = {
         }
         return null
     },
+    persistPieceLater: function(piece) {
+        console.log('persistPieceLater',piece.num)
+        this.pieceCache.add(piece)
+        var pieceNum = piece.num
+        piece.destroy()
+
+        _.defer( function() { 
+            for (var key in this.bridges) {
+                this.bridges[key].newPiece(pieceNum)
+            }
+        }.bind(this))
+
+    },
     persistPieceResult: function(result) {
         var foundmissing = true
         if (result.error) {
@@ -774,7 +791,7 @@ Torrent.prototype = {
 
             _.defer( function() { 
                 for (var key in this.bridges) {
-                    this.bridges[key].newPiece(result.piece)
+                    this.bridges[key].newPiece(result.piece.num)
                 }
             }.bind(this))
 
@@ -861,9 +878,38 @@ Torrent.prototype = {
         // an important edge case that's worth handling separately,
         // even though it adds complexity.
 
-        this.persistPiece(piece)
+        var filesinfo = piece.getSpanningFilesInfo()
+        var files = []
+        for (var i=0; i<filesinfo.length; i++) {
+            files.push( this.getFile(filesinfo[i].fileNum) )
+        }
+
+        this.getStorage().ensureFilesMetadata(files, function() {
+
+            var persistNow = true
+
+            for (var i=0; i<files.length; i++) {
+                var file = files[i]
+                var meta = file.getCachedMetadata()
+                //console.log('maybepersistpiece, meta',file.num,meta)
+
+                if (files[i].size / filesinfo[i].fileOffset > 0.9 &&
+                    filesinfo[i].fileOffset - meta.size > Math.pow(2,25)) {
+                    // 32 megs need to be written, plus fileoffset is 90% at the end of the file
+                    persistNow = false
+                    console.warn("DONT persist piece! because of file",filesinfo[i],file,meta)
+                    break
+                }
+            }
+            if (persistNow) {
+                this.persistPiece(piece)
+            } else {
+                this.persistPieceLater(piece)
+            }
+        }.bind(this))
     },
     persistPiece: function(piece) {
+        console.log('persistPiece (now)',piece.num)
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
         if (storage) {
@@ -1348,6 +1394,8 @@ Torrent.prototype = {
         this.set('state','removing')
 
         // maybe do some other async stuff? clean socket shutdown? what?
+
+        //this.removeFiles: // TODO need option to remove files from disk
         setTimeout( _.bind(function(){
             this.set('state','stopped')
             // TODO -- clear the entry from storage? nah, just put it in a trash bin
