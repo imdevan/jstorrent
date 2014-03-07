@@ -72,7 +72,7 @@ function Disk(opts) {
                         torrents.items[i].set('state','error')                        
                     }
                 }
-                
+                this.trigger('error')
                 collection.remove(this)
                 collection.save()
             } else {
