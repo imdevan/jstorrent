@@ -63,10 +63,6 @@ function Client(opts) {
             loadTorrents()
         }
     }.bind(this)
-    var onDiskError = function() {
-        // XXX make this work bettar
-        loadTorrents()
-    }
 
     if (jstorrent.device.platform == 'Chrome') {
         this.disks.fetch(_.bind(function() {
@@ -77,7 +73,7 @@ function Client(opts) {
             }
             // XXX - install a timeout ??
             this.disks.on('ready', onDiskReady)
-            this.disks.on('error', onDiskError)
+            this.disks.on('error', onDiskReady)
         },this))
     } else {
         // probably need to guard behind document.addEventListener('deviceready', callback, false)

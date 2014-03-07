@@ -73,8 +73,8 @@ function Disk(opts) {
                     }
                 }
                 this.trigger('error')
-                collection.remove(this)
-                collection.save()
+                //collection.remove(this)
+                //collection.save() // dont remove it
             } else {
                 //console.log('successfully restored entry')
                 this.entry = entry
