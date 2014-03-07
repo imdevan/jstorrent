@@ -503,6 +503,7 @@ App.prototype = {
 
 
         if (this.options.get('restart_torrent_on_error')) {
+            // XXX delete this its crap
             if (err == 'error persisting piece: timeout') {
                 // other types of errors, dont restart
                 if (! seedingError && torrent.stopinfo && torrent.stopinfo.reason == 'error') {

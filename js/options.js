@@ -84,12 +84,14 @@ function Options(opts) {
             'visible': false
         },
         'restart_torrent_on_error': {
-            'default':true,
+            'default':false,
             'name':'Restart Torrent if an error occurs',
+            'visible': false,
             'type':'bool'
         },
         'seed_public': {
             'default':false,
+            'visible': false,
             'name':'Enable seeding public torrents (BETA)',
             'type':'bool',
             'visible':true
@@ -104,11 +106,13 @@ function Options(opts) {
         },
 
         'socks5_proxy': {
+            'visible': false,
             'default':'192.168.43.1:8080',
             'type':'string',
             'name':'SOCKS5 Proxy server address'
         },
         'socks5_proxy_enabled': {
+            'visible': false,
             'default': false,
             'type': 'bool',
             'name': 'Use SOCKS5 proxy server'
