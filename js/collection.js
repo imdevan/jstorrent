@@ -246,6 +246,7 @@ var CollectionProto = {
         return [key, toStore]
     },
     fetch: function(callback) {
+        console.log('collection.fetch',this.itemClass.__name__)
         var collectionKey = this.getStoreKey()
         chrome.storage.local.get( collectionKey, _.bind(function(result) {
             if (! result || ! result[collectionKey] || ! result[collectionKey].items) {
@@ -280,7 +281,7 @@ var CollectionProto = {
                                                    itemClass: this.itemClass,
                                                    initializedBy: 'collection.fetch',
                                                    attributes:itemData})
-                        if (item.onRestore) { item.onRestore() }
+                        if (item.onRestore) { _.defer(item.onRestore.bind(item)) }
                         console.assert(item.get_key() == itemKeys[i])
                         this.add(item)
                     }

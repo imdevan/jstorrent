@@ -59,12 +59,15 @@ function Client(opts) {
 
     var onDiskReady = function() {
         this.disks.numLoaded++
+        console.log('onDiskReady',this.disks.numLoaded, this.disks.length)
         if (this.disks.numLoaded == this.disks.length) {
             loadTorrents()
         }
     }.bind(this)
 
     if (jstorrent.device.platform == 'Chrome') {
+        this.disks.on('ready', onDiskReady)
+        this.disks.on('error', onDiskReady)
         this.disks.fetch(_.bind(function() {
             if (this.disks.items.length == 0) {
                 console.log('disks length == 0')
@@ -72,8 +75,6 @@ function Client(opts) {
                 loadTorrents()
             }
             // XXX - install a timeout ??
-            this.disks.on('ready', onDiskReady)
-            this.disks.on('error', onDiskReady)
         },this))
     } else {
         // probably need to guard behind document.addEventListener('deviceready', callback, false)

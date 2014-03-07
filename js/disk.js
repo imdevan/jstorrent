@@ -1,6 +1,6 @@
 function Disk(opts) {
     jstorrent.Item.apply(this, arguments)
-
+    this.__name__ = arguments.callee.name
     this.diskio = new jstorrent.DiskIO({disk:this})
     this.client = opts.client || opts.parent.parent
     this.app = opts.app
@@ -57,7 +57,7 @@ function Disk(opts) {
             // remove this.
             if (!entry) {
                 console.error('unable to restore entry - (was the folder removed?)', opts.id)
-                app.notify("Unable to load disk. Was it removed?")
+                app.notify("Unable to load disk: "+this.key+". Was it removed?")
                 var parts = opts.id.split(':')
                 parts.shift()
                 var folderName = parts.join(':')

@@ -1,6 +1,6 @@
 {
-    "name": "JSTorrent Lite",
-    "short_name": "JSTorrent Lite",
+    "name": "JSTorrent",
+    "short_name": "JSTorrent",
     "description": "A Torrent Client for Google Chrome, runs everywhere in pure JavaScript",
     "author": "Kyle Graehl",
     "version": "2.2.2",
@@ -15,7 +15,7 @@
             "extensions": [
                 "torrent"
             ],
-            "title": "Open with JSTorrent Lite"
+            "title": "Open with JSTorrent"
         }
     },
     "permissions": [

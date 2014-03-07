@@ -156,7 +156,9 @@
     var path = inpath.slice()
 
     function recurse(e) {
-        if (path.length == 0) {
+        if (! e) {
+            callback({error:"Disk missing"})
+        } else if (path.length == 0) {
             if (e.name == 'TypeMismatchError') {
                 state.e.getDirectory(state.path, {create:false}, recurse, recurse)
             } else if (e.name == 'NotFoundError') {
