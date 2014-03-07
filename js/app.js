@@ -87,16 +87,29 @@ App.prototype = {
         console.warn('runtime message!',msg)
         if (msg == 'onSuspend') {
             console.error("APP ABOUT TO CRASH!! EEE!!!")
-            app.createNotification({message:"Need to Restart",
-                                    title:"The app got a suspend event. This will cause it to stop working, so we are restarting the app for you. Sorry about the inconvenience. You can prevent the suspend event by keeping the JSTorrent window visible on your screen."})
-            setTimeout( function() {
-                chrome.runtime.reload() // reloading app
-            }, 2000 )
+
+            if (this.client.get('numActiveTorrents') == 0) {
+                app.analytics.sendEvent('runtime','onSuspend','noActiveTorrents')
+                app.createNotification({message:"JSTorrent Closing",
+                                        priority:2,
+                                        details:"ChromeOS terminates an app that is not kept in the foreground. Since no torrents are active, the app will automatically close."})
+                setTimeout( function() {
+                    window.close()
+                }, 6000 )
+            } else {
+                app.analytics.sendEvent('runtime','onSuspend','ActiveTorrents',this.client.get('numActiveTorrents'))
+                app.createNotification({message:"JSTorrent Suspended",
+                                        priority:2,
+                                        details:"ChromeOS terminates an app that is not kept in the foreground. Sorry about the inconvenience. You can prevent the suspend event by keeping the JSTorrent window visible on your screen. The app will now restart so your downloads can continue."})
+                setTimeout( function() {
+                    chrome.runtime.reload() // reloading app
+                }, 6000 )
+            }
         }
     },
     on_options_loaded: function() {
         if (this.options.get('web_server_enable')) {
-            this.webapp.start()
+            this.webapp.start() // TODO -- try to listen on different ports if listen fails
         }
     },
     onContextMenu: function(grid, item, evt) {

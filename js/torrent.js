@@ -45,6 +45,8 @@ function Torrent(opts) {
     jstorrent.Item.apply(this, arguments)
     this.__name__ = arguments.callee.name
     this.client = opts.client || opts.parent.parent
+    this.thinkIntervalTime = 250
+    this.newStateThinkCtr = 0
     console.assert(this.client)
     this.hashhexlower = null
     this.hashbytes = null
@@ -1230,7 +1232,7 @@ Torrent.prototype = {
         app.analytics.sendEvent("Torrent", "Start")
 
         this.starting = true
-        this.think_interval = setInterval( _.bind(this.newStateThink, this), 1000 )
+        this.think_interval = setInterval( _.bind(this.newStateThink, this), this.thinkIntervalTime )
         if (! this.getStorage()) {
             this.error('Disk Missing')
             return
@@ -1455,6 +1457,8 @@ Torrent.prototype = {
         },this), 200)
     },
     newStateThink: function() {
+        this.newStateThinkCtr = (this.newStateThinkCtr + 1) % 4
+
         /* 
 
            how does piece requesting work? good question...  each peer
@@ -1500,7 +1504,10 @@ Torrent.prototype = {
             console.log("ENDGAME ON")
         }
 
-        this.maybeDropShittyConnection()
+        if (this.newStateThinkCtr == 0) {
+            // only do this slightly more expensive thing every 4 ticks
+            this.maybeDropShittyConnection()
+        }
 
         var idx, peer, peerconn
         if (this.should_add_peers() && this.swarm.items.length > 0) {
