@@ -65,6 +65,7 @@ function Client(opts) {
             if (this.disks.items.length == 0) {
                 console.log('disks length == 0')
                 this.app.notifyNeedDownloadDirectory()
+                onDiskReady()
             }
             // XXX - install a timeout ??
             this.disks.on('ready', onDiskReady)
