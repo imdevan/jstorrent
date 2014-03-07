@@ -178,7 +178,11 @@ function updateLocation() {
     var parts = defaultLocation.split(':')
     parts.shift()
     var disk = app.client.disks.get(defaultLocation)
-    var displaypath = disk.get('entrydisplaypath')
+    if (disk) {
+        var displaypath = disk.get('entrydisplaypath')
+    } else {
+        var displaypath = '(Missing)'
+    }
     if (displaypath) {
         $("#current-location").text('Current Location: ' + displaypath)
     } else {
