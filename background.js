@@ -4,7 +4,12 @@ console.log('background page loaded')
 var extensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
 
 function app() {
-    return chrome.app.window.get('mainWindow').contentWindow.app
+    return chrome.app.window.get && chrome.app.window.get('mainWindow').contentWindow.app
+}
+
+function getMainWindow() {
+    return chrome.app.window.get && chrome.app.window.get('mainWindow')
+
 }
 
 function WindowManager() {
@@ -54,7 +59,7 @@ WindowManager.prototype = {
         chrome.app.window.create('gui/index.html',
                                  this.mainWindowOpts,
                                  function(mainWindow) {
-
+                                     ensureAlive()
                                      _this.mainWindow = mainWindow
                                      _this.creatingMainWindow = false
 
@@ -96,18 +101,19 @@ window.ctr = 0
 function ensureAlive() {
     // attempt to make this page not suspend, because that causes our retained directoryentry to become invalid
     if (! window.ensureAliveTimeout) {
-        window.ensureAliveTimeout = setTimeout( function() {
-            window.ensureAliveTimeout = null;
-            window.ctr++
-            //console.log('ensured alive')
-            ensureAlive()
-        }, 60000 )
+        if (getMainWindow()) { // only when the page is alive
+            window.ensureAliveTimeout = setTimeout( function() {
+                window.ensureAliveTimeout = null;
+                window.ctr++
+                console.log('ensured alive')
+                ensureAlive()
+            }, 1000 )
+        }
     }
 }
 
 
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
-    ensureAlive()
     console.log('onLaunched with launchdata',launchData)
     var info = {type:'onLaunched',
                 launchData: launchData}
