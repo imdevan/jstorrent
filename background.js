@@ -155,7 +155,7 @@ function onAppLaunchMessage(launchData) {
 }
 
 if (chrome.runtime.setUninstallUrl) {
-    chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall?version=' + 
+    chrome.runtime.setUninstallUrl('http://jstorrent.com/uninstall.html?version=' + 
                                    encodeURIComponent(chrome.runtime.getManifest().version)
                                   )
 }
