@@ -1,4 +1,13 @@
-// common stuff
+if (! String.prototype.startsWith) {
+    String.prototype.startsWith = function(substr) {
+        for (var i=0; i<substr.length; i++) {
+            if (this[i] !== substr[i]) {
+                return false
+            }
+        }
+        return true
+    }
+}
 window['jstorrent'] = window['jstorrent'] || {}
 jstorrent.device = window.device || { platform: "Chrome" };
 jstorrent.constants = {
