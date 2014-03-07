@@ -92,9 +92,22 @@ WindowManager.prototype = {
 
 var windowManager = new WindowManager
 // if background page reloads, we lose reference to windowmanager main window...
+window.ctr = 0
+function ensureAlive() {
+    // attempt to make this page not suspend, because that causes our retained directoryentry to become invalid
+    if (! window.ensureAliveTimeout) {
+        window.ensureAliveTimeout = setTimeout( function() {
+            window.ensureAliveTimeout = null;
+            window.ctr++
+            //console.log('ensured alive')
+            ensureAlive()
+        }, 60000 )
+    }
+}
 
 
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
+    ensureAlive()
     console.log('onLaunched with launchdata',launchData)
     var info = {type:'onLaunched',
                 launchData: launchData}
