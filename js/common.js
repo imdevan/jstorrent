@@ -39,20 +39,25 @@ jstorrent.getLocaleString = function(s) {
 jstorrent.options = {
     disable_notifications: false,
     transferable_objects: true,
+    use_metadata_cache: true, // speeds up the app diskio
+    use_fileentry_cache: true, // speeds up the app diskio
     load_options_on_start: false,
     add_torrents_on_start: false,
     run_unit_tests: true,
-    disable_trackers: true,
+    disable_trackers: false,
     slow_diskio: false,
+    slow_hashcheck: false,
+    use_piece_cache: false,
     seed_public_torrents: false, // default off
     allow_report_torrent_bug: false,
+    reset_on_complete: false, // reset torrent state on torrent completion (testing)
     manual_peer_connect_on_start: {
 //        "d0a7ed3e79d51ea05775cae7122d5e46c0a9451f": ['127.0.0.1:6881']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['184.75.214.170:15402']
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
 //        '726ff42f84356c9aeb27dfa379678c89f0e62149': ['127.0.0.1:9090'],
     },
-    always_add_special_peer: '127.0.0.1:8030'
+    always_add_special_peer: ['127.0.0.1:8030','127.0.0.1:8031','127.0.0.1:8032','127.0.0.1:8033']
 //    manual_infohash_on_start: ['726ff42f84356c9aeb27dfa379678c89f0e62149']
 }
 bind = Function.prototype.bind

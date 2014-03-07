@@ -1,5 +1,15 @@
+(function() {
+    function maybeTimeout(fn, t) {
+        if (jstorrent.options.slow_hashcheck) {
+            setTimeout(fn, t)
+        } else {
+            fn()
+        }
+    }
+
 function Piece(opts) {
     jstorrent.Item.apply(this, arguments)
+    console.assert(typeof opts.num == 'number')
     this.torrent = opts.torrent
     this.num = opts.num
     this.size = this.torrent.getPieceSize(this.num)
@@ -225,6 +235,16 @@ Piece.prototype = {
         }
     },
     notifyPiecePersisted: function() {
+        // TODO - if we have a bridge present and this piece is near it, dont delete the data right away...
+        // stick it in the piece cache for like a little while
+/*
+        this.torrent.pieceCache.add(this)
+        var pieceNum = this.num
+        var pieceCache = this.torrent.pieceCache
+        setTimeout( function() {
+            pieceCache.remove(pieceNum)
+        }, 4000)
+*/
         this.destroy()
         this.haveDataPersisted = false
         this.haveDataCached = true
@@ -278,28 +298,32 @@ Piece.prototype = {
         console.assert(! this.checkingHash)
         this.checkingHash = true
         var desiredHash = this.torrent.infodict.pieces.slice( this.num * 20, (this.num+1)*20 )
-        worker.send( { chunks: chunks,
-                       desiredHash: desiredHash,
-                       command: 'hashChunks' },
-                     _.bind(function(result) {
-                         this.roundTripChunks = result.chunks
-                         // transferable objects need to be put back into place...
-                         this.checkingHash = false // XXX why are we hashChunks in two places?
-                         if (result && result.hash) {
-                             var responseHash = ui82str(result.hash)
-                             if (responseHash == desiredHash) {
-                                 //console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
-                                 callback(true)
+
+        maybeTimeout( function() {
+
+            worker.send( { chunks: chunks,
+                           desiredHash: desiredHash,
+                           command: 'hashChunks' },
+                         _.bind(function(result) {
+                             this.roundTripChunks = result.chunks
+                             // transferable objects need to be put back into place...
+                             this.checkingHash = false // XXX why are we hashChunks in two places?
+                             if (result && result.hash) {
+                                 var responseHash = ui82str(result.hash)
+                                 if (responseHash == desiredHash) {
+                                     //console.log('%cGOOD PIECE RECEIVED!', 'background:#33f; color:#fff',this.num)
+                                     callback(true)
+                                 } else {
+                                     this.chunkResponsesChosenPlain = null
+                                     console.log('%cBAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
+                                     callback(false)
+                                 }
                              } else {
-                                 this.chunkResponsesChosenPlain = null
-                                 console.log('%cBAD PIECE RECEIVED!', 'background:#f33; color:#fff',this.num)
+                                 console.error('error with sha1 hashing worker thread')
                                  callback(false)
                              }
-                         } else {
-                             console.error('error with sha1 hashing worker thread')
-                             callback(false)
-                         }
-                     },this));
+                         },this));
+        }.bind(this), 4000 )
     },
     checkChunkResponsesFilled: function() {
         for (var i=0; i<this.numChunks; i++) {
@@ -578,3 +602,4 @@ debugger
 for (var method in jstorrent.Item.prototype) {
     jstorrent.Piece.prototype[method] = jstorrent.Item.prototype[method]
 }
+})()

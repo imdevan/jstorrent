@@ -449,9 +449,16 @@ PeerConnection.prototype = {
             }
         }
 
-        for (var i=0; i<allPayloads.length; i++) {
-            this.set('requests',this.get('requests')+1)
-            this.sendMessage("REQUEST", [allPayloads[i]])
+        if (allPayloads.length > 0) {
+            for (var i=0; i<allPayloads.length; i++) {
+                this.set('requests',this.get('requests')+1)
+                this.sendMessage("REQUEST", [allPayloads[i]])
+            }
+        } else {
+            // nothing to do now, but maybe in a second we will have something to do... (bridge race condition)
+            setTimeout( function() {
+                this.newStateThink()
+            }.bind(this), 1000 )
         }
     },
     registerExpectResponse: function(type, key, info) {
@@ -926,10 +933,10 @@ PeerConnection.prototype = {
             curByte = 0
             idx = 8*i
             for (var j=7; j>=0; j--) {
-                idx++
                 if (idx < this.torrent.numPieces) {
                     curByte = (curByte | (this.torrent.havePieceData(idx) << j))
                 }
+                idx++
             }
             //console.assert(curByte >= 0 && curByte < 256)
             arr.push(curByte)

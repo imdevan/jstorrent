@@ -6,6 +6,10 @@ function Disk(opts) {
     this.app = opts.app
     this.concurrentBroken = 0
     this.think_interval = null
+
+    this.test_tick_timeout = 30000 // when to say disk is broken
+    //this.test_tick_timeout = 2000 // when to say disk is broken
+    this.test_tick = this.test_tick_timeout * 2
     this.client.on('activeTorrentsChange', _.bind(function(){
 
         _.delay(function() {
@@ -20,7 +24,7 @@ function Disk(opts) {
             } else {
                 if (! this.think_interval) {
                     console.log('disk, start ticking')
-                    this.think_interval = setInterval( this.checkBroken.bind(this), 60000 )
+                    this.think_interval = setInterval( this.checkBroken.bind(this), this.test_tick )
                 }
             }
 
@@ -115,7 +119,7 @@ Disk.prototype = {
                 }
             }
             if (callback) { callback(true) }
-        }.bind(this),30000)
+        }.bind(this),this.test_tick_timeout)
 
         this.entry.getMetadata(function(info) {
             this.checkingBroken = false

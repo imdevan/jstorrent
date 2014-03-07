@@ -105,7 +105,7 @@ function ensureAlive() {
             window.ensureAliveTimeout = setTimeout( function() {
                 window.ensureAliveTimeout = null;
                 window.ctr++
-                console.log('ensured alive')
+                //console.log('ensured alive')
                 ensureAlive()
             }, 1000 )
         }

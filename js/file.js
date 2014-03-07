@@ -140,7 +140,7 @@ File.prototype = {
             var fileOffset = startByte
             var fileSize = endByte - startByte + 1
             // XXX no way to pass in exact ranges and get offsets etc
-            curInfos = Piece.getSpanningFilesInfo(this.torrent, i, this.torrent.getPieceSize(i))
+            curInfos = jstorrent.Piece.getSpanningFilesInfo(this.torrent, i, this.torrent.getPieceSize(i))
             console.assert(curInfos.length > 0)
 
             for (var j=0; j<curInfos.length; j++) {
@@ -205,8 +205,8 @@ File.prototype = {
                 var curSz = Math.min( pieceinfo.size - a,
                                       szLeft )
                 var b = a + curSz
-                var cacheData = this.torrent.pieceCache.get(pieceinfo.pieceNum)
-                console.assert(a > 0)
+                var cacheData = this.torrent.pieceCache.get(pieceinfo.pieceNum).data
+                console.assert(a >= 0)
                 console.assert(b <= cacheData.byteLength)
                 szLeft -= curSz
                 var buf = cacheData.slice(a,b)

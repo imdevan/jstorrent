@@ -437,6 +437,7 @@ Torrent.prototype = {
         console.assert(start < end)
         console.assert((end - start) <= (byteEnd - byteStart))
         console.assert(end < this.size)
+        console.assert(end <= byteEnd)
         return [start,end]
     },
     havePieceData: function(pieceNum) {
@@ -784,7 +785,8 @@ Torrent.prototype = {
         } else {
             // clean up all registered chunk requests
             this.client.notifyPiecePersisted(result.piece)
-            result.piece.notifyPiecePersisted()
+            result.piece.notifyPiecePersisted() // this will insert into the piece cache for a little while
+            // warning - this needs to come before .newPiece is called
             this.pieceDoneUpdateFileComplete(result.piece)
             //console.log('persisted piece!')
             this.unflushedPieceDataSize -= result.piece.size
@@ -876,12 +878,18 @@ Torrent.prototype = {
     },
     maybePersistPieceCache: function() {
         // check if it makes sense now to persist a piece
-        for (var pieceNum in this.pieceCache.cache) {
+        for (var key in this.pieceCache.cache) {
+            var pieceNum = parseInt(key)
             if (! this._attributes.bitfield[pieceNum]) {
                 var piece = this.getPiece(pieceNum)
                 // only works cuz diskio only does one job at a time, otherwise this would have race condition
-                debugger
-                this.maybePersistPiece(piece)
+                this.shouldPersistPiece(piece, function(shouldPersist) {
+                    if (shouldPersist) {
+                        piece.data = this.pieceCache.get(pieceNum).data
+                        this.persistPiece(piece)
+                        _.defer( function() { this.pieceCache.remove(pieceNum) }.bind(this) )
+                    }
+                }.bind(this))
             }
         }
     },
@@ -901,6 +909,16 @@ Torrent.prototype = {
         // an important edge case that's worth handling separately,
         // even though it adds complexity.
 
+        if (! jstorrent.options.use_piece_cache) {
+            callback(true) // not working so well
+            return
+        }
+
+        if (this.pieceCache.size > 20) { // dont store too much shit in cache
+            callback(true)
+            return
+        }
+
         var filesinfo = piece.getSpanningFilesInfo()
         var files = []
         for (var i=0; i<filesinfo.length; i++) {
@@ -914,11 +932,11 @@ Torrent.prototype = {
                 var file = files[i]
                 var meta = file.getCachedMetadata()
                 //console.log('maybepersistpiece, meta',file.num,meta)
-
                 if (files[i].size / filesinfo[i].fileOffset > 0.9 &&
                     _.keys(this.bridges).length > 0 && // using a bridge!
                     filesinfo[i].fileOffset - meta.size > Math.pow(2,25)) {
                     // 32 megs need to be written, plus fileoffset is 90% at the end of the file
+                    // plus we have a bridge
                     persistNow = false
                     console.warn("DONT persist piece! because of file",filesinfo[i],file,meta)
                     break
@@ -932,6 +950,9 @@ Torrent.prototype = {
         }.bind(this))
     },
     persistPiece: function(piece) {
+        if (! piece.data) {
+            this.error("Piece data missing")
+        }
         //console.log('persistPiece (now)',piece.num)
         // saves this piece to disk, and update our bitfield.
         var storage = this.getStorage()
@@ -1245,10 +1266,12 @@ Torrent.prototype = {
         //return;
 
         if (jstorrent.options.always_add_special_peer) {
-            var host = jstorrent.options.always_add_special_peer
-            var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
-            if (! this.swarm.contains(peer)) {
-                this.swarm.add(peer)
+            for (var i=0; i<jstorrent.options.always_add_special_peer.length; i++) {
+                var host = jstorrent.options.always_add_special_peer[i]
+                var peer = new jstorrent.Peer({torrent: this, host:host.split(':')[0], port:parseInt(host.split(':')[1])})
+                if (! this.swarm.contains(peer)) {
+                    this.swarm.add(peer)
+                }
             }
         }
 

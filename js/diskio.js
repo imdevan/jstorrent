@@ -29,10 +29,12 @@
     }
     var FileMetadataCacheprototype = {
         updateEntryManual: function(root, path, meta) {
+            if (! jstorrent.options.use_metadata_cache) { return }
             var cacheKey = root.filesystem.name + root.fullPath + '/' + path.join('/')
             this.cache[cacheKey] = meta
         },
         updateEntry: function(entry, metadata) {
+            if (! jstorrent.options.use_metadata_cache) { return }
             var cacheKey = entry.filesystem.name + entry.fullPath
             this.cache[cacheKey] = { size: metadata.size,
                                      modificationTime: metadata.modificationTime }
@@ -45,6 +47,7 @@
             delete this.cache[cacheKey]
         },
         updateSize: function(entry, newsz, is_exact) {
+            if (! jstorrent.options.use_metadata_cache) { return }
             var cacheKey = entry.filesystem.name + entry.fullPath
             var cacheEntry = this.cache[cacheKey]
 
@@ -75,6 +78,7 @@
             return this.cache[cacheKey]
         },
         get: function(entry) {
+            if (! jstorrent.options.use_metadata_cache) { return }
             var cacheKey = entry.filesystem.name + entry.fullPath
             var cacheEntry = this.cache[cacheKey]
             if (cacheEntry) { return cacheEntry }
@@ -110,12 +114,15 @@
             delete this.cache[k]
         },
         set: function(k,v) {
+            if (! jstorrent.options.use_fileentry_cache) { return }
             this.cache[k] = v
         },
         get: function(k) {
+            if (! jstorrent.options.use_fileentry_cache) { return }
             return this.cache[k]
         },
         getByFile: function(file) {
+            if (! jstorrent.options.use_fileentry_cache) { return }
             debugger
             var disk = file.torrent.getStorage()
             var cacheKey = disk.key + '/' + file.path.join('/')
@@ -219,7 +226,9 @@
 
         function recurse(e) {
             if (path.length == 0) {
-                if (e.isFile) {
+                if (e.name && e.message) {
+                    oncallback({error:e})
+                } else if (e.isFile) {
                     app.entryCache.set(cacheKey, e)
                     oncallback(e)
                 } else {
@@ -536,11 +545,19 @@
 
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
+
+                if (entry.error) {
+                    job.set('state','entrygeterror')
+                    console.error(entry)
+                    oncallback({error:'entrygeterror',evt:entry})
+                    return
+                }
+
                 job.set('state','createwriter')
                 var oncreatewritererr = function(evt) {
                     job.set('state','createwritererr')
                     console.error('oncreatewritererr',evt)
-                    debugger
+                    oncallback({error:'createwritererr',evt:evt})
                 }
                 entry.createWriter( function(writer) {
                     if (this.checkShouldBail(job)) { writer.abort(); return }
@@ -552,7 +569,7 @@
                         var oncreatewriter2err = function(evt) {
                             job.set('state','createwriter2err')
                             console.error('oncreatewriter2err',evt)
-                            debugger
+                            oncallback({error:'createwriter2err',evt:evt})
                         }
 
                         entry.createWriter( function(writer2) {
@@ -566,7 +583,6 @@
                                 job.set('state','writer2.onerror')
                                 job.set('error',evt2.target.error.name)
                                 console.error('writer error',evt2)
-                                debugger
                                 oncallback({error:evt2})
                             }
                             writer2.onprogress = function(evt2) {
@@ -592,7 +608,6 @@
                         console.error('truncate error',evt)
                         job.set('state','write.truncate.error')
                         job.set('error',evt.target.error.name)
-                        debugger
                         oncallback({error:evt})
                     }
                     //console.log('writer.Write')
@@ -686,7 +701,6 @@
                 //job.set('state','error')
                 job.set('error',cargs[0].error)
                 job._error_all = cargs
-
                 _.defer( function() { this.reportJobError(cargs[0], job, state) }.bind(this) )
 
                 //job.set('haderror',true)
@@ -706,18 +720,20 @@
             // this is specific to a FILE
 
             console.assert(opts.size > 0)
-            if (this.checkShouldBail(job)) return
+            if (this.checkShouldBail(job, opts)) return
             var oncallback = this.createWrapCallback(callback,job)
             var file = opts.file || opts.piece.torrent.getFile(opts.fileNum)
             console.assert(opts.fileOffset + opts.size <= file.size)
             var path = file.path.slice()
             job.set('state','getentry')
 
-            var cacheData = file.getCachedData(opts.fileOffset, opts.size)
-            if (cacheData) {
-                console.assert(cacheData.byteLength == opts.size)
-                oncallback(cacheData)
-                return
+            if (jstorrent.options.use_piece_cache) {
+                var cacheData = file.getCachedData(opts.fileOffset, opts.size)
+                if (cacheData) {
+                    console.assert(cacheData.byteLength == opts.size)
+                    oncallback(cacheData)
+                    return
+                }
             }
 
             // XXX - BROKEN - this needs to get split into subjobs
@@ -729,8 +745,11 @@
                     var onFile = function(result) {
                         job.set('state','gotfile')
                         if (this.checkShouldBail(job)) return
-                        if (result.err || result.type == 'error') {
-                            oncallback({error:result.err.name,evt:result})
+                        if (result.err || // also no
+                            result.type == 'error' || // doesnt happen this way i dont think
+                            result.code !== undefined && result.name && result.message
+                           ) {
+                            oncallback({error:result,evt:result})
                         } else {
                             var file = result
                             function onRead(evt) {
@@ -844,6 +863,9 @@
                 // getting torrent metadata
                 return false
             }
+            if (job.opts.file && job.opts.file.isComplete()) {
+                return false
+            }
             var shouldBail = this.checkTorrentStopped(job) || this.checkJobTimeout(job)
             //var shouldBail = this.checkJobTimeout(job)
             if (shouldBail) { console.warn('shouldbail!') }
@@ -875,12 +897,19 @@
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
+
+                if (entry.error) {
+                    job.set('state','entrygeterror')
+                    console.error(entry)
+                    oncallback({error:'entrygeterror',evt:entry})
+                    return
+                }
                 job.set('state','createwriter')
 
                 var oncreatewritererr = function(evt) {
                     job.set('state','createwritererr')
                     console.error('oncreatewritererr',evt)
-                    debugger
+                    oncallback({error:'createwritererr',evt:evt})
                 }
 
                 entry.createWriter( function(writer) {
@@ -917,6 +946,7 @@
                     //console.log('writer.Write')
                     job.set('state','truncating')
                     maybeTimeout( function() {
+                        console.warn("TRUNCATE!")
                         writer.truncate(opts.size)
                     }, DiskIO.debugtimeout)
                 }.bind(this), oncreatewritererr)
@@ -943,12 +973,20 @@
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
+
+                if (entry.error) {
+                    job.set('state','entrygeterror')
+                    console.error(entry)
+                    oncallback({error:'entrygeterror',evt:entry})
+                    return
+                }
+
                 job.set('state','createwriter')
 
                 var oncreatewritererr = function(evt) {
                     job.set('state','createwritererr')
                     console.error('oncreatewritererr',evt)
-                    debugger
+                    oncallback({error:'createwritererr',evt:evt})
                 }
 
                 entry.createWriter( function(writer) {
@@ -1055,19 +1093,22 @@
             job.set('state','getentry')
             this.getFileEntryWriteable( this.disk, path, function(entry) {
                 if (this.checkShouldBail(job)) return
+
                 if (entry.error) {
-                    job.set('state','timeout:getentry')
-                    oncallback(entry)
+                    job.set('state','entrygeterror')
+                    console.error(entry)
+                    oncallback({error:'entrygeterror',evt:entry})
                     return
                 }
                 job.set('state','createwriter')
                 var oncreatewritererr = function(evt) {
                     job.set('state','createwritererr')
                     console.error('oncreatewritererr',evt)
-                    debugger
+                    oncallback({error:'createwritererr',evt:evt})
                 }
 
                 entry.createWriter( function(writer) {
+                    job.set('state','gotwriter')
                     if (this.checkShouldBail(job)) { writer.abort(); return }
                     writer.onwrite = function(evt) {
                         app.fileMetadataCache.updateSize(entry, fileOffset + buftowrite.byteLength)

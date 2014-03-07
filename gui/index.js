@@ -106,12 +106,6 @@ function onappready() {
             }, 1000);
         }
     }
-    var t = client.torrents.get('78b4885178c711d691b4b841042b596c96ed7396')
-    t.loadMetadata( function() {
-        var f = t.getFile(0)
-        f.getCachedData(161766936, 69)
-    })
-
 }
 
 function onready() {

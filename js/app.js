@@ -85,6 +85,14 @@ jstorrent.App = App
 App.prototype = {
     runtimeMessage: function(msg) {
         console.warn('runtime message!',msg)
+        if (msg == 'onSuspend') {
+            console.error("APP ABOUT TO CRASH!! EEE!!!")
+            app.createNotification({message:"Need to Restart",
+                                    title:"The app got a suspend event. This will cause it to stop working, so we are restarting the app for you. Sorry about the inconvenience. You can prevent the suspend event by keeping the JSTorrent window visible on your screen."})
+            setTimeout( function() {
+                chrome.runtime.reload() // reloading app
+            }, 2000 )
+        }
     },
     on_options_loaded: function() {
         if (this.options.get('web_server_enable')) {
@@ -400,6 +408,12 @@ App.prototype = {
         this.incrementTotalDownloads( _.bind(function() {
             this.updateRemainingDownloadsDisplay()
         },this))
+
+        if (jstorrent.options.reset_on_complete) {
+            setTimeout( function() {
+                torrent.resetState()
+            }, 4000 )
+        }
     },
     updateRemainingDownloadsDisplay: function() {
         // bother the user every N downloads with a link to the chrome web store and let them write a review...
