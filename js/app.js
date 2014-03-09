@@ -723,9 +723,19 @@ App.prototype = {
     },
     external_storage_attached: function(storageInfo) {
         console.log('external storage attached',storageInfo)
+        setTimeout( function() {
+            for (var i=0; i<this.client.disks.items.length; i++) {
+                // check if new disk available
+                var disk = this.client.disks.items[i]
+                if (! disk.entry) {
+                    disk.restoreFromKey()
+                }
+            }
+        }.bind(this), 2000 ); // XXX bug it takes like some time after storage event before disk avail?
     },
     external_storage_detached: function(storageInfo) {
         console.log('external storage detached',storageInfo)
+        // TODO -- maybe check disks and invalidate
     },
     focus_or_open_options: function() {
         if (this.options_window) { 

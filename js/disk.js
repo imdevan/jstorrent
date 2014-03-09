@@ -51,14 +51,24 @@ function Disk(opts) {
         if (! this.key) {
             this.error = true
         }
+        this.restoreFromKey()
+    } else {
+        this.entry = opts.entry
+        this.onentry()
+        this.key = null
+    }
+}
+jstorrent.Disk = Disk
+Disk.prototype = {
+    restoreFromKey: function() {
         console.log('restoring disk with id',this.key)
         chrome.fileSystem.restoreEntry(this.key, _.bind(function(entry) {
             console.log('restored',this.key)
             // remove this.
             if (!entry) {
-                console.error('unable to restore entry - (was the folder removed?)', opts.id)
+                console.error('unable to restore entry - (was the folder removed?)', this._opts.id)
                 app.notify("Unable to load disk: "+this.key+". Was it removed?")
-                var parts = opts.id.split(':')
+                var parts = this._opts.id.split(':')
                 parts.shift()
                 var folderName = parts.join(':')
                 var collection = this.getCollection()
@@ -66,7 +76,7 @@ function Disk(opts) {
                 // now loop over torrents using this download directory and set their error state
                 var torrents = collection.opts.client.torrents
                 for (var i=0; i<torrents.items.length; i++) {
-                    if (torrents.items[i].get('disk') == opts.id) {
+                    if (torrents.items[i].get('disk') == this._opts.id) {
                         torrents.items[i].stop()
                         torrents.items[i].invalidDisk = true
                         torrents.items[i].set('state','error')                        
@@ -76,20 +86,12 @@ function Disk(opts) {
                 //collection.remove(this)
                 //collection.save() // dont remove it
             } else {
-                //console.log('successfully restored entry')
+                console.log('successfully restored disk entry',this.key)
                 this.entry = entry
                 this.onentry()
             }
         },this))
-
-    } else {
-        this.entry = opts.entry
-        this.onentry()
-        this.key = null
-    }
-}
-jstorrent.Disk = Disk
-Disk.prototype = {
+    },
     onentry: function() {
         if (chrome.fileSystem.getDisplayPath) {
             chrome.fileSystem.getDisplayPath(this.entry, function(displaypath) {
@@ -100,6 +102,7 @@ Disk.prototype = {
         }
     },
     checkBroken: function(callback) {
+        if (! this.entry) { if (callback) {callback(true)}; return }
         //console.log('checkBroken')
         var _this = this
         if (this.checkingBroken) { console.log('alreadycheckingbroken');return }
@@ -121,7 +124,7 @@ Disk.prototype = {
             if (callback) { callback(true) }
         }.bind(this),this.test_tick_timeout)
 
-        this.entry.getMetadata(function(info) {
+        this.entry.getMetadata(function(info) { // XXX - this is broken
             this.checkingBroken = false
             this.concurrentBroken = 0
             clearTimeout(this.checkBrokenTimeout)
