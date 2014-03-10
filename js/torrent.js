@@ -533,7 +533,7 @@ Torrent.prototype = {
 
         for (var i=0; i<this.numPieces; i++) {
             needPiece = false
-            var info = Piece.getSpanningFilesInfo(this, i, this.getPieceSize(i))
+            var info = jstorrent.Piece.getSpanningFilesInfo(this, i, this.getPieceSize(i))
             for (var j=0; j<info.length; j++) {
                 if (fp[info[j].fileNum] != jstorrent.constants.PRIO_SKIP) {
                     // priority is not "0", so need this piece!
