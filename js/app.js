@@ -88,6 +88,7 @@ App.prototype = {
         if (msg == 'onSuspend') {
             console.error("APP ABOUT TO CRASH!! EEE!!!")
 
+
             if (this.client.get('numActiveTorrents') == 0) {
                 app.analytics.sendEvent('runtime','onSuspend','noActiveTorrents')
                 app.createNotification({message:"JSTorrent Closing",
@@ -105,6 +106,10 @@ App.prototype = {
                     chrome.runtime.reload() // reloading app
                 }, 6000 )
             }
+
+            // stop listening, destroy all sockets
+            this.webapp.stop()
+
         }
     },
     on_options_loaded: function() {

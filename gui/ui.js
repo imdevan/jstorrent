@@ -30,8 +30,11 @@ function UI(opts) {
             {id: "bytes_received", name: "Bytes Received", formatVal: byteUnits, width:100},
             {id: "size", name: "Size", formatVal: byteUnits, width: 100, sortable:true},
             {id: "complete", name: "% Complete", formatVal: fracToPercent},
+            {id:'downspeed', name: "Down Speed", width:90, formatVal: byteUnitsSec },
+            {id:'eta', name: "ETA", formatVal: formatValETA, width:60},
             {id: "numpeers", name: "Peers"},
             {id: "bytes_sent", name: "Bytes Sent", formatVal: byteUnits},
+            {id:'upspeed', formatVal: byteUnitsSec},
             {id: 'downloaded', formatVal:byteUnits},
             {id: "added", sortable:true},
             {id: "numswarm", name: "Swarm"}

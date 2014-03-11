@@ -76,7 +76,7 @@ jstorrent.options = {
 //        'b91ec066668f2ce8111349ae86cc81941ce48c69': ['127.0.0.1:9090'],
 //        '726ff42f84356c9aeb27dfa379678c89f0e62149': ['127.0.0.1:9090'],
     }
-    //always_add_special_peer: ['127.0.0.1:8030','127.0.0.1:8031','127.0.0.1:8032','127.0.0.1:8033']
+//    always_add_special_peer: ['127.0.0.1:8030','127.0.0.1:8031','127.0.0.1:8032','127.0.0.1:8033']
 //    manual_infohash_on_start: ['726ff42f84356c9aeb27dfa379678c89f0e62149']
 }
 bind = Function.prototype.bind
@@ -225,7 +225,7 @@ function pad(s, padwith, len) {
     var units = ['B','kB','MB','GB','TB']
     var idxmax = units.length - 1
 
-    function byteUnits(val) {
+    function byteUnitsGeneric(roundOpt, val) {
         // TODO - this is dumb, dont divide, just do comparison. more efficient
         if (val === undefined || val == 0) { return '' }
         var idx = 0
@@ -233,10 +233,39 @@ function pad(s, padwith, len) {
             val = val/1024
             idx++
         }
-        var round = (idx==0) ? 0 : 2
+        var round = (idx==0) ? 0 : roundOpt
         return val.toFixed(round) + ' ' + units[idx]
     }
+
+    var byteUnits = byteUnitsGeneric.bind(undefined, 2)
     window.byteUnits = byteUnits
+
+    function byteUnitsSec(val) {
+        var v = byteUnitsGeneric(0,val)
+        if (v) {
+            return v + '/s'
+        } else {
+            return v
+        }
+    }
+    window.byteUnitsSec = byteUnitsSec
+
+    var sunits = ['s','m','h','d']
+    var ssz = [1, 60, 60*60, 24*60*60]
+
+    function formatValETA(val) {
+        var parts = []
+        if (val === undefined || val == 0) { return '' }
+        for (var i=ssz.length-1;i>=0;i--) {
+            if (val > ssz[i]) {
+                parts.push( Math.floor(val / ssz[i]) + sunits[i] )
+                val = val % ssz[i]
+            }
+        }
+        return parts.join(' ')
+    }
+    window.formatValETA = formatValETA
+
 })()
 
 /*

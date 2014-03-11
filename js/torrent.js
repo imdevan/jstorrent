@@ -99,6 +99,9 @@ function Torrent(opts) {
     this.files = new jstorrent.Collection({torrent:this, itemClass:jstorrent.File})
     this.pieceCache = new jstorrent.PieceCache({torrent:this})
 
+    this.rings = { sent: new jstorrent.RingBuffer(8),
+                   received: new jstorrent.RingBuffer(8) }
+
     this.connectionsServingInfodict = [] // maybe use a collection class for this instead
     this.connectionsServingInfodictLimit = 3 // only request concurrently infodict from 3 peers
 
@@ -847,6 +850,8 @@ Torrent.prototype = {
         this.save()
     },
     countBytes: function(type, val) {
+        // bubble up to client
+        this.client.countBytes(type, val)
         if (type == 'received') {
             this.set('bytes_received', this.get('bytes_received') + val)
         } else {
@@ -1457,6 +1462,8 @@ Torrent.prototype = {
         },this), 200)
     },
     newStateThink: function() {
+        // misnomer, this is actually a regular interval triggered function
+
         this.newStateThinkCtr = (this.newStateThinkCtr + 1) % 4
 
         /* 
@@ -1505,6 +1512,26 @@ Torrent.prototype = {
         }
 
         if (this.newStateThinkCtr == 0) {
+
+            var sent = this.get('bytes_sent')
+            var received = this.get('bytes_received')
+
+            this.rings.sent.add( sent )
+            this.rings.received.add( received )
+
+            // calculate rate based on last 4 seconds
+            var prev = this.rings.sent.get(-4)
+            if (prev !== null) {
+                this.set('upspeed', (sent - prev) / 4)
+            }
+            var prev = this.rings.received.get(-4)
+            if (prev !== null) {
+                var downSpeed = (received - prev)/4
+                this.set('downspeed', downSpeed)
+                var bytesRemain = (1-this.get('complete')) * this.size
+                this.set('eta', bytesRemain / downSpeed)
+            }
+
             // only do this slightly more expensive thing every 4 ticks
             this.maybeDropShittyConnection()
         }

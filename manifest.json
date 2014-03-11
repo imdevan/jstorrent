@@ -1,9 +1,9 @@
 {
-    "name": "JSTorrent",
-    "short_name": "JSTorrent",
+    "name": "JSTorrent Dev",
+    "short_name": "JSTorrent Dev",
     "description": "A Torrent Client for Google Chrome, runs everywhere in pure JavaScript",
     "author": "Kyle Graehl",
-    "version": "2.2.6",
+    "version": "2.2.7",
     "manifest_version": 2,
     "offline_enabled": true,
     "minimum_chrome_version": "31",
@@ -15,7 +15,7 @@
             "extensions": [
                 "torrent"
             ],
-            "title": "Open with JSTorrent"
+            "title": "Open with JSTorrent Dev"
         }
     },
     "permissions": [

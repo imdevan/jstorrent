@@ -106,6 +106,9 @@ function Client(opts) {
 }
 
 Client.prototype = {
+    countBytes: function(type, val) {
+        // keep track of bitrate
+    },
     notifyPiecePersisted: function(piece) {
         var portinfo 
         for (var key in this.ports) {
