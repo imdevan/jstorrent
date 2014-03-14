@@ -35,19 +35,33 @@ function onadd(evt) {
 }
 
 function onresizewindow() {
-    var toph = $('#chrome-top').height()
-    var tabh = $('#detail-tabs').height()
-    var titlebarh = $('#top-titlebar').height()
-    var totalchrome = toph + tabh
+    if (app.minimized) {
+        var toph = 0
+        var tabh = 0
+        var titlebarh = $('#top-titlebar').height()
+        var totalchrome = toph + tabh
 
-    var width = $(window).width()
-    var height = $(window).height() - titlebarh
-    $("#torrentGrid")[0].style.width = width
-    $("#detailGrid")[0].style.width = width
-    $("#torrentGrid")[0].style.height = Math.floor((height - totalchrome) * 0.4)
-    $("#detailGrid")[0].style.height = Math.ceil((height - totalchrome) * 0.6)
-    if (app && app.UI && app.UI.detailtable) { app.UI.detailtable.resizeCanvas() }
-    if (app && app.UI && app.UI.torrenttable) { app.UI.torrenttable.grid.resizeCanvas() }
+        var width = $(window).width()
+        var height = $(window).height() - titlebarh
+        $("#mintorrentGrid")[0].style.width = width
+        $("#mintorrentGrid")[0].style.height = Math.floor((height - totalchrome) * 1.0)
+        if (app && app.minUI && app.minUI.torrenttable) { app.minUI.torrenttable.grid.resizeCanvas() }
+
+    } else {
+        var toph = $('#chrome-top').height()
+        var tabh = $('#detail-tabs').height()
+        var titlebarh = $('#top-titlebar').height()
+        var totalchrome = toph + tabh
+
+        var width = $(window).width()
+        var height = $(window).height() - titlebarh
+        $("#torrentGrid")[0].style.width = width
+        $("#detailGrid")[0].style.width = width
+        $("#torrentGrid")[0].style.height = Math.floor((height - totalchrome) * 0.4)
+        $("#detailGrid")[0].style.height = Math.ceil((height - totalchrome) * 0.6)
+        if (app && app.UI && app.UI.detailtable) { app.UI.detailtable.resizeCanvas() }
+        if (app && app.UI && app.UI.torrenttable) { app.UI.torrenttable.grid.resizeCanvas() }
+    }
 }
 
 function onappready() {

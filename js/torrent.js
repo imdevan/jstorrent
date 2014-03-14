@@ -1312,8 +1312,9 @@ Torrent.prototype = {
         //console.log('torrent.onStarted')
         var a = this.client.get('activeTorrents')
         a[this.hashhexlower] = true
+        this.client.activeTorrents.add(this)
         this.client.set('activeTorrents', a)
-        this.client.trigger('activeTorrentsChange')
+        this.client.trigger('activeTorrentsChange', this)
 
         if (! jstorrent.options.disable_trackers) {
             if (this.trackers.length == 0) {
@@ -1372,20 +1373,24 @@ Torrent.prototype = {
     onComplete: function() {
         //console.log('torrent.onComplete')
         var a = this.client.get('activeTorrents')
+        this.client.activeTorrents.remove(this)
         delete a[this.hashhexlower]
         this.client.set('activeTorrents', a)
-        this.client.trigger('activeTorrentsChange')
+        this.client.trigger('activeTorrentsChange', this)
 
         for (var i=0; i<this.trackers.length; i++) {
             this.trackers.get_at(i).announce('complete')
         }
     },
     onStopped: function() {
-        //console.log('torrent.onStopped')
+        //console.log('torrent.onStopped') // could be previously "complete"
         var a = this.client.get('activeTorrents')
+        if (this.client.activeTorrents.contains(this)) {
+            this.client.activeTorrents.remove(this)
+        }
         delete a[this.hashhexlower]
         this.client.set('activeTorrents', a)
-        this.client.trigger('activeTorrentsChange')
+        this.client.trigger('activeTorrentsChange', this)
 
         if (this.stopinfo && this.stopinfo.dontannounce) {
             return

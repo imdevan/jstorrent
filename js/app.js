@@ -92,15 +92,20 @@ App.prototype = {
         var cw = chrome.app.window.current()
         // destroy the UI and make the window small and save current window state and stuff
         this.minimized = true
-        this.minimizedRestore = cw.getBounds()
-        cw.setMinWidth(225) // dont work yet in dev channel
-        cw.resizeTo(225, 32)
-        cw.moveTo(10000, 10000)
+        this.minimizedRestore = cw.getBounds() // persist this so that when we close in minimized mode it doesnt use these bounds
+        cw.setMinWidth(270) // dont work yet in dev channel
+        cw.resizeTo(275 + 16, 100)
+        //cw.moveTo(10000, 10000)
         $('#top-titlebar-min').text("Full")
         $('#top-titlebar-icon').show()
         this.UI.destroy()
+
+        this.minUI = new jstorrent.MinUI({client:this.client})
     },
     unminimize: function() {
+        if (this.minUI) {
+            this.minUI.destroy()
+        }
         var cw = chrome.app.window.current()
         this.minimized = false
         cw.setMinWidth(770)
@@ -572,6 +577,9 @@ App.prototype = {
     },
     set_ui: function(UI) {
         this.UI = UI
+    },
+    set_minui: function(minUI) {
+        this.minUI = minUI
     },
     handleDrop: function(evt) {
         console.log('handleDrop')

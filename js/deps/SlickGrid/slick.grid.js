@@ -71,6 +71,7 @@ if (typeof Slick === "undefined") {
       asyncPostRenderDelay: 50,
       autoHeight: false,
       editorLock: Slick.GlobalEditorLock,
+        showHeader: true,
       showHeaderRow: false,
       headerRowHeight: 25,
       showTopPanel: false,
@@ -232,6 +233,10 @@ if (typeof Slick === "undefined") {
       $focusSink = $("<div tabIndex='0' hideFocus style='position:fixed;width:0;height:0;top:0;left:0;outline:0;'></div>").appendTo($container);
 
       $headerScroller = $("<div class='slick-header ui-state-default' style='overflow:hidden;position:relative;' />").appendTo($container);
+        if (!options.showHeader) {
+            $headerScroller.hide();
+        }
+
       $headers = $("<div class='slick-header-columns' style='left:-1000px' />").appendTo($headerScroller);
       $headers.width(getHeadersWidth());
 
@@ -1566,10 +1571,15 @@ if (typeof Slick === "undefined") {
     }
 
     function getViewportHeight() {
+        if (! options.showHeader) {
+            var headerPart = 0
+        } else {
+            var headerPart = parseFloat($.css($headerScroller[0], "height")) - getVBoxDelta($headerScroller)
+        }
       return parseFloat($.css($container[0], "height", true)) -
           parseFloat($.css($container[0], "paddingTop", true)) -
           parseFloat($.css($container[0], "paddingBottom", true)) -
-          parseFloat($.css($headerScroller[0], "height")) - getVBoxDelta($headerScroller) -
+          headerPart -
           (options.showTopPanel ? options.topPanelHeight + getVBoxDelta($topPanelScroller) : 0) -
           (options.showHeaderRow ? options.headerRowHeight + getVBoxDelta($headerRowScroller) : 0);
     }

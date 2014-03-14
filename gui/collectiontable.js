@@ -3,6 +3,7 @@ function SlickCollectionTable(opts) {
     this.domid = opts.domid
     this.columns = opts.columns
     this.formatters = opts.formatters
+    var slickOptions = opts.slickOptions || {}
 
     var makeFormatter = {
         getFormatter: function(column) {
@@ -38,6 +39,7 @@ function SlickCollectionTable(opts) {
 //        autoEdit: true
         
     };
+    _.extend(options, slickOptions)
 
     var collectiondata = this.collection.data()
 

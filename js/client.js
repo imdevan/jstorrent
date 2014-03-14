@@ -14,6 +14,12 @@ function Client(opts) {
     this.app = opts.app
     this.id = opts.id
 
+    this.activeTorrents = new jstorrent.Collection({__name__: 'Torrents', 
+                                                    parent:this, 
+                                                    client:this, 
+                                                    shouldPersist: false,
+                                                    itemClass: jstorrent.Torrent})
+
     this.torrents = new jstorrent.Collection({__name__: 'Torrents', 
                                               parent:this, 
                                               client:this, 
@@ -48,6 +54,7 @@ function Client(opts) {
     this.set('bytes_received',0)
     this.on('change', _.bind(this.onChange, this))
     this.on('activeTorrentsChange', _.bind(function(){
+        // a torrent stopped, completed, or started...
         this.set('numActiveTorrents', _.keys(this.get('activeTorrents')).length)
     },this))
 
