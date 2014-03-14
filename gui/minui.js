@@ -6,7 +6,7 @@
         $('#minui-wrapper').show()
 
         function renderTorrent(torrent) {
-            var pct = (torrent.get('complete')*100).toFixed(0)
+            var pct = (torrent.get('complete')*100).toFixed(1)
             var html = '<div class="progress">' + 
                 '<div class="progress-bar" role="progressbar" style="width: '+pct+'%">' +
                 '<span style="color:black">' + _.escape(torrent.get('name')) + '</span>' +
@@ -36,13 +36,13 @@
     }
     var MinUIproto = {
         onTorrentChange: function(collection, torrent, newval, oldval, attr) {
+            var idx = collection.indexOf( torrent.get_key() )
             if (attr == 'name') {
-                var idx = collection.indexOf( torrent.get_key() )
                 this.torrenttable.grid.updateCell(idx, 0)
             } else if (attr == 'complete') {
-                var pct = (torrent.get('complete')*100).toFixed(0)
-                $('.progress-bar',this.torrenttable.grid.getCellNode(0,0)).css('width', pct + '%')
-
+                var pct = (torrent.get('complete')*100).toFixed(1)
+                var node = $('.progress-bar',this.torrenttable.grid.getCellNode(idx,0))
+                node.css('width', pct + '%')
             }
         },
         destroy: function() {

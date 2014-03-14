@@ -121,13 +121,13 @@ function UI(opts) {
             if (newval) {
                 $('#client-infobar-down').text( 'Down: ' + byteUnitsSec(newval) )
             } else {
-                $('#client-infobar-down').empty()
+                $('#client-infobar-down').text('')
             }
         } else if (attr == 'upspeed') {
             if (newval) {
                 $('#client-infobar-up').text( 'Up: ' + byteUnitsSec(newval) )
             } else {
-                $('#client-infobar-up').empty()
+                $('#client-infobar-up').text('')
             }
         }
     })

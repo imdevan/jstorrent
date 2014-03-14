@@ -86,9 +86,12 @@ App.prototype = {
     close: function() {
         // app wants to close
         // maybe do some cleanup stuff?
+        this.webapp.stop()
+        this.unminimize()
         window.close()
     },
     minimize: function() {
+        if (this.minimized) { return }
         var cw = chrome.app.window.current()
         // destroy the UI and make the window small and save current window state and stuff
         this.minimized = true
@@ -103,6 +106,7 @@ App.prototype = {
         this.minUI = new jstorrent.MinUI({client:this.client})
     },
     unminimize: function() {
+        if (! this.minimized) { return }
         if (this.minUI) {
             this.minUI.destroy()
         }
@@ -112,7 +116,7 @@ App.prototype = {
         $('#top-titlebar-min').text("Compact")
         $('#top-titlebar-icon').hide()
         cw.resizeTo(Math.max(770, this.minimizedRestore.width),
-                    Math.max(320, this.minimizedRestore.height))
+                    Math.max(400, this.minimizedRestore.height))
         cw.moveTo(this.minimizedRestore.left,this.minimizedRestore.top)
         this.UI.undestroy()
     },
