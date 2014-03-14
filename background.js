@@ -22,6 +22,7 @@ function WindowManager() {
         height: 610,
         resizable: true,
         minHeight: 32,
+//        minWidth: 770, // set/get doesnt work yet (dev channel?)
         id: 'mainWindow'
     }
 

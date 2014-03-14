@@ -89,21 +89,26 @@ App.prototype = {
         window.close()
     },
     minimize: function() {
+        var cw = chrome.app.window.current()
         // destroy the UI and make the window small and save current window state and stuff
         this.minimized = true
-        this.minimizedRestore = { height: $(window).height(),
-                                  width: $(window).width()
-                                }
-        chrome.app.window.get('mainWindow').resizeTo(this.minimizedRestore.width,
-                                                     32)
+        this.minimizedRestore = cw.getBounds()
+        cw.setMinWidth(225) // dont work yet in dev channel
+        cw.resizeTo(225, 32)
+        cw.moveTo(10000, 10000)
         $('#top-titlebar-min').text("Full")
+        $('#top-titlebar-icon').show()
         this.UI.destroy()
     },
     unminimize: function() {
+        var cw = chrome.app.window.current()
         this.minimized = false
+        cw.setMinWidth(770)
         $('#top-titlebar-min').text("Compact")
-        chrome.app.window.get('mainWindow').resizeTo(this.minimizedRestore.width,
-                                                     this.minimizedRestore.height)
+        $('#top-titlebar-icon').hide()
+        cw.resizeTo(Math.max(770, this.minimizedRestore.width),
+                    Math.max(320, this.minimizedRestore.height))
+        cw.moveTo(this.minimizedRestore.left,this.minimizedRestore.top)
         this.UI.undestroy()
     },
     runtimeMessage: function(msg) {
