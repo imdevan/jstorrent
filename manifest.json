@@ -1,4 +1,5 @@
 {
+    "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDCvpsh4qvVEOcUZPeucJJ5VASn8fIOGsoQIXnIewzRcqi3Nwj/4WttouI8Fp2OlNxjH6rkaFOSaUPv5n0j20M7clmTjFPmJtbdKKBdVnE5g1jRpkzwMPMV8fpP5IyyTy0hSkK1FAWuxnlBmOMLSAeqCsVH4cYO9s2ilFMNMEG04wIDAQAB",
     "name": "JSTorrent Dev",
     "short_name": "JSTorrent Dev",
     "description": "A Torrent Client for Google Chrome, runs everywhere in pure JavaScript",
@@ -37,16 +38,18 @@
         "pushMessaging",
         "http://*/",
         "https://*/",
+        "https://www.googleapis.com/",
         "identity"
     ],
     "optional_permissions": [
     ],
     "oauth2": {
         "client_id": "432934632994-20rclui1m8od0p2g09vfbrdnk93gbraa.apps.googleusercontent.com",
-        "scopes": ["openid"]
+        "scopes": ["https://www.googleapis.com/auth/chromewebstore.readonly"]
     },
     "app": {
         "background": {
+            "persistent": true,
             "scripts": ["background.js"]
         }
     },

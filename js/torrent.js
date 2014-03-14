@@ -1411,6 +1411,9 @@ Torrent.prototype = {
         this.trigger('stopped')
         app.analytics.sendEvent("Torrent", "Stopping")
         this.set('state','stopped')
+        this.set('downspeed',0)
+        this.set('upspeed',0)
+        this.set('eta',0)
         this.started = false
 
         if (this.think_interval) { 

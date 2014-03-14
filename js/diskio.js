@@ -197,6 +197,7 @@
         if (inCache) { callback(inCache); return }
 
         var filesystem = disk.entry
+        console.assert(filesystem)
 
         var path = inpath.slice()
         var oncallback = callback
@@ -227,7 +228,9 @@
 */
 
         function recurse(e) {
-            if (path.length == 0) {
+            if (! e) {
+                oncallback({error:'empty input'}) // e.isDirectory was dying...
+            } else if (path.length == 0) {
                 if (e.name && e.message) {
                     oncallback({error:e})
                 } else if (e.isFile) {

@@ -45,7 +45,7 @@ function App() {
     chrome.i18n.getAcceptLanguages(this.onAcceptLanguages.bind(this))
 
     this.totalDownloads = 0
-
+    this.minimized = false
     this.popup_windows = {}
 
     // store random shit in sync app attributes. like if user clicked on my stupid "please rate me"
@@ -83,6 +83,29 @@ function App() {
 jstorrent.App = App
 
 App.prototype = {
+    close: function() {
+        // app wants to close
+        // maybe do some cleanup stuff?
+        window.close()
+    },
+    minimize: function() {
+        // destroy the UI and make the window small and save current window state and stuff
+        this.minimized = true
+        this.minimizedRestore = { height: $(window).height(),
+                                  width: $(window).width()
+                                }
+        chrome.app.window.get('mainWindow').resizeTo(this.minimizedRestore.width,
+                                                     32)
+        $('#top-titlebar-min').text("Full")
+        this.UI.destroy()
+    },
+    unminimize: function() {
+        this.minimized = false
+        $('#top-titlebar-min').text("Compact")
+        chrome.app.window.get('mainWindow').resizeTo(this.minimizedRestore.width,
+                                                     this.minimizedRestore.height)
+        this.UI.undestroy()
+    },
     runtimeMessage: function(msg) {
         console.warn('runtime message!',msg)
         if (msg == 'onSuspend') {

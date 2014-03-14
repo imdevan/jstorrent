@@ -37,10 +37,11 @@ function onadd(evt) {
 function onresizewindow() {
     var toph = $('#chrome-top').height()
     var tabh = $('#detail-tabs').height()
+    var titlebarh = $('#top-titlebar').height()
     var totalchrome = toph + tabh
 
     var width = $(window).width()
-    var height = $(window).height()
+    var height = $(window).height() - titlebarh
     $("#torrentGrid")[0].style.width = width
     $("#detailGrid")[0].style.width = width
     $("#torrentGrid")[0].style.height = Math.floor((height - totalchrome) * 0.4)
@@ -130,6 +131,17 @@ function bind_events() {
     tabs.forEach(function(tab) {
 	$('#detail-' + tab).click( click_detail.bind(this, tab) )
     });
+
+    $('#top-titlebar-close').click( function(evt) {
+        app.close()
+    })
+    $('#top-titlebar-min').click( function(evt) {
+        if (app.minimized) {
+            app.unminimize()
+        } else {
+            app.minimize()
+        }
+    })
 
 
     $('.download-remain-click').click( function(evt) {

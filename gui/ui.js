@@ -114,16 +114,41 @@ function UI(opts) {
         ]
     }
 
-    this.torrenttable = new SlickCollectionTable( { collection: this.client.torrents,
-                                                    domid: 'torrentGrid',
-                                                    columns: this.coldefs.torrent
-                                                  } )
-    this.torrenttable.grid.onSelectedRowsChanged.subscribe( _.bind(this.handle_torrent_selection_change,this))
+    this.undestroy()
 
-
+    this.client.on('change',function(item, newval, oldval, attr) {
+        if (attr == 'downspeed') {
+            if (newval) {
+                $('#client-infobar-down').text( 'Down: ' + byteUnitsSec(newval) )
+            } else {
+                $('#client-infobar-down').empty()
+            }
+        } else if (attr == 'upspeed') {
+            if (newval) {
+                $('#client-infobar-up').text( 'Up: ' + byteUnitsSec(newval) )
+            } else {
+                $('#client-infobar-up').empty()
+            }
+        }
+    })
 }
 
 UI.prototype = {
+    destroy: function() {
+        this.torrenttable.destroy()
+        if (this.detailtable) {
+            this.detailtable.destroy()
+        }
+        $('#ui-wrapper').hide()
+    },
+    undestroy: function() {
+        $('#ui-wrapper').show()
+        this.torrenttable = new SlickCollectionTable( { collection: this.client.torrents,
+                                                        domid: 'torrentGrid',
+                                                        columns: this.coldefs.torrent
+                                                      } )
+        this.torrenttable.grid.onSelectedRowsChanged.subscribe( _.bind(this.handle_torrent_selection_change,this))
+    },
     get_selected_files: function() {
         var rows = this.detailtable.grid.getSelectedRows()
         var files = []

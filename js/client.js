@@ -21,6 +21,9 @@ function Client(opts) {
                                               itemClass: jstorrent.Torrent})
     this.torrents.on('add', _.bind(this.onTorrentAdd, this))
 
+    this.rings = { sent: new jstorrent.RingBuffer(8),
+                   received: new jstorrent.RingBuffer(8) }
+
     this.packageEntry = null
     this.packageDisk = null
     if (chrome.runtime.getPackageDirectoryEntry) {
@@ -41,6 +44,8 @@ function Client(opts) {
     this.disks.numLoaded = 0
     this.set('activeTorrents',{})
     this.set('numActiveTorrents',0)
+    this.set('bytes_sent',0) // todo - persist these?
+    this.set('bytes_received',0)
     this.on('change', _.bind(this.onChange, this))
     this.on('activeTorrentsChange', _.bind(function(){
         this.set('numActiveTorrents', _.keys(this.get('activeTorrents')).length)
@@ -96,8 +101,6 @@ function Client(opts) {
 
     this.setPeerIdBytes()
 
-    //this.interval = setInterval( _.bind(this.frame,this), 1000 ) // try to only to edge triggered so that background page can go to slep
-
     this.on('error', _.bind(this.onError, this))
     this.on('ready', _.bind(this.onReady, this))
 
@@ -107,7 +110,8 @@ function Client(opts) {
 
 Client.prototype = {
     countBytes: function(type, val) {
-        // keep track of bitrate
+        var k = 'bytes_' + type
+        this.set(k, this.get(k) + val)
     },
     notifyPiecePersisted: function(piece) {
         var portinfo 
@@ -197,9 +201,17 @@ Client.prototype = {
             if (this.app.options.get('prevent_sleep')) {
                 console.log('number of active torrents now', newval)
                 if (newval == 0) {
+                    this.set('downspeed',0)
+                    this.set('upspeed',0)
+                    if (this.thinkInterval) {
+                        clearInterval(this.thinkInterval)
+                    }
                     console.log('POWER:release keep awake')
                     chrome.power.releaseKeepAwake()
                 } else if (newval > 0 && oldval == 0) {
+                    if (! this.thinkInterval) {
+                        this.thinkInterval = setInterval( _.bind(this.frame,this), 1000 )
+                    }
                     console.log('POWER:requesting system keep awake')
                     chrome.power.requestKeepAwake('system')
                 }
@@ -295,9 +307,6 @@ Client.prototype = {
         //this.app.createNotification(e)
         // app binds to our error and shows notification
     },
-    stop: function() {
-        clearInterval( this.interval )
-    },
     set_ui: function(ui) {
         this.ui = ui
     },
@@ -349,9 +358,26 @@ Client.prototype = {
     },
     frame: function() {
         // TODO -- only do a frame when there is at least one started torrent
-        this.torrents.each( function(torrent) {
-            torrent.frame()
-        })
+
+        // triggered every second
+
+        var sent = this.get('bytes_sent')
+        var received = this.get('bytes_received')
+
+        this.rings.sent.add( sent )
+        this.rings.received.add( received )
+
+        // calculate rate based on last 4 seconds
+        var prev = this.rings.sent.get(-4)
+        if (prev !== null) {
+            this.set('upspeed', (sent - prev) / 4)
+        }
+        var prev = this.rings.received.get(-4)
+        if (prev !== null) {
+            var downSpeed = (received - prev)/4
+            this.set('downspeed', downSpeed)
+        }
+
     }
 }
 
