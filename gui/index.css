@@ -11,6 +11,10 @@
   background: linear-gradient(#24a3ed 0%, #24a3ed 8%, #90d1fc 12%, #90d1fc 90%, white 100%);
   -webkit-app-region: drag;
 }
+#top-titlebar.blur {
+  background: linear-gradient(#999 0%, #999 8%, #dddeee 12%, #dddeee 90%, white 100%);
+}
+
 #top-titlebar-close {
   float:right;
   -webkit-app-region: no-drag;

@@ -109,6 +109,9 @@ function tryauth() {
 
 
 function reload() {
+    if (app) { app.unminimize() }
+    if (app && app.webapp) { app.webapp.stop() }
+
     chrome.runtime.reload()
 }
 

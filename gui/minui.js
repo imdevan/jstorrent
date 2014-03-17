@@ -17,7 +17,8 @@
 
         this.coldefs = {
             'torrent': [
-                {id: "name", name: "Name", width:275, displayFunc: renderTorrent }
+                {id: "name", name: "Name", width:275 - 60, displayFunc: renderTorrent },
+                {id:'eta', name: "ETA", formatVal: formatValETA, width:60}
             ]
         }
 

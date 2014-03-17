@@ -146,6 +146,14 @@ function bind_events() {
 	$('#detail-' + tab).click( click_detail.bind(this, tab) )
     });
 
+
+    window.onfocus = function() {
+        $('#top-titlebar').removeClass("blur")
+    }
+    window.onblur = function() {
+        $('#top-titlebar').addClass("blur")
+    }
+
     $('#top-titlebar-close').click( function(evt) {
         app.close()
     })

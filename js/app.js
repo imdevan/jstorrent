@@ -146,7 +146,7 @@ App.prototype = {
 
             // stop listening, destroy all sockets
             this.webapp.stop()
-
+            this.unminimize()
         }
     },
     on_options_loaded: function() {
