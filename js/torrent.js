@@ -46,7 +46,7 @@ function Torrent(opts) {
     this.__name__ = arguments.callee.name
     this.client = opts.client || opts.parent.parent
     this.thinkIntervalTime = 250
-    this.newStateThinkCtr = 0
+    this.thinkCtr = 0
     console.assert(this.client)
     this.hashhexlower = null
     this.hashbytes = null
@@ -707,6 +707,7 @@ Torrent.prototype = {
         return this.get('complete') == 1
     },
     maybeDropShittyConnection: function() {
+        // TODO only call every few seconds, as we drop too aggressively
         if (! this.infodict) { return }
         if (this.get('complete') == 1) { return }
 
@@ -716,7 +717,11 @@ Torrent.prototype = {
             if (this.swarm.items.length > this.peers.items.length) {
                 var connected = _.filter( this.peers.items, function(p) { return p.get('state') == 'connected' })
 
-                if (connected.length > this.getMaxConns() * 0.7) { // 70% of connections are connected
+                if (connected.length > this.getMaxConns() * 0.7
+                    ||
+                    (this.swarm.items.length > this.getMaxConns() * 5 && connected.length > this.getMaxConns() * 0.3)
+                   ) { // 70% of connections are connected
+                    // OR, if we have a much larger swarm than our current maxconns and say, 30% connected...
 
                     var chokers = _.filter( connected, function(p) { 
                         return (p.amChoked &&
@@ -1471,8 +1476,7 @@ Torrent.prototype = {
     },
     newStateThink: function() {
         // misnomer, this is actually a regular interval triggered function
-
-        this.newStateThinkCtr = (this.newStateThinkCtr + 1) % 4
+        this.thinkCtr == (this.thinkCtr + 1) % 2048 // overflow condition?
 
         /* 
 
@@ -1519,7 +1523,8 @@ Torrent.prototype = {
             console.log("ENDGAME ON")
         }
 
-        if (this.newStateThinkCtr == 0) {
+        if (this.thinkCtr % 4 == 0) {
+            // only update these stats every second
 
             var sent = this.get('bytes_sent')
             var received = this.get('bytes_received')
@@ -1540,23 +1545,30 @@ Torrent.prototype = {
                 this.set('eta', bytesRemain / downSpeed)
             }
 
-            // only do this slightly more expensive thing every 4 ticks
+
+        }
+
+        if (this.thinkCtr % 12 == 0) {
+            // every 3 seconds see if we wanna drop some conns
             this.maybeDropShittyConnection()
         }
 
-        var idx, peer, peerconn
-        if (this.should_add_peers() && this.swarm.items.length > 0) {
-            idx = Math.floor( Math.random() * this.swarm.items.length )
-            peer = this.swarm.get_at(idx)
-            peerconn = new jstorrent.PeerConnection({peer:peer})
-            //console.log('should add peer!', idx, peer)
-            if (! this.peers.contains(peerconn)) {
-                if (peer.get('only_connect_once')) { return }
-                this.peers.add( peerconn )
-                this.set('numpeers',this.peers.items.length)
-                peerconn.connect()
+        if (this.thinkCtr % 2 == 0) {
+            // add new peers every 1/2 second
+            var idx, peer, peerconn
+            if (this.should_add_peers() && this.swarm.items.length > 0) {
+                idx = Math.floor( Math.random() * this.swarm.items.length )
+                peer = this.swarm.get_at(idx)
+                peerconn = new jstorrent.PeerConnection({peer:peer})
+                //console.log('should add peer!', idx, peer)
+                if (! this.peers.contains(peerconn)) {
+                    if (peer.get('only_connect_once')) { return }
+                    this.peers.add( peerconn )
+                    this.set('numpeers',this.peers.items.length)
+                    peerconn.connect()
+                }
+                // peer.set('only_connect_once',true) // huh?
             }
-            // peer.set('only_connect_once',true) // huh?
         }
     },
     getMaxConns: function() {
