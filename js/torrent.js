@@ -1476,7 +1476,7 @@ Torrent.prototype = {
     },
     newStateThink: function() {
         // misnomer, this is actually a regular interval triggered function
-        this.thinkCtr == (this.thinkCtr + 1) % 2048 // overflow condition?
+        this.thinkCtr = (this.thinkCtr + 1) % 2048 // overflow condition?
 
         /* 
 
