@@ -225,7 +225,7 @@ App.prototype = {
     onAcceptLanguages: function(s) {
         // detect if 
         app.analytics.sendEvent('acceptLanguages',window.navigator.language,s)
-        if (_.contains(['pt-BR'], window.navigator.language) || true) {
+        if (_.contains(['pt-BR'], window.navigator.language)) {
             this.freeTrialFreeDownloads = 999
         }
 
