@@ -22,7 +22,12 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
+    if (chrome.WebApplication) {
+        // let this work without submodule
+        this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
+    } else {
+        this.webapp = null
+    }
 
     this.analytics = new jstorrent.Analytics({app:this})
     this.entryCache = new jstorrent.EntryCache
@@ -86,7 +91,9 @@ App.prototype = {
     close: function() {
         // app wants to close
         // maybe do some cleanup stuff?
-        this.webapp.stop()
+        if (this.webapp) {
+            this.webapp.stop()
+        }
         this.unminimize()
         window.close()
     },
@@ -145,13 +152,17 @@ App.prototype = {
             }
 
             // stop listening, destroy all sockets
-            this.webapp.stop()
+            if (this.webapp) {
+                this.webapp.stop()
+            }
             this.unminimize()
         }
     },
     on_options_loaded: function() {
         if (this.options.get('web_server_enable')) {
-            this.webapp.start() // TODO -- try to listen on different ports if listen fails
+            if (this.webapp) {
+                this.webapp.start() // TODO -- try to listen on different ports if listen fails
+            }
         }
     },
     onContextMenu: function(grid, item, evt) {
