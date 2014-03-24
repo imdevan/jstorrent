@@ -100,14 +100,16 @@ File.prototype = {
     },
     streamable: function() {
         var ext = this.name.toLowerCase()
-        for (var i=0; i<MIMECATEGORIES.video.length; i++) {
-            if (ext.endsWith('.' + MIMECATEGORIES.video[i])) {
-                return {type:'video'}
+        if (window.MIMECATEGORIES) {
+            for (var i=0; i<MIMECATEGORIES.video.length; i++) {
+                if (ext.endsWith('.' + MIMECATEGORIES.video[i])) {
+                    return {type:'video'}
+                }
             }
-        }
-        for (var i=0; i<MIMECATEGORIES.audio.length; i++) {
-            if (ext.endsWith('.' + MIMECATEGORIES.audio[i])) {
-                return {type:'audio'}
+            for (var i=0; i<MIMECATEGORIES.audio.length; i++) {
+                if (ext.endsWith('.' + MIMECATEGORIES.audio[i])) {
+                    return {type:'audio'}
+                }
             }
         }
     },
