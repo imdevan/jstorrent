@@ -1,6 +1,10 @@
 (function(){
 
     // simple but inefficient utf8 trickery from stack overflow
+    // seems to not work very well?
+    var td = new TextDecoder('utf-8')
+    var te = new TextEncoder('utf-8')
+
     window.utf8 = {}
     utf8.toByteArray = function(str) {
         var byteArray = [];
@@ -48,7 +52,7 @@
         return [n, newf+1];
     }
 
-    function decode_string(x,f, opts) {
+    function decode_string(x,f, opts, key) {
         var colon = x.indexOf(':',f);
         var n = python_int(x.slice(f,colon));
         if (x[f] == '0' && colon != f+1) {
@@ -56,10 +60,14 @@
         }
         colon++;
         var raw = x.slice(colon,colon+n);
-        if (opts && opts.utf8) {
-            var decoded = utf8.decode(raw);
+        if (opts && opts.utf8 && key != 'pieces') {
+            var decoded = td.decode(stringToUint8Array(raw))
+            //var decoded = utf8.parse(stringToUint8Array(raw))
         } else {
             var decoded = raw;
+            if (key == 'pieces') {
+                console.assert(Math.floor(raw.length/20) == raw.length/20)
+            }
         }
         toret = [decoded, colon+n];
         return toret;
@@ -92,7 +100,7 @@
             k = data[0];
             f = data[1];
 
-            data2 = decode_func[ x[f] ](x,f, opts)
+            data2 = decode_func[ x[f] ](x,f, opts, k)
             r[k] = data2[0];
             f = data2[1];
         }
@@ -137,13 +145,16 @@
         r.push('e'.charCodeAt(0));
     }
     function encode_string(x, r, stack, cb, opts) {
-        if (opts && opts.utf8) {
-            var bytes = utf8.toByteArray(x);
+        var isPieces = stack && stack.length > 1 && stack[stack.length-1] == 'pieces';
+        if (opts && opts.utf8 && ! (isPieces) ) {
+            //var bytes = utf8.toByteArray(x);
+            var bytes = te.encode(x);
         } else {
             var bytes = [];
             for (var i=0; i<x.length; i++) {
                 bytes.push(x.charCodeAt(i));
             }
+            if (isPieces) { console.assert(Math.floor(bytes.length/20) == bytes.length/20) }
         }
         var s = bytes.length.toString();
         for (var i=0; i<s.length; i++) {
@@ -197,6 +208,7 @@
     encode_func['object'] = encode_object;
 
     window.bencode = function(x, stack_callback, opts) {
+        opts = opts || {utf8:true}
         var r = [];
         var stack = [];
         encode_func[gettype(x)](x ,r, stack, stack_callback, opts);

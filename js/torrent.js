@@ -349,12 +349,20 @@ Torrent.prototype = {
                 return
             }
             this.metadata = bdecode(ui82str(new Uint8Array(buffer)))
+            if (this.metadata.encoding) {
+                if (this.metadata.encoding.toLowerCase() == 'utf-8' ||
+                    this.metadata.encoding.toLowerCase() == 'utf8') {
+                    this.metadata = bdecode(ui82str(new Uint8Array(buffer)),{utf8:true})
+                    console.log('utf-8 torrent', this.metadata)
+                }
+            }
+
         } catch(e) {
             callback({error:"Invalid torrent file"})
             return
         }
         this.infodict = this.metadata.info
-        this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer
+        this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer // need to do utf-8 encoding?
         var chunkData = this.infodict_buffer // turn off transferable
         this.client.workerthread.send( { command: 'hashChunks',
                                          chunks: [new Uint8Array(chunkData)] }, onHashResult, {transferable:false} )
@@ -567,6 +575,7 @@ Torrent.prototype = {
         this.connectionsServingInfodict = []
 
         this.numPieces = this.infodict.pieces.length/20
+        console.assert( Math.floor(this.numPieces) == this.numPieces )
         if (! this._attributes.bitfield) {
             this._attributes.bitfield = ui82arr(new Uint8Array(this.numPieces))
         } else {
@@ -670,8 +679,14 @@ Torrent.prototype = {
                 callback({error:'disk missing'})
             }
         } else {
-
-            var data = new Uint8Array(bencode(_this.metadata))
+            if (this.metadata.encoding &&
+                (this.metadata.encoding.toLowerCase() == 'utf-8' ||
+                 this.metadata.encoding.toLowerCase() == 'utf8')) {
+                debugger
+                var data = new Uint8Array(bencode(this.metadata),{utf8:true})
+            } else {
+                var data = new Uint8Array(bencode(this.metadata))
+            }
             storage.diskio.writeWholeContents({path:[filename],
                                                data:data},
                                               callback)
