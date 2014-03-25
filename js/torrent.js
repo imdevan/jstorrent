@@ -679,11 +679,24 @@ Torrent.prototype = {
                 callback({error:'disk missing'})
             }
         } else {
-            if (this.metadata.encoding &&
+            if (true || this.metadata.encoding &&
                 (this.metadata.encoding.toLowerCase() == 'utf-8' ||
                  this.metadata.encoding.toLowerCase() == 'utf8')) {
-                debugger
-                var data = new Uint8Array(bencode(this.metadata),{utf8:true})
+                var s = bencode(this.metadata)
+                var data = new Uint8Array(s)
+                // assert infohash still matches
+                var digest = new Digest.SHA1()
+                var s2 = bencode(this.metadata.info)
+                digest.update(arrayBufferToString(s2))
+                var savedInfo = new Uint8Array(digest.finalize())
+                for (var i=0; i<savedInfo.length ;i++ ) {
+                    if (savedInfo[i] != this.hashbytes[i]) {
+                        console.error("HASH MISMATCH!")
+                        debugger
+                    }
+                }
+
+                
             } else {
                 var data = new Uint8Array(bencode(this.metadata))
             }

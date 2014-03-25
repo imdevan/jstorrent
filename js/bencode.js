@@ -145,7 +145,7 @@
         r.push('e'.charCodeAt(0));
     }
     function encode_string(x, r, stack, cb, opts) {
-        var isPieces = stack && stack.length > 1 && stack[stack.length-1] == 'pieces';
+        var isPieces = stack && stack.length > 0 && stack[stack.length-1] == 'pieces';
         if (opts && opts.utf8 && ! (isPieces) ) {
             //var bytes = utf8.toByteArray(x);
             var bytes = te.encode(x);
