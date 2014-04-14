@@ -140,6 +140,16 @@ function str2ab(str) {
     return new TextEncoder('utf-8').encode(str).buffer;
 }
 
+function arrayBufferToStringWS(buffer) {
+    // TODO // merge this with ui82str. this comes from web-server-chrome
+    var str = '';
+    var uArrayVal = new Uint8Array(buffer);
+    for(var s = 0; s < uArrayVal.length; s++) {
+        str += String.fromCharCode(uArrayVal[s]);
+    }
+    return str;
+}
+
 function ui82str(arr, startOffset) {
     console.assert(arr)
     if (! startOffset) { startOffset = 0 }

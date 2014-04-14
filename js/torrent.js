@@ -687,7 +687,7 @@ Torrent.prototype = {
                 // assert infohash still matches
                 var digest = new Digest.SHA1()
                 var s2 = bencode(this.metadata.info)
-                digest.update(arrayBufferToString(s2))
+                digest.update(arrayBufferToStringWS(s2))
                 var savedInfo = new Uint8Array(digest.finalize())
                 for (var i=0; i<savedInfo.length ;i++ ) {
                     if (savedInfo[i] != this.hashbytes[i]) {

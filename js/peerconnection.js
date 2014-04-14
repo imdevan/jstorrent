@@ -849,6 +849,7 @@ PeerConnection.prototype = {
             var slicea = jstorrent.protocol.chunkSize * pieceRequested
             var slicelen = Math.min( d.total_size - slicea,
                                      jstorrent.protocol.chunkSize )
+            // TODO -- assert pieceRequested/slicea in bounds
             var slicebuf = new Uint8Array(this.torrent.infodict_buffer, slicea, slicelen)
             var newbuf = new Uint8Array(slicelen)
             newbuf.set( slicebuf )
