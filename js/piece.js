@@ -461,7 +461,7 @@ debugger
                     if (isSaturated) {
                         var foundThisPeer = false
                         for (var i=0; i<this.chunkRequests[chunkNum]; i++) {
-                            if (this.chunkRequests[chunkNum][i].peerconn = peerconn) {
+                            if (this.chunkRequests[chunkNum][i].peerconn == peerconn) {
                                 foundThisPeer = true
                                 break
                             }
