@@ -2274,7 +2274,7 @@ if (typeof Slick === "undefined") {
         //console.log('handlecontextmenu',self.collectionTable.collection.itemClass.name)
       var $cell = $(e.target).closest(".slick-cell", $canvas);
       if ($cell.length === 0) {
-        return;
+        trigger(self.onContextMenuNoItem, {}, e); return;
       }
 
       // are we editing this cell?
@@ -3305,6 +3305,7 @@ if (typeof Slick === "undefined") {
       "onClick": new Slick.Event(),
       "onDblClick": new Slick.Event(),
       "onContextMenu": new Slick.Event(),
+      "onContextMenuNoItem": new Slick.Event(),
       "onKeyDown": new Slick.Event(),
       "onAddNewRow": new Slick.Event(),
       "onValidationError": new Slick.Event(),

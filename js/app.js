@@ -165,8 +165,23 @@ App.prototype = {
             }
         }
     },
+    onContextMenuNoItem: function(grid, info, evt) {
+        window.contextMenuContextItem = info
+        console.log('oncontextmenunoitem',info)
+        chrome.contextMenus.removeAll()
+        if (info.collection.itemClass == jstorrent.Tracker) {
+            var opts = {
+                contexts:["all"],
+                title:"Add Custom Tracker",
+                id:"add-custom-tracker"
+            }
+            chrome.contextMenus.create(opts)
+        }
+        return true
+    },
     onContextMenu: function(grid, item, evt) {
-        //console.log('oncontextmenu',item)
+        console.log('oncontextmenu',item)
+        chrome.contextMenus.removeAll()
         if (item.itemClass == jstorrent.Torrent) {
             if (jstorrent.options.allow_report_torrent_bug) {
 
@@ -201,9 +216,9 @@ App.prototype = {
     },
     onContextMenuClick: function(c) {
         chrome.contextMenus.removeAll(function(){})
-        var item = contextMenuContextItem
+        console.log('contextmenuclick',c,c.menuItemId)
+        var item = window.contextMenuContextItem
         window.contextMenuContextItem = null
-        //console.log('contextmenuclick',c,c.menuItemId)
         if (c.menuItemId == 'reportTorrentIssue') {
             var torrent = item
             var data = {data:torrent.getSaveData()}
@@ -230,8 +245,10 @@ App.prototype = {
                 var file = files[i]
                 file.torrent.setFilePriority(file.num, 0, file.getPriority())
             }
+        } else if (c.menuItemId == 'add-custom-tracker') {
+            console.log('add custom tracker now...')
+            app.createWindowCustomTracker(item)
         }
-
     },
     onAcceptLanguages: function(s) {
         // detect if 
@@ -858,15 +875,28 @@ App.prototype = {
     upsell_window_closed: function() {
         this.upsell_window = null
     },
-    focus_or_open: function(type, callback) {
+    addTracker: function(val) {
+        // clicked OK
+        var context = this.addCustomTrackerContext
+        console.log('add tracker!', val)
+        debugger
+    },
+    createWindowCustomTracker: function(item) {
+        this.addCustomTrackerContext = item
+        this.focus_or_open('addcustomtracker', null, {width:360, height:80})
+    },
+    focus_or_open: function(type, callback, opts) {
         if (this.popup_windows[type]) {
             this.popup_windows[type].focus()
             if (callback) {callback(this.popup_windows[type])}
         } else {
+            var width = (opts && opts.width) || 520
+            var height = (opts && opts.height) || 480
+            var bounds = { width: width, height: height }
+            // if use an ID, it saves the first opened height... strange
             chrome.app.window.create( 'gui/'+type+'.html', 
-                                      { width: 520,
-                                        id:"help",
-                                        height: 480 },
+                                      { bounds: bounds,
+                                         },
                                       _.bind(this.window_opened, this, type, callback)
                                     );
         }

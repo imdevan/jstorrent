@@ -92,6 +92,10 @@ debugger // using CellSelectEditor now
 */
     },this))
 
+    grid.onContextMenuNoItem.subscribe( _.bind(function(evt, data) {
+        app.onContextMenuNoItem(grid, opts, evt)
+    },this))
+
     grid.onContextMenu.subscribe( _.bind(function(evt, data) {
 
         //var cell1 = grid.getCellFromPoint(evt.clientX,evt.clientY)

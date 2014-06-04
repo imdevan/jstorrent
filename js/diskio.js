@@ -229,6 +229,7 @@
 
         function recurse(e) {
             if (! e) {
+                debugger // #1 exception
                 oncallback({error:'empty input'}) // e.isDirectory was dying...
             } else if (path.length == 0) {
                 if (e.name && e.message) {
