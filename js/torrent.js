@@ -1249,6 +1249,16 @@ Torrent.prototype = {
             }
         }
     },
+    addTrackerByURL: function(url) {
+        if (url.toLowerCase().match('^udp')) {
+            tracker = new jstorrent.UDPTracker( {url:url, torrent: this} )
+        } else {
+            tracker = new jstorrent.HTTPTracker( {url:url, torrent: this} )
+        }
+        if (! this.trackers.contains(tracker)) {
+            this.trackers.add( tracker )
+        }
+    },
     addPublicTrackers: function() {
         if (this.isPrivate()) { return }
         for (var i=0; i<jstorrent.constants.publicTrackers.length; i++) {

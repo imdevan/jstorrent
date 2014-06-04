@@ -876,10 +876,9 @@ App.prototype = {
         this.upsell_window = null
     },
     addTracker: function(val) {
-        // clicked OK
         var context = this.addCustomTrackerContext
-        console.log('add tracker!', val)
-        debugger
+        var torrent = context.collection.opts.torrent
+        torrent.addTrackerByURL(val)
     },
     createWindowCustomTracker: function(item) {
         this.addCustomTrackerContext = item
