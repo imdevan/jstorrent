@@ -81,6 +81,7 @@ ChromeSocketXMLHttpRequest.prototype = {
     onCreate: function(sockInfo) {
         if (this.closed) { return }
         this.sockInfo = sockInfo
+        peerSockMap[sockInfo.socketId] = this
         this.connecting = true
         chrome.sockets.tcp.connect( sockInfo.socketId, this.getHost(), this.getPort(), _.bind(this.onConnect, this) )
     },
@@ -111,7 +112,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
         //console.log('writing data',ui82str(data))
-        chrome.sockets.tcp.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
+        chrome.sockets.tcp.send( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(result) {
         this.writing = false
@@ -120,13 +121,14 @@ ChromeSocketXMLHttpRequest.prototype = {
     doRead: function() {
         if (this.closed) { return }
         console.assert(! this.reading)
-        chrome.sockets.tcp.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
+        //chrome.sockets.tcp.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) ) // new api dont work this way
     },
     close: function() {
         this.closed = true
         if (this.sockInfo) {
             chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
-            chrome.sockets.tcp.destroy(this.sockInfo.socketId)
+            chrome.sockets.tcp.close(this.sockInfo.socketId)
+            delete peerSockMap[this.sockInfo.socketId]
             this.sockInfo = null
         }
     },
