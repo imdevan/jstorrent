@@ -67,12 +67,13 @@ Disk.prototype = {
             // remove this.
             if (!entry) {
                 console.error('unable to restore entry - (was the folder removed?)', this._opts.id)
-                app.notify("Unable to load disk: "+this.key+". Was it removed?")
+                //app.notify("Unable to load disk: "+this.key+". Was it removed?")
                 var parts = this._opts.id.split(':')
                 parts.shift()
                 var folderName = parts.join(':')
+                app.notifyMissingDisk(this.key, folderName)
                 var collection = this.getCollection()
-                collection.opts.client.trigger('error','Unable to load Download Directory: '+ folderName)
+                //collection.opts.client.trigger('error','Unable to load Download Directory: '+ folderName) // double error notification, how annoying.
                 // now loop over torrents using this download directory and set their error state
                 var torrents = collection.opts.client.torrents
                 for (var i=0; i<torrents.items.length; i++) {

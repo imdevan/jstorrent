@@ -257,7 +257,7 @@ UDPTracker.prototype = {
                     this.set_error(err); return
                 }
                 // this.connection = connectionInfo // dont re-use connection, whatevs
-                //console.log('tracker got connection',connectionInfo.connectionId)
+                console.log('tracker got connection',connectionInfo.connectionId)
 
                 var announceRequest = this.get_announce_payload( connectionInfo.connectionId, event );
                 this.set_state('write_announce')

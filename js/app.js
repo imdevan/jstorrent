@@ -103,7 +103,7 @@ App.prototype = {
         // destroy the UI and make the window small and save current window state and stuff
         this.minimized = true
         this.minimizedRestore = cw.getBounds() // persist this so that when we close in minimized mode it doesnt use these bounds
-        cw.setMinWidth(270) // dont work yet in dev channel
+        //cw.setMinWidth(270) // dont work yet in dev channel
         cw.resizeTo(275 + 16, 100)
         //cw.moveTo(10000, 10000)
         $('#top-titlebar-min').text("Full")
@@ -119,7 +119,7 @@ App.prototype = {
         }
         var cw = chrome.app.window.current()
         this.minimized = false
-        cw.setMinWidth(770)
+        //cw.setMinWidth(770) // not supported
         $('#top-titlebar-min').text("Compact")
         $('#top-titlebar-icon').hide()
         cw.resizeTo(Math.max(770, this.minimizedRestore.width),
@@ -290,6 +290,26 @@ App.prototype = {
         this.createNotification({details:'There seems to be a problem with the disk for this torrent. Is it attached? You can reset the disk for this torrent in the "More Actions" in the toolbar. This could just be the disk was too slow, and you can try again.',
                                  priority:2,
                                  id:'storage-missing'})
+    },
+    notifyMissingDisk: function(diskKey, folderName) {
+        function onclick(idx) {
+            if (idx == 0) {
+                
+            } else {
+                var disk = this.client.disks.get(diskKey)
+                disk._collections[0].remove(disk)
+            }
+        }
+        this.createNotification({ details:"Unable to locate download directory: " + folderName,
+                                  message: "Missing directory",
+                                  buttons: [ 
+                                      {title:"Keep directory (default)"},
+                                      {title:"Remove directory"}
+                                  ],
+                                  id:'directory-missing-' + diskKey,
+                                  priority:1,
+                                  onButtonClick: _.bind(onclick,this),
+                                  onClick: _.bind(onclick,this) })
     },
     notifyWantToAddPublicTrackers: function(torrent) {
         if (! app.client.torrents.contains(torrent)) { return }
