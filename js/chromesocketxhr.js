@@ -40,7 +40,7 @@ ChromeSocketXMLHttpRequest.prototype = {
     },
     send: function(data) {
         console.assert( ! data ) // do not support sending request body yet
-        chrome.socket.create('tcp', {}, _.bind(this.onCreate, this))
+        chrome.sockets.tcp.create({}, _.bind(this.onCreate, this))
         if (this.timeout !== 0) {
             this.timeoutId = setTimeout( _.bind(this.checkTimeout, this), this.timeout )
         }
@@ -82,7 +82,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         if (this.closed) { return }
         this.sockInfo = sockInfo
         this.connecting = true
-        chrome.socket.connect( sockInfo.socketId, this.getHost(), this.getPort(), _.bind(this.onConnect, this) )
+        chrome.sockets.tcp.connect( sockInfo.socketId, this.getHost(), this.getPort(), _.bind(this.onConnect, this) )
     },
     onConnect: function(result) {
         if (this.closed) { return }
@@ -111,7 +111,7 @@ ChromeSocketXMLHttpRequest.prototype = {
         this.writing = true
         var data = this.writeBuffer.consume_any_max(jstorrent.protocol.socketWriteBufferMax)
         //console.log('writing data',ui82str(data))
-        chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
+        chrome.sockets.tcp.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(result) {
         this.writing = false
@@ -120,13 +120,13 @@ ChromeSocketXMLHttpRequest.prototype = {
     doRead: function() {
         if (this.closed) { return }
         console.assert(! this.reading)
-        chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
+        chrome.sockets.tcp.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
     },
     close: function() {
         this.closed = true
         if (this.sockInfo) {
-            chrome.socket.disconnect(this.sockInfo.socketId)
-            chrome.socket.destroy(this.sockInfo.socketId)
+            chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
+            chrome.sockets.tcp.destroy(this.sockInfo.socketId)
             this.sockInfo = null
         }
     },

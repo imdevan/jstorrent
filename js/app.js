@@ -22,7 +22,7 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    if (chrome.WebApplication) {
+    if (chrome.socket && chrome.WebApplication) {
         // let this work without submodule
         this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
     } else {
@@ -81,7 +81,6 @@ function App() {
         $('#button-sponsor').hide()
     } else if (this.isUnpacked()) {
         $('#unpacked-container').show()
-
     }
 }
 
@@ -278,7 +277,7 @@ App.prototype = {
         })
     },
     initialize_client: function() {
-        //console.log('app:initialize_client')
+        console.log('app:initialize_client')
         this.client = new jstorrent.Client({app:this, id:'client01'});
         this.client.torrents.on('error', _.bind(this.onTorrentError, this))
         this.client.torrents.on('started', _.bind(this.onTorrentStart, this))

@@ -1,3 +1,15 @@
+var peerSockMap = {}
+
+function onTCPReceive(info) {
+    var sockId = info.socketId
+    if (peerSockMap[sockId]) {
+        peerSockMap[sockId].onReadTCP(info)
+    }
+}
+
+chrome.sockets.tcp.onReceive.addListener( onTCPReceive )
+
+
 function PeerConnection(opts) {
     jstorrent.Item.apply(this, arguments)
 
@@ -150,7 +162,8 @@ PeerConnection.prototype = {
         //console.log(this.get_key(),'connect timeout')
         this.connecting = false;
         this.connect_timeouts++;
-        chrome.socket.destroy( this.sockInfo.socketId )
+        chrome.sockets.tcp.close( this.sockInfo.socketId )
+        delete peerSockMap[this.sockInfo.socketId]
         this.sockInfo = null
         this.trigger('connect_timeout')
     },
@@ -185,9 +198,10 @@ PeerConnection.prototype = {
         if (this.sockInfo) {
             // if no this.sockInfo, perhaps we were not yet connected
             if (this.connectedWhen) {
-                chrome.socket.disconnect(this.sockInfo.socketId)
+                chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
             }
-            chrome.socket.destroy(this.sockInfo.socketId)
+            chrome.sockets.tcp.close(this.sockInfo.socketId)
+            delete peerSockMap[this.sockInfo.socketId]
         }
         this.sockInfo = null
         // need to clean up registerd requests
@@ -198,13 +212,14 @@ PeerConnection.prototype = {
         console.assert( ! this.connecting )
         this.connecting = true;
         this.set('state','connecting')
-        chrome.socket.create('tcp', {}, _.bind(this.oncreate, this))
+        chrome.sockets.tcp.create({}, _.bind(this.oncreate, this))
     },
     oncreate: function(sockInfo) {
         this.sockInfo = sockInfo;
+        peerSockMap[this.sockInfo.socketId] = this
         //this.log('peer oncreate')
         this.connect_timeout_callback = setTimeout( _.bind(this.on_connect_timeout, this), this.connect_timeout_delay )
-        chrome.socket.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
+        chrome.sockets.tcp.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
         //console.log(this.get_key(),'connected.',connectInfo)
@@ -246,7 +261,7 @@ PeerConnection.prototype = {
         if (this.hasclosed) { return }
         if (this.reading) { return }
         this.reading = true
-        chrome.socket.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) )
+        // chrome.sockets.tcp.read( this.sockInfo.socketId, jstorrent.protocol.socketReadBufferMax, _.bind(this.onRead,this) ) // new socket API doesnt do it this way
     },
     sendExtensionHandshake: function() {
         this.sentExtensionHandshake = true
@@ -345,7 +360,7 @@ PeerConnection.prototype = {
         //this.log('write',data.byteLength)
         this.writing = true
         this.writing_length = data.byteLength
-        chrome.socket.write( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
+        chrome.sockets.tcp.send( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(writeResult) {
         if (! this.sockInfo) {
@@ -355,13 +370,14 @@ PeerConnection.prototype = {
 
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
-        if(writeResult.bytesWritten != this.writing_length) {
-            if (writeResult.bytesWritten == 0) {
-                this.close('bytesWritten==0, closed connection')
-            } else if (writeResult.bytesWritten < 0) {
-                this.error('negative bytesWritten',writeResult.bytesWritten)
+        if(writeResult.bytesSent != this.writing_length) {
+            if (writeResult.bytesSent == 0) {
+                this.close('bytesSent==0, closed connection')
+            } else if (writeResult.bytesSent < 0) {
+                this.error('negative bytesSent',writeResult.bytesSent)
             } else {
-                console.error('bytes written does not match!, was',writeResult.bytesWritten,'should be',this.writing_length)
+debugger
+                console.error('bytes written does not match!, was',writeResult.bytesSent,'should be',this.writing_length)
 /*
                 chrome.socket.getInfo( this.sockInfo.socketId, function(socketStatus) {
                     console.log('socket info -',socketStatus)
@@ -558,9 +574,9 @@ PeerConnection.prototype = {
     error: function(msg) {
         //this.log(msg)
         if (this.connectedWhen) {
-            chrome.socket.disconnect(this.sockInfo.socketId)
+            chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
         }
-        chrome.socket.destroy(this.sockInfo.socketId)
+        chrome.sockets.tcp.close(this.sockInfo.socketId)
         this.trigger('error')
     },
     shouldThrottleRead: function() { 
@@ -576,6 +592,9 @@ PeerConnection.prototype = {
                 this.doRead()
             }
         }
+    },
+    onReadTCP: function(readResult) {
+        this.onRead(readResult)
     },
     onRead: function(readResult) {
         //console.log('onread',readResult,readResult.data.byteLength, [ui82str(new Uint8Array(readResult.data))])

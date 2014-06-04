@@ -1,6 +1,17 @@
 // TODO -- figure out how udp connection re-use is supposed to work
 // TODO -- add retry logic
 
+function onUDPReceive(info) {
+    var sockId = info.socketId
+    if (trackerSockMap[sockId]) {
+        trackerSockMap[sockId].onReadUDP(info)
+    }
+}
+
+var trackerSockMap = {}
+
+chrome.sockets.udp.onReceive.addListener( onUDPReceive )
+
 function Tracker(opts) {
     // TODO -- make sure we are destroying sockets and there aren't
     // double error conditions with timeouts and socket reads
@@ -196,6 +207,7 @@ for (var method in Tracker.prototype) {
 
 function UDPTracker() {
     Tracker.apply(this, arguments)
+    this.udpSockId = null
 }
 
 UDPTracker.prototype = {
@@ -257,14 +269,14 @@ UDPTracker.prototype = {
                     this.set_error(err); return
                 }
                 // this.connection = connectionInfo // dont re-use connection, whatevs
-                console.log('tracker got connection',connectionInfo.connectionId)
+                //console.log('tracker got connection',connectionInfo.connectionId)
 
                 var announceRequest = this.get_announce_payload( connectionInfo.connectionId, event );
                 this.set_state('write_announce')
-                chrome.socket.write( connectionInfo.socketId, announceRequest.payload, _.bind( function(writeResult) {
+                chrome.sockets.udp.send( connectionInfo.socketId, announceRequest.payload, this.host, this.port, _.bind( function(writeResult) {
                     this.set_state('read_announce')
                     // check error condition?
-                    chrome.socket.read( connectionInfo.socketId, 4096, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
+                    this.readUDP( connectionInfo.socketId, _.bind(this.on_announce_response, this, connectionInfo, announceRequest ) )
                 }, this))
 	    },this) );
 	} else {
@@ -327,15 +339,23 @@ UDPTracker.prototype = {
         v.setUint32(12, transaction_id)
         return {payload:payload.buffer, transaction_id:transaction_id}
     },
+    readUDP: function(sockId, callback) {
+        this._read_udp_callback = callback
+        trackerSockMap[sockId] = this
+    },
+    onReadUDP: function(info) {
+        this._read_udp_callback(info)
+    },
     get_connection: function(callback) {
-        chrome.socket.create('udp', {}, _.bind(function(sockInfo) {
+        chrome.sockets.udp.create({}, _.bind(function(sockInfo) {
             var sockId = sockInfo.socketId
-            chrome.socket.connect( sockId, this.host, this.port, _.bind( function(sockConnectResult) {
+            this.udpSockId = sockId
+            chrome.sockets.udp.bind( sockId, "0.0.0.0", 0, _.bind( function(sockConnectResult) {
                 //console.log('udp connected', sockConnectResult)
                 var connRequest = this.get_connection_data();
-                chrome.socket.write( sockId, connRequest.payload, _.bind( function(sockWriteResult) {
+                chrome.sockets.udp.send( sockId, connRequest.payload, this.host, this.port, _.bind( function(sockWriteResult) {
                     //console.log('udp wrote', sockWriteResult)
-                    chrome.socket.read( sockId, 4096, _.bind( function(sockReadResult) {
+                    this.readUDP( sockId, _.bind( function(sockReadResult) {
                         //console.log('udp read get connection response',sockReadResult)
                         if (sockReadResult.data === undefined) {
                             // cordova bug?

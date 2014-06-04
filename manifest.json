@@ -7,7 +7,7 @@
     "version": "2.2.7",
     "manifest_version": 2,
     "offline_enabled": true,
-    "minimum_chrome_version": "31",
+    "minimum_chrome_version": "33",
     "file_handlers": {
         "any": {
             "types": [
@@ -19,14 +19,20 @@
             "title": "Open with JSTorrent Dev"
         }
     },
+    "sockets": {
+       "udp": {
+         "send": [""],
+         "bind": [""]
+       },
+       "tcp": {
+         "connect": [""]
+       },
+       "tcpServer": {
+         "listen": [""]
+       }
+    },
     "permissions": [
         {"fileSystem":["write","directory","retainEntries"]},
-        {"socket":[
-            "tcp-connect",
-            "udp-bind::",
-            "tcp-listen::",
-            "udp-send-to::"
-        ]},
         "contextMenus",
         "storage",
         "unlimitedStorage",
