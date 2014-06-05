@@ -370,7 +370,10 @@ PeerConnection.prototype = {
 
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
-        if(writeResult.bytesSent != this.writing_length) {
+        if (writeResult.resultCode < 0) {
+            console.warn('sock onwrite resultcode',writeResult.resultCode)
+            this.error('negative onwrite')
+        } else if (writeResult.bytesSent != this.writing_length) {
             if (writeResult.bytesSent == 0) {
                 this.close('bytesSent==0, closed connection')
             } else if (writeResult.bytesSent < 0) {
@@ -857,6 +860,8 @@ debugger
                 console.error("was not expecting this torrent metadata piece")
             }
         } else if (infodictMsgType == 'REQUEST') {
+            if (! this.torrent.infodict_buffer) { return } // cant handle this!
+
             var code = this.peerExtensionHandshake.m.ut_metadata
 
             var pieceRequested = extMessageBencodedData.piece
