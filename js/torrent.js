@@ -818,7 +818,7 @@ Torrent.prototype = {
         var foundmissing = true
         if (result.error) {
             //console.error('persist piece result',result)
-            if (result.error == 'QuotaExceededError') {
+            if (result.error == 'QuotaExceededError' || result.error.indexOf('QuotaExceededError') != -1) {
                 this.error("Hard disk is full. Free up disk space by removing some files", result.job)
             } else {
                 this.error('error persisting piece: ' + result.error, result.job)
