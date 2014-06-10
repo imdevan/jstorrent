@@ -212,6 +212,7 @@ Client.prototype = {
                     this.set('upspeed',0)
                     if (this.thinkInterval) {
                         clearInterval(this.thinkInterval)
+                        this.thinkInterval = null
                     }
                     console.log('POWER:release keep awake')
                     chrome.power.releaseKeepAwake()
