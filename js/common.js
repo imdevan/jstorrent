@@ -140,6 +140,16 @@ function str2ab(str) {
     return new TextEncoder('utf-8').encode(str).buffer;
 }
 
+// TODO // merge this; comes from web-server-chrome
+var stringToUint8ArrayWS = function(string) {
+    var buffer = new ArrayBuffer(string.length);
+    var view = new Uint8Array(buffer);
+    for(var i = 0; i < string.length; i++) {
+        view[i] = string.charCodeAt(i);
+    }
+    return view;
+};
+
 function arrayBufferToStringWS(buffer) {
     // TODO // merge this with ui82str. this comes from web-server-chrome
     var str = '';
