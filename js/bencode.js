@@ -61,7 +61,7 @@
         colon++;
         var raw = x.slice(colon,colon+n);
         if (opts && opts.utf8 && key != 'pieces') {
-            var decoded = td.decode(stringToUint8Array(raw))
+            var decoded = td.decode(stringToUint8ArrayWS(raw))
             //var decoded = utf8.parse(stringToUint8Array(raw))
         } else {
             var decoded = raw;
