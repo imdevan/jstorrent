@@ -301,9 +301,12 @@ Client.prototype = {
                                       })
     },
     handleLaunchWithItem: function(item) {
+        var entry = item.entry
         if (item.type == "application/x-bittorrent") { // item.type is sometimes octet-stream, so look at file extension, too.
-            console.log('have a bittorrent file... do handleLaunchWithItem',item.entry)
-            var entry = item.entry
+            console.log('have a bittorrent file... do handleLaunchWithItem',entry)
+            this.addTorrentFromEntry(entry)
+        } else if (entry.name.toLowerCase().endsWith('.torrent')) {
+            console.log('have a .torrent file... do handleLaunchWithItem',entry)
             this.addTorrentFromEntry(entry)
         }
     },

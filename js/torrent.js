@@ -342,7 +342,7 @@ Torrent.prototype = {
                 callback({error:'hasher error'})
             }
         }
-        try {
+        //try {
             // try to make this utf-8 aware...
             if (buffer.byteLength > Math.pow(2,25)) { // 32 megs 
                 callback({error:"Torrent file too large: " + buffer.byteLength})
@@ -356,11 +356,11 @@ Torrent.prototype = {
                     console.log('utf-8 torrent', this.metadata)
                 }
             }
-
+/*
         } catch(e) {
             callback({error:"Invalid torrent file"})
             return
-        }
+        }*/
         this.infodict = this.metadata.info
         this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer // need to do utf-8 encoding?
         var chunkData = this.infodict_buffer // turn off transferable
