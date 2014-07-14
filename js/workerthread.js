@@ -69,8 +69,33 @@ if (self.jstorrent) {
         var id = msg._id
         var transferable = msg.transferable
         var returnchunks = []
+        var chunks = msg.chunks
 
         if (msg.command == 'hashChunks') {
+
+            if (self.crypto && self.crypto.subtle) {
+                var sz = 0
+                for (var i=0; i<chunks.length; i++) { sz += chunks[i].byteLength }
+                var toCheck = new Uint8Array(sz)
+                var offset = 0
+                for (var i=0; i<chunks.length; i++) {
+                    if (transferable) {
+                        // this seems to have helped, creating a new uint8array on it...?
+                        returnchunks.push( new Uint8Array(msg.chunks[i]).buffer )
+                    }
+                    toCheck.set( chunks[i], offset )
+                    offset += chunks[i].byteLength
+                }
+                self.crypto.subtle.digest({name:'SHA-1'}, toCheck).then( function(result) {
+                    if (transferable) {
+                        self.postMessage({hash:new Uint8Array(result), _id:id, chunks:msg.chunks}, returnchunks)
+                    } else {
+                        self.postMessage({hash:new Uint8Array(result), _id:id})
+                    }
+                })
+                return
+            }
+
             var digest = new Digest.SHA1()
             for (var i=0; i<msg.chunks.length; i++) {
                 digest.update( msg.chunks[i] )
