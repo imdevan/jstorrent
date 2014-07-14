@@ -180,6 +180,23 @@ function ui82arr(arr, startOffset) {
     return outarr
 }
 
+function base32tohex(base32) {
+    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = "";
+    var hex = "";
+
+    for (var i = 0; i < base32.length; i++) {
+        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
+        bits += pad(val.toString(2), '0', 5);
+    }
+
+    for (var i = 0; i + 4 <= bits.length; i += 4) {
+        var chunk = bits.substr(i, 4);
+        hex = hex + parseInt(chunk, 2).toString(16);
+    }
+    return hex;
+}
+
 function parse_magnet(url) {
     var uri = url.slice(url.indexOf(':')+2)
     var parts = uri.split('&');
@@ -195,6 +212,13 @@ function parse_magnet(url) {
     if (! d.xt) { return }
     var xt = d.xt[0].split(':');
     var hash = xt[xt.length-1];
+
+    // need to make this recognize base32, etc(?)
+    if (hash.length == 32) {
+        hash = base32tohex(hash)
+        
+    }
+
     d['hashhexlower'] = hash.toLowerCase()
     return d;
 }
