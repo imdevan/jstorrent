@@ -11,7 +11,7 @@ function UI(opts) {
 
         var streamable = val.streamable()
         if (streamable) {
-            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
+            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play (stream)</a>'
         } else {
             return ''
         }

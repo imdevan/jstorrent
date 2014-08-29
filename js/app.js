@@ -22,7 +22,7 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    if (chrome.socket && chrome.WebApplication) {
+    if (chrome.sockets && chrome.WebApplication) {
         // let this work without submodule
         this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
     } else {
