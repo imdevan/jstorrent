@@ -405,7 +405,7 @@ debugger
     },
     couldRequestPieces: function() {
         // XXX -- in endgame mode, make sure all the fastest effective players get everything
-
+        if (app.options.get('debug_dht')) { return }
 
         //console.log('couldRequestPieces')
         if (this.outstandingPieceChunkRequestCount > this.pieceChunkRequestPipelineLimit) {
@@ -769,8 +769,11 @@ debugger
         this.peerInterested = false
     },
     handle_PORT: function(msg) {
-        // peer's listening port
-        this.peerPort = msg
+        // peer's listening port (DHT)?
+        this.peerPort = new DataView(msg.payload, 5, 2).getUint16(0)
+        if (app.options.get('debug_dht')) {
+            app.dht.test_dht(this.peer.host, this.peerPort)
+        }
     },
     handle_HANDSHAKE: function(msg) {
         var buf = msg.payload

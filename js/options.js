@@ -120,6 +120,12 @@ function Options(opts) {
             'default': true,
             'type': 'bool',
             'name': 'Enable web server (port 8543)'
+        },
+        'debug_dht': {
+            'visible': false,
+            'default': false,
+            'type': 'bool',
+            'name': 'debugging dht'
         }
         
     }

@@ -1446,6 +1446,7 @@ Torrent.prototype = {
         }
     },
     maybePropagatePEX: function(data) {
+        // TODO -- if private torrent, do not do this
         return
         this.peers.each( function(peer) {
             if (peer.peer.host == '127.0.0.1') {

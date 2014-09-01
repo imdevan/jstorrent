@@ -15,6 +15,7 @@ function App() {
     this.options_window = null
     this.help_window = null
     this.options = new jstorrent.Options({app:this}); // race condition, options not yet fetched...
+    this.dht = new jstorrent.DHT
 
     var handlers = [
         ['/favicon.ico',jstorrent.FavIconHandler],

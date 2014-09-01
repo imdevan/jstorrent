@@ -11,7 +11,9 @@ jstorrent.protocol = {
     handshakeLength: 68,
     handshakeFlags: [0,0,0,0,0,
                      0x10, // have to set this bit, or we wont get ut_metadata
-                     0,0],
+                     0,
+                     1 // DHT
+                    ],
     extensionMessages: { ut_metadata: 2,
                          ut_pex: 3},
     extensionMessageHandshakeCode: 0,

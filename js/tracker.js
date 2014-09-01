@@ -1,10 +1,14 @@
 // TODO -- figure out how udp connection re-use is supposed to work
 // TODO -- add retry logic
+// TODO -- close udp sockets
 
 function onUDPReceive(info) {
     var sockId = info.socketId
     if (trackerSockMap[sockId]) {
         trackerSockMap[sockId].onReadUDP(info)
+    }
+    if (dhtSockMap[sockId]) {
+        dhtSockMap[sockId](info)
     }
 }
 
