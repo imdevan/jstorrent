@@ -23,7 +23,7 @@ function Disk(opts) {
                 }
             } else {
                 if (! this.think_interval) {
-                    console.log('disk, start ticking')
+                    //console.log('disk, start ticking')
                     this.think_interval = setInterval( this.checkBroken.bind(this), this.test_tick )
                 }
             }

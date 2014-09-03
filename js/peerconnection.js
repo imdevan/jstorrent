@@ -772,7 +772,7 @@ debugger
         // peer's listening port (DHT)?
         this.peerPort = new DataView(msg.payload, 5, 2).getUint16(0)
         if (app.options.get('debug_dht')) {
-            app.dht.test_dht(this.peer.host, this.peerPort)
+            app.dht.ping(this.peer.host, this.peerPort)
         }
     },
     handle_HANDSHAKE: function(msg) {
