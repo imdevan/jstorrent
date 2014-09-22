@@ -1230,7 +1230,8 @@ Torrent.prototype = {
                 if (this.metadata.announce) {
                     url = this.metadata.announce
                     urls.push(url)
-                } else if (this.metadata['announce-list']) {
+                }
+                if (this.metadata['announce-list']) {
                     for (var tier in this.metadata['announce-list']) {
                         for (var i=0; i<this.metadata['announce-list'][tier].length; i++) {
                             urls.push( this.metadata['announce-list'][tier][i] )
