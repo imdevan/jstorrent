@@ -100,15 +100,15 @@ WindowManager.prototype = {
 
 var windowManager = new WindowManager
 // if background page reloads, we lose reference to windowmanager main window...
-window.ctr = 0
+//window.ctr = 0
 function ensureAlive() {
     // attempt to make this page not suspend, because that causes our retained directoryentry to become invalid
     if (! window.ensureAliveTimeout) {
         if (getMainWindow()) { // only when the page is alive
             window.ensureAliveTimeout = setTimeout( function() {
                 window.ensureAliveTimeout = null;
-                window.ctr++
-                console.log('ensured alive')
+                //window.ctr++
+                //console.log('ensured alive')
                 ensureAlive()
             }, 1000 )
         }

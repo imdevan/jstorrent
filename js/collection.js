@@ -263,6 +263,7 @@ var CollectionProto = {
                         fullItemKeys.push(collectionKey + '/' + itemKey)
                     }
                 }
+                console.log('collection.restore items',fullItemKeys)
 
                 // have a list of all the items we need to now fetch from storage
                 var item, itemData

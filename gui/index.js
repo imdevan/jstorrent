@@ -35,10 +35,11 @@ function onadd(evt) {
 }
 
 function onresizewindow() {
+    var fudgeFactor = 8 // um, not sure about why we need this
     if (app.minimized) {
         var toph = 0
         var tabh = 0
-        var titlebarh = $('#top-titlebar').height()
+        var titlebarh = $('#top-titlebar').height() + fudgeFactor
         var totalchrome = toph + tabh
 
         var width = $(window).width()
@@ -50,7 +51,7 @@ function onresizewindow() {
     } else {
         var toph = $('#chrome-top').height()
         var tabh = $('#detail-tabs').height()
-        var titlebarh = $('#top-titlebar').height()
+        var titlebarh = $('#top-titlebar').height() + fudgeFactor
         var totalchrome = toph + tabh
 
         var width = $(window).width()
