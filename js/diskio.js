@@ -555,6 +555,7 @@
                 if (entry.error) {
                     job.set('state','entrygeterror')
                     console.error(entry)
+                    //debugger // TODO -- report FileError message or number here better
                     oncallback({error:'entrygeterror',evt:entry})
                     return
                 }

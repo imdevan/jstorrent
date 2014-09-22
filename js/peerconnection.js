@@ -733,7 +733,7 @@ debugger
     },
     handle_PIECE: function(msg) {
         this.set('responses',this.get('responses')+1)
-        var v = new DataView(msg.payload, 5, 12)
+        var v = new DataView(msg.payload, 5, 12) // TODO catch error with erroneous size payload (out of bounds)
         var pieceNum = v.getUint32(0)
         var chunkOffset = v.getUint32(4)
         // does not send size, inherent in message. could be smaller than chunk size though!

@@ -17,6 +17,9 @@ function DHT() {
 
     this.queryTimeouts = {}
     this.activeSockets = {}
+
+    this.table = new RoutingTable(20)
+
 }
 
 DHT.prototype = {
@@ -83,5 +86,52 @@ DHT.prototype = {
 }
 
 jstorrent.DHT = DHT
+
+    function KBucket(lobit, hibit, ksize, includeLobit) {
+        this.lobit = lobit
+        this.hibit = hibit
+        this.ksize = ksize
+        this.replacementNodes = []
+        this.includeLobit = includeLobit || false
+        this.nodeKeys = [] // sorted keys of this.nodes
+        this.nodes = {}
+        this.touched = new Date
+    }
+    KBucket.prototype = {
+        touch: function() {
+            this.touched = new Date
+        },
+        split: function() {
+            var midbit = (this.hibit + this.lobit) / 2
+            var lt = new KBucket(this.lobit, midbit, this.ksize)
+            var rt = new KBucket(midbit, midbit, this.ksize)
+        },
+        addNode: function(node) {
+            if (this.nodes[node.id]) {
+                // already had this node!
+                debugger
+            } else if (this.nodeList.length < this.ksize) {
+                this.nodes[node.id] = node
+                var idx = bisect_left(this.nodeKeys, node.id)
+                this.nodeKeys.splice(idx, 0, node.id)
+            } else {
+                this.replacementNodes.push(node)
+            }
+        }
+    }
+
+    function RoutingTable(ksize, node) {
+        this.ksize = ksize
+        this.node = node
+        this.buckets = [ new KBucket(0, 160, this.ksize, true) ]
+    }
+    RoutingTable.prototype = {
+        split: function(idx) {
+            
+        }
+    }
+
+
+
 
 })()
