@@ -935,7 +935,7 @@ App.prototype = {
     },
     set_default_download_location: function(entry) {
         if (! entry) {
-            this.createNotification({details:"No download folder was selected. Note you CANNOT save torrents to a Google Drive folder."})
+            this.createNotification({details:"No download folder was selected."})
             return
         }
 

@@ -162,7 +162,12 @@ PeerConnection.prototype = {
         //console.log(this.get_key(),'connect timeout')
         this.connecting = false;
         this.connect_timeouts++;
-        chrome.sockets.tcp.close( this.sockInfo.socketId )
+        //if (peerSockMap[this.sockInfo.socketId] === undefined) { debugger }
+        chrome.sockets.tcp.close( this.sockInfo.socketId, this.onClosed ) // seeing a warning unchecked chrome.runtime.lastError even though we check it in this callback ???
+        // perhaps this is because when a socket gets a lastError (e.g. ERR_CONNECTION_REFUSED its implied to be closed already)
+        if (chrome.runtime.lastError) {
+            console.warn('close sync lastError',chrome.runtime.lastError)
+        }
         delete peerSockMap[this.sockInfo.socketId]
         this.sockInfo = null
         this.trigger('connect_timeout')
@@ -198,14 +203,24 @@ PeerConnection.prototype = {
         if (this.sockInfo) {
             // if no this.sockInfo, perhaps we were not yet connected
             if (this.connectedWhen) {
-                chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
+                chrome.sockets.tcp.disconnect(this.sockInfo.socketId, this.onDisconnect)
             }
-            chrome.sockets.tcp.close(this.sockInfo.socketId)
+            chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClose)
             delete peerSockMap[this.sockInfo.socketId]
         }
         this.sockInfo = null
         // need to clean up registerd requests
         this.trigger('disconnect')
+    },
+    onDisconnect: function(result) {
+        if (chrome.runtime.lastError) {
+            console.warn('ondisconnect lasterror',chrome.runtime.lastError)
+        }
+    },
+    onClose: function(result) {
+        if (chrome.runtime.lastError) {
+            console.warn('onclose lasterror',chrome.runtime.lastError) // TODO -- "Socket not found" ?
+        }
     },
     connect: function() {
         //console.log(this.get_key(),'connecting...')
@@ -222,6 +237,12 @@ PeerConnection.prototype = {
         chrome.sockets.tcp.connect( sockInfo.socketId, this.peer.host, this.peer.port, _.bind(this.onconnect, this) )
     },
     onconnect: function(connectInfo) {
+        if (chrome.runtime.lastError) {
+            //console.log('onconnect lasterror',chrome.runtime.lastError)
+            this.peer.set('connectionResult', chrome.runtime.lastError.message)
+            this.error('connect_error')
+            return
+        }
         //console.log(this.get_key(),'connected.',connectInfo)
         if (this.hasclosed) { return } // XXX -- better handling for closing of sockets still in connecting state?
 
@@ -363,6 +384,10 @@ PeerConnection.prototype = {
         chrome.sockets.tcp.send( this.sockInfo.socketId, data, _.bind(this.onWrite,this) )
     },
     onWrite: function(writeResult) {
+        if (chrome.runtime.lastError) {
+            console.warn('lasterror on tcp.send',chrome.runtime.lastError,writeResult.resultCode)
+        }
+
         if (! this.sockInfo) {
             //console.error('onwrite for socket forcibly or otherwise closed')
             return
@@ -579,7 +604,7 @@ debugger
         if (this.connectedWhen) {
             chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
         }
-        chrome.sockets.tcp.close(this.sockInfo.socketId)
+        chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClosed)
         this.trigger('error')
     },
     shouldThrottleRead: function() { 

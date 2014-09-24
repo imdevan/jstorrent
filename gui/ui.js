@@ -10,8 +10,8 @@ function UI(opts) {
         //return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
 
         var streamable = val.streamable()
-        if (streamable) {
-            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play (stream)</a>'
+        if (streamable && app.webapp) {
+            return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
         } else {
             return ''
         }
@@ -20,7 +20,8 @@ function UI(opts) {
     this.client = opts.client
 
     this.detailtable = null
-    var default_tab = 'peers' // TODO -- remember last
+    //var default_tab = 'peers' // TODO -- remember last
+    var default_tab = 'files'
     this.detailtype = default_tab
 
     this.coldefs = {
@@ -59,7 +60,7 @@ function UI(opts) {
             {attr:"host", width:110, sortable:true},
             {attr:"port", sortable:true},
             {id:"connected_ever", name: "Ever Connected", sortable:true},
-            {id:'connectionResult', sortable:true}
+            {id:'connectionResult', sortable:true, width:300}
         ],
         'trackers':[
             {attr:'url', name:"URL", width:200, sortable:true},

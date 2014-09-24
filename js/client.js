@@ -252,6 +252,11 @@ Client.prototype = {
         }
     },
     handleLaunchData: function(launchData) {
+        if (! this.app.canDownload()) {
+            this.app.notifyNoDownloadsLeft()
+            return
+        }
+
         var item
         //console.log('handle launch data',launchData)
         if (launchData.type == 'onMessageExternal') {

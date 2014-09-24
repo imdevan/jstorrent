@@ -1,5 +1,5 @@
 console.log('background page loaded')
-
+function reload() { chrome.runtime.reload() }
 // the browser extension that adds a context menu
 var extensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
 

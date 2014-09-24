@@ -97,13 +97,13 @@ Disk.prototype = {
         this.get_key()
         if (this.entry.name == 'crxfs') {
             // calling getDisplayPath on the package entry will cause a lastError, which we don't want..
-            console.log(this.key,'crxfs manual trigger ready')
+            //console.log(this.key,'crxfs manual trigger ready')
             this.set('entrydisplaypath','crxfs')
             this.trigger('ready')
         } else if (chrome.fileSystem.getDisplayPath) {
-            console.log(this.key,'getDisplayPath')
+            //console.log(this.key,'getDisplayPath')
             chrome.fileSystem.getDisplayPath(this.entry, function(displaypath) {
-                console.log(this.key,'got display path',displaypath)
+                //console.log(this.key,'got display path',displaypath)
                 this.set('entrydisplaypath',displaypath)
                 this.trigger('ready') // XXX only after ALL disks are ready
             }.bind(this))
