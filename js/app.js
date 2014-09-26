@@ -23,7 +23,7 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    if (chrome.sockets && chrome.WebApplication) {
+    if (chrome.sockets && chrome.WebApplication && false) { // temporarily disabled, too buggy
         // let this work without submodule
         this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
     } else {

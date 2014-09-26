@@ -162,8 +162,9 @@ PeerConnection.prototype = {
         //console.log(this.get_key(),'connect timeout')
         this.connecting = false;
         this.connect_timeouts++;
-        //if (peerSockMap[this.sockInfo.socketId] === undefined) { debugger }
-        chrome.sockets.tcp.close( this.sockInfo.socketId, this.onClosed ) // seeing a warning unchecked chrome.runtime.lastError even though we check it in this callback ???
+        if (! peerSockMap[this.sockInfo.socketId]) { debugger }
+        //if (peerSockMap[this.sockInfo.socketId] === undefined) { return } // FIXME -- somebody should have cleared the connect timeout already
+        chrome.sockets.tcp.close( this.sockInfo.socketId, this.onClose.bind(this) ) // seeing a warning unchecked chrome.runtime.lastError even though we check it in this callback ???
         // perhaps this is because when a socket gets a lastError (e.g. ERR_CONNECTION_REFUSED its implied to be closed already)
         if (chrome.runtime.lastError) {
             console.warn('close sync lastError',chrome.runtime.lastError)
@@ -203,9 +204,9 @@ PeerConnection.prototype = {
         if (this.sockInfo) {
             // if no this.sockInfo, perhaps we were not yet connected
             if (this.connectedWhen) {
-                chrome.sockets.tcp.disconnect(this.sockInfo.socketId, this.onDisconnect)
+                chrome.sockets.tcp.disconnect(this.sockInfo.socketId, this.onDisconnect.bind(this))
             }
-            chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClose)
+            chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClose.bind(this))
             delete peerSockMap[this.sockInfo.socketId]
         }
         this.sockInfo = null
@@ -219,7 +220,8 @@ PeerConnection.prototype = {
     },
     onClose: function(result) {
         if (chrome.runtime.lastError) {
-            console.warn('onclose lasterror',chrome.runtime.lastError) // TODO -- "Socket not found" ?
+            //console.warn('onclose lasterror',chrome.runtime.lastError.message) // TODO -- "Socket not found" ?
+            // double close, not a big deal. :-\
         }
     },
     connect: function() {
@@ -385,7 +387,7 @@ PeerConnection.prototype = {
     },
     onWrite: function(writeResult) {
         if (chrome.runtime.lastError) {
-            console.warn('lasterror on tcp.send',chrome.runtime.lastError,writeResult.resultCode)
+            //console.warn('lasterror on tcp.send',chrome.runtime.lastError,writeResult.resultCode)
         }
 
         if (! this.sockInfo) {
@@ -396,7 +398,7 @@ PeerConnection.prototype = {
         //this.log('onWrite', writeResult)
         // probably only need to worry about partial writes with really large buffers
         if (writeResult.resultCode < 0) {
-            console.warn('sock onwrite resultcode',writeResult.resultCode)
+            //console.warn('sock onwrite resultcode',writeResult.resultCode)
             this.error('negative onwrite')
         } else if (writeResult.bytesSent != this.writing_length) {
             if (writeResult.bytesSent == 0) {
@@ -602,9 +604,9 @@ debugger
     error: function(msg) {
         //this.log(msg)
         if (this.connectedWhen) {
-            chrome.sockets.tcp.disconnect(this.sockInfo.socketId)
+            chrome.sockets.tcp.disconnect(this.sockInfo.socketId, this.onDisconnect.bind(this))
         }
-        chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClosed)
+        chrome.sockets.tcp.close(this.sockInfo.socketId, this.onClose.bind(this))
         this.trigger('error')
     },
     shouldThrottleRead: function() { 
