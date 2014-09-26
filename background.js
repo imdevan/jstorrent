@@ -4,7 +4,14 @@ function reload() { chrome.runtime.reload() }
 var extensionId = "bnceafpojmnimbnhamaeedgomdcgnbjk"
 
 function app() {
-    return chrome.app.window.get && chrome.app.window.get('mainWindow').contentWindow.app
+    if (chrome.app && chrome.app.window.get) {
+        var mw = chrome.app.window.get('mainWindow')
+        if (mw) {
+            if (mw.contentWindow) {
+                return mw.contentWindow.app
+            }
+        }
+    }
 }
 
 function getMainWindow() {
