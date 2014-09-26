@@ -16,7 +16,7 @@
             "extensions": [
                 "torrent"
             ],
-            "title": "Open with JSTorrent"
+            "title": "JSTorrent"
         }
     },
     "sockets": {

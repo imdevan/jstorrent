@@ -256,11 +256,17 @@ chrome.runtime.onStartup.addListener( function(evt) {
     console.log('onStartup',evt)
 })
 chrome.runtime.onSuspend.addListener( function(evt) {
-    app().runtimeMessage('onSuspend')
+    var a = app()
+    if (a) {
+        a.runtimeMessage('onSuspend')
+    }
     console.log('onSuspend',evt)
 })
 chrome.runtime.onSuspendCanceled.addListener( function(evt) {
-    app().runtimeMessage('onSuspendCanceled')
+    var a = app()
+    if (a) {
+        a.runtimeMessage('onSuspendCanceled')
+    }
     console.log('onSuspendCanceled',evt)
 })
 chrome.app.runtime.onRestarted.addListener( function(evt) {
