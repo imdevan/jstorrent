@@ -935,7 +935,9 @@ debugger
         console.assert(idx == this.peerExtensionHandshake.metadata_size)
 
         // XXX -- not happening in background thread??
-        var infodict = bdecode(ui82str(b))
+        // better to have bdecode that works on arraybuffers?
+        var infodict = bdecode(ui82str(b),{utf8:true})
+        //var infodict = bdecode(ui82str(b))
         var digest = new Digest.SHA1()
         digest.update(b)
         var receivedInfodictHash = new Uint8Array(digest.finalize())
