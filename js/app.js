@@ -329,6 +329,10 @@ App.prototype = {
                                   onClick: _.bind(onclick,this) })
     },
     notifyWantToAddPublicTrackers: function(torrent) {
+        if (torrent.isPrivate()) {
+            this.createNotification({ details:"No peers were received from the private tracker. Support for private trackers is limited. You may want to try to enable spoofing in the app options."})
+            return
+        }
         if (! app.client.torrents.contains(torrent)) { return }
         function onclick(idx) {
             if (idx == 1) {

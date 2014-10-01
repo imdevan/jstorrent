@@ -327,6 +327,7 @@ Torrent.prototype = {
     },
     initializeFromBuffer: function(buffer, callback, opts) {
         //console.log('initializefrombuffer')
+        this.initializedFromBuffer = buffer
         var _this = this
         function onHashResult(result) {
             var hash = result.hash
@@ -334,6 +335,7 @@ Torrent.prototype = {
                 //console.log('hashed input torrent file to',hash)
                 _this.hashbytes = ui82arr(hash)
                 _this.hashhexlower = _this.bytesToHashhex(_this.hashbytes).toLowerCase()
+                //console.assert( _this.hashhexlower == '0cd80358a182edd5a74d1e967d98822212d2f744' ) // Tomorrow's Modern Boxes
                 _this.initializeTrackers()
                 _this.metadataPresentInitialize(opts)
                 console.assert(_this.hashhexlower.length == 40)
@@ -343,15 +345,17 @@ Torrent.prototype = {
             }
         }
         try {
-            // try to make this utf-8 aware...
             if (buffer.byteLength > Math.pow(2,25)) { // 32 megs 
                 callback({error:"Torrent file too large: " + buffer.byteLength})
                 return
             }
             this.metadata = bdecode(ui82str(new Uint8Array(buffer)))
-            if (this.metadata.encoding) {
-                if (this.metadata.encoding.toLowerCase() == 'utf-8' ||
+            this.metadata_isutf8 = false
+            // always assume .torrent file is utf-8 (this is how transmission behaves...)
+            if (true || this.metadata.encoding) {
+                if (true || this.metadata.encoding.toLowerCase() == 'utf-8' ||
                     this.metadata.encoding.toLowerCase() == 'utf8') {
+                    this.metadata_isutf8 = true
                     this.metadata = bdecode(ui82str(new Uint8Array(buffer)),{utf8:true})
                     console.log('utf-8 torrent', this.metadata)
                 }
@@ -362,6 +366,7 @@ Torrent.prototype = {
         }
         this.infodict = this.metadata.info
         this.infodict_buffer = new Uint8Array(bencode(this.metadata.info)).buffer // need to do utf-8 encoding?
+        // computer SHA1 hash of infodict to get torrent hash
         var chunkData = this.infodict_buffer // turn off transferable
         this.client.workerthread.send( { command: 'hashChunks',
                                          chunks: [new Uint8Array(chunkData)] }, onHashResult, {transferable:false} )
@@ -1448,6 +1453,7 @@ Torrent.prototype = {
     },
     maybePropagatePEX: function(data) {
         // TODO -- if private torrent, do not do this
+        if (this.isPrivate()) { return false }
         return
         this.peers.each( function(peer) {
             if (peer.peer.host == '127.0.0.1') {

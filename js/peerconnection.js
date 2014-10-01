@@ -215,7 +215,7 @@ PeerConnection.prototype = {
     },
     onDisconnect: function(result) {
         if (chrome.runtime.lastError) {
-            console.warn('ondisconnect lasterror',chrome.runtime.lastError)
+            //console.warn('ondisconnect lasterror',chrome.runtime.lastError.message)
         }
     },
     onClose: function(result) {

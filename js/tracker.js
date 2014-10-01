@@ -173,18 +173,30 @@ HTTPTracker.prototype = {
         xhr.onload = _.bind(function(evt) {
             this.set('lasterror','')
             clearTimeout( this.announce_timeout_id )
-            var data = bdecode(ui82str(new Uint8Array(evt.target.response)))
-            //console.log('http tracker response',data)
-            this.response = data
-            if (data.peers && typeof data.peers == 'object') {
-                this.torrent.addNonCompactPeerBuffer(data.peers)
-            } else if (data.peers) {
-                this.torrent.addCompactPeerBuffer(data.peers)
+            var strResponse = ui82str(new Uint8Array(evt.target.response))
+
+            if (evt.target.status != 200) {
+                this.set_error('error','code ' + evt.target.status + ', ' + strResponse)
             } else {
-                this.set_error('no peers in response',data,evt)
-                if (data['failure reason']) {
-                    app.createNotification({details:"HTTP Tracker error, reason given: \"" + data['failure reason'] + '\". If this is a private torrent, please contact the site administrator and ask them if they can unblock JSTorrent',
-                                            priority:2})
+                try {
+                    var data = bdecode(strResponse)
+                } catch(e) {
+                    this.set_error('error','error decoding tracker response')
+                    return
+                }
+                
+                //console.log('http tracker response',data)
+                this.response = data
+                if (data.peers && typeof data.peers == 'object') {
+                    this.torrent.addNonCompactPeerBuffer(data.peers)
+                } else if (data.peers) {
+                    this.torrent.addCompactPeerBuffer(data.peers)
+                } else {
+                    this.set_error('no peers in response',data,evt)
+                    if (data['failure reason']) {
+                        app.createNotification({details:"HTTP Tracker error, reason given: \"" + data['failure reason'] + '\". If this is a private torrent, please contact the site administrator and ask them if they can unblock JSTorrent',
+                                                priority:2})
+                    }
                 }
             }
 

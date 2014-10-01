@@ -118,6 +118,7 @@ function Options(opts) {
         },
         'web_server_enable': {
             'default': false,
+            'visible':false,
             'type': 'bool',
             'name': 'Enable web server (port 8543)'
         },
