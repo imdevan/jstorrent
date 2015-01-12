@@ -87,7 +87,7 @@ function UI(opts) {
             {attr:'num', name:"Number", sortable:true},
             {attr:'name', name:"Name", width:400, sortable:true},
             {attr:'size', name:"Size", formatVal:byteUnits, width:100, sortable:true},
-//            {name:"Action" , displayFunc: fileAction},
+            {name:"Action" , displayFunc: fileAction},
             {id:"priority", formatVal: priority, sortable:true
 /*
   ,editor: Slick.Editors.SelectCellEditor,

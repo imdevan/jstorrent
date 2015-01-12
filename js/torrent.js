@@ -121,7 +121,7 @@ function Torrent(opts) {
     this.pieceBlacklist = {}
 
     if (opts.url) {
-        this.initializeFromWeb(opts.url, opts.callback)
+        this.initializeFromWeb(opts.url, opts.callback) 
     } else if (opts.id) {
         this.hashhexlower = opts.id
     } else if (opts.entry) {
@@ -138,12 +138,6 @@ function Torrent(opts) {
         console.log('inited torrent without hash known yet!')
     } else {
         console.assert(this.hashhexlower)
-        this.hashbytes = []
-        for (var i=0; i<20; i++) {
-            this.hashbytes.push(
-                parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
-            )
-        }
         //console.log('inited torrent',this.hashhexlower)
     }
 }
@@ -175,6 +169,14 @@ Torrent.attributeSerializers = {
 }
 
 Torrent.prototype = {
+    updateHashBytes: function() {
+        this.hashbytes = []
+        for (var i=0; i<20; i++) {
+            this.hashbytes.push(
+                parseInt(this.hashhexlower.slice(i*2, i*2 + 2), 16)
+            )
+        }
+    },
     resetState: function() {
         console.log(this.get_key(),'resetState')
         var url = this.get('url')

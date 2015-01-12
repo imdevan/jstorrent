@@ -6,6 +6,9 @@ function onUDPReceive(info) {
     var sockId = info.socketId
     if (trackerSockMap[sockId]) {
         trackerSockMap[sockId].onReadUDP(info)
+        console.log('udp receive',info)
+    } else {
+        console.warn('unhandled udp receive',info)
     }
     if (dhtSockMap[sockId]) {
         dhtSockMap[sockId](info)
@@ -163,7 +166,7 @@ HTTPTracker.prototype = {
         } else {
             url = this.url + '&'
         }
-
+        this.torrent.updateHashBytes() // prevent race condition
         url = url + 'info_hash=' + this.paramEncode(ui82str(this.torrent.hashbytes))
         for (var key in data) {
             url = url + '&' + key + '=' + this.paramEncode(data[key]) // is this the right format?
@@ -187,6 +190,11 @@ HTTPTracker.prototype = {
                 
                 //console.log('http tracker response',data)
                 this.response = data
+
+                this.set('leechers',data.incomplete)
+                this.set('seeders',data.complete)
+                this.set('lasterror','')
+
                 if (data.peers && typeof data.peers == 'object') {
                     this.torrent.addNonCompactPeerBuffer(data.peers)
                 } else if (data.peers) {

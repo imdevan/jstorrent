@@ -142,6 +142,7 @@ var CollectionProto = {
         }
     },
     add: function(v) {
+        //if (this.itemClass == jstorrent.Peer) { debugger }
         console.assert(! this.contains(v))
         this.setItem(v.get_key(), v)
     },
