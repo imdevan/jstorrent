@@ -117,8 +117,8 @@ function Options(opts) {
             'name': 'Use SOCKS5 proxy server'
         },
         'web_server_enable': {
-            'default': true,
-            'visible':true,
+            'default': false,
+            'visible':false,
             'type': 'bool',
             'name': 'Enable web server (port 8543)'
         },
