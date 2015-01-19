@@ -124,6 +124,7 @@ function Torrent(opts) {
         this.initializeFromWeb(opts.url, opts.callback) 
     } else if (opts.id) {
         this.hashhexlower = opts.id
+	this.updateHashBytes()
     } else if (opts.entry) {
         // initialize from filesystem entry!
         console.assert(opts.callback)
@@ -138,6 +139,7 @@ function Torrent(opts) {
         console.log('inited torrent without hash known yet!')
     } else {
         console.assert(this.hashhexlower)
+	console.assert(this.hashbytes)
         //console.log('inited torrent',this.hashhexlower)
     }
 }
@@ -308,6 +310,7 @@ Torrent.prototype = {
             }
             this.set('url',url)
             this.hashhexlower = this.magnet_info.hashhexlower
+	    this.updateHashBytes()
             this.save()
             if (callback) { callback({torrent:this}) }
         } else {

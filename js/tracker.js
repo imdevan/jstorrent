@@ -4,9 +4,10 @@
 
 function onUDPReceive(info) {
     var sockId = info.socketId
+    //console.log('udp receive',info)
     if (trackerSockMap[sockId]) {
         trackerSockMap[sockId].onReadUDP(info)
-        console.log('udp receive',info)
+
     } else {
         console.warn('unhandled udp receive',info)
     }
@@ -368,6 +369,7 @@ UDPTracker.prototype = {
         trackerSockMap[sockId] = this
     },
     onReadUDP: function(info) {
+	//console.log('onReadUDP',info)
         this._read_udp_callback(info)
     },
     get_connection: function(callback) {
