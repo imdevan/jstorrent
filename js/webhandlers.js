@@ -1,4 +1,7 @@
 (function() {
+    if (! (window.BaseHandler && chrome.WebApplication)) { // if web-server-chrome available
+        return
+    }
     function PackageHandler() {
         this.disk = app.client.packageDisk
         BaseHandler.prototype.constructor.call(this)

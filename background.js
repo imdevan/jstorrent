@@ -133,6 +133,13 @@ chrome.app.runtime.onLaunched.addListener(function(launchData) {
 function onAppLaunchMessage(launchData) {
     // launchData, request, sender, sendRepsonse
 
+//    chrome.app.window.create("dummy.html", function(win) {
+//        window.open('gui/index.html')
+//        setTimeout(function() {
+//            win && win.contentWindow.close()
+//        }, 1e3)
+//    })
+
     function onMainWindow(mainWindow) {
         mainWindow.contentWindow.app.registerLaunchData(launchData)
     }
@@ -208,6 +215,15 @@ chrome.runtime.sendMessage(extensionId, {running:true}, function(response) {
     console.log('got msg from extension',response, chrome.runtime.lastError)
 })
 */
+
+if (chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        console.log('chrome runtime message',request,sender)
+        if (request && request.command == 'openWindow') {
+            window.open(request.url)
+        }
+    })
+}
 
 if (chrome.runtime.onMessageExternal) {
 chrome.runtime.onMessageExternal.addListener(function(request, sender, sendResponse) {

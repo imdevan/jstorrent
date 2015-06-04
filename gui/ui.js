@@ -10,7 +10,9 @@ function UI(opts) {
         //return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
 
         var streamable = val.streamable()
-        if (streamable && app.webapp) {
+        if (true || streamable) {
+            return '<a href="#"><span class="glyphicon glyphicon-play"></span>Play</a>'
+        } else if (streamable && app.webapp) {
             return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
         } else {
             return ''
@@ -253,6 +255,7 @@ UI.prototype = {
                         // XXX TODO -- make torrent list refresh once metadata is completed...
                         this.detailtable.grid.setData([])
                     }
+                    this.detailtable.grid.onClick.subscribe( _.bind(app.handle_click, app, 'files', torrent[type]) )
                 } else if (this.detailtype == 'peers') {
                     this.detailtable.grid.onDblClick.subscribe( _.bind(app.handle_dblclick, app, 'peers', torrent[type]) )
                 } else if (this.detailtype == 'swarm') {

@@ -117,11 +117,17 @@ debugger // using CellSelectEditor now
         }
     },this))
 
+/*
+    grid.onClick.subscribe( _.bind(function(evt, data) {
+        //console.log('onClick',evt,data,evt.row, evt.cell)
+    },this))
+
     grid.onDblClick.subscribe( _.bind(function(evt, data) {
         
         //this.handleDoubleClick(evt.row, evt.cell)
         //console.log('dblclick',evt,data)
     },this))
+*/
 
     grid.onSelectedRowsChanged.subscribe( _.bind(function(evt, data) {
         var selected = data.rows;

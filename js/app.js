@@ -374,6 +374,20 @@ App.prototype = {
                                   onButtonClick: _.bind(onclick,this),
                                   onClick: _.bind(onclick,this) })
     },
+    handle_click: function(type, collection, evt, info) {
+        var item = collection.items[info.row]
+        var column = UI.coldefs.files[info.cell]
+        if (type == 'files') {
+            console.log('clicked in files on item',item,info.cell)
+            if (evt.target.tagName == 'A' && column.name == 'Action') {
+                // clicking on file action (like Play)
+                var url = file.getPlayerURL()
+                var msg = {command:'openWindow',url:url}
+                console.log('sending message',msg)
+                chrome.runtime.sendMessage(msg)
+            }
+        }
+    },
     handle_dblclick: function(type, collection, evt, info) {
         console.log('dblclick',type,collection, evt, info)
         var item = collection.items[info.row]
@@ -488,7 +502,7 @@ App.prototype = {
         this.createNotification({details:details})
     },
     onTorrentHaveMetadata: function(torrent) {
-        if (this.UI.get_selected_torrent() == torrent) {
+        if (this.UI && this.UI.get_selected_torrent() == torrent) {
             // reset the detail view (works for files view, general view)
             this.UI.set_detail(this.UI.detailtype, torrent)
         }

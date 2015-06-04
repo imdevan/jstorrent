@@ -317,7 +317,7 @@ if (typeof Slick === "undefined") {
             .bind("keydown", handleKeyDown);
         $canvas
             .bind("keydown", handleKeyDown)
-            .bind("click", handleClick)
+//            .bind("click", handleClick)
             .bind("dblclick", handleDblClick)
             .bind("contextmenu", handleContextMenu)
             .bind("draginit", handleDragInit)
@@ -2242,6 +2242,7 @@ if (typeof Slick === "undefined") {
     }
 
     function handleClick(e) {
+        // beind fired twice ??
         //console.log('handleClick',self.collectionTable.collection.itemClass.name)
       if (!currentEditor) {
         // if this click resulted in some cell child node getting focus,

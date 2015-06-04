@@ -245,6 +245,20 @@ File.prototype = {
         })
         
     },
+    getPlayableSRCForVideo: function(callback) {
+        this.getEntry( function(entry) {
+            entry.file( function(file) {
+                var url = webkitURL.createObjectURL(file)
+                callback(url)
+            })
+        })
+    },
+    getPlayerURL: function() {
+        // this version uses window.open to open a chrome-extension:// URL
+        var url = 'gui/play.html#hash=' + this.torrent.hashhexlower
+        url += '&file=' + this.num
+        return url
+    },
     getEntry: function(callback) {
         // XXX this is not calling callback in some cases!
         // gets file entry, recursively creating directories as needed...
