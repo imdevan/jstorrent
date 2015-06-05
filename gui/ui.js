@@ -10,8 +10,11 @@ function UI(opts) {
         //return '<a href="https://code.google.com/p/chromium/issues/detail?id=328803&thanks=328803&ts=1387186852" target="_blank">Open</a>'
 
         var streamable = val.streamable()
-        if (true || streamable) {
+        var openable = val.openable()
+        if (streamable) {
             return '<a href="#"><span class="glyphicon glyphicon-play"></span>Play</a>'
+        } else if (openable) {
+            return '<a href="#"><span class="glyphicon glyphicon-folder-open"></span>View</a>'
         } else if (streamable && app.webapp) {
             return '<a target="_blank" href="' + val.torrent.getPlayerURL(val.num, streamable) + '"><span class="glyphicon glyphicon-play"></span>Play</a>'
         } else {

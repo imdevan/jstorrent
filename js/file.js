@@ -111,7 +111,18 @@ File.prototype = {
                     return {type:'audio'}
                 }
             }
+        } else {
+            return ext.endsWith('.mp4') ||
+                ext.endsWith('.mp3')
         }
+    },
+    openable: function() {
+        var ext = this.name.toLowerCase()
+            return ext.endsWith('.jpeg') ||
+                ext.endsWith('.jpg') ||
+                ext.endsWith('.pdf') ||
+                ext.endsWith('.txt') ||
+                ext.endsWith('.png')
     },
     readBytes: function(start, size, callback) {
         var storage = this.torrent.getStorage()
@@ -247,11 +258,17 @@ File.prototype = {
     },
     getPlayableSRCForVideo: function(callback) {
         this.getEntry( function(entry) {
+            if (entry.error) {
+                this.torrent.error("File Missing: " + this.name)
+                callback(entry)
+                return
+            }
             entry.file( function(file) {
-                var url = webkitURL.createObjectURL(file)
+                console.log('playable file',file)
+                var url = (window.URL || window.webkitURL).createObjectURL(file)
                 callback(url)
             })
-        })
+        }.bind(this), {create:false})
     },
     getPlayerURL: function() {
         // this version uses window.open to open a chrome-extension:// URL
@@ -259,19 +276,22 @@ File.prototype = {
         url += '&file=' + this.num
         return url
     },
-    getEntry: function(callback) {
+    getEntry: function(callback, opts) {
         // XXX this is not calling callback in some cases!
         // gets file entry, recursively creating directories as needed...
         var filesystem = this.torrent.getStorage().entry
         var path = this.path.slice()
-        recursiveGetEntry(filesystem, path, callback)
+        recursiveGetEntry(filesystem, path, callback, opts)
     }
 }
 for (var method in jstorrent.Item.prototype) {
     jstorrent.File.prototype[method] = jstorrent.Item.prototype[method]
 }
 
-function recursiveGetEntry(filesystem, path, callback) {
+function recursiveGetEntry(filesystem, path, callback, opts) {
+    if (opts === undefined) {
+        opts = {create:true}
+    }
     function recurse(e) {
         if (path.length == 0) {
             if (e.isFile) {
@@ -282,10 +302,12 @@ function recursiveGetEntry(filesystem, path, callback) {
         } else if (e.isDirectory) {
             if (path.length > 1) {
                 // this is not calling error callback, simply timing out!!!
-                e.getDirectory(path.shift(), {create:true}, recurse, recurse)
+                e.getDirectory(path.shift(), opts, recurse, recurse)
             } else {
-                e.getFile(path.shift(), {create:true}, recurse, recurse)
+                e.getFile(path.shift(), opts, recurse, recurse)
             }
+        } else if (e.name == 'NotFoundError') {
+            callback({error:e.name, message:e.message})
         } else {
             callback({error:'file exists'})
         }

@@ -375,16 +375,22 @@ App.prototype = {
                                   onClick: _.bind(onclick,this) })
     },
     handle_click: function(type, collection, evt, info) {
-        var item = collection.items[info.row]
+        var file = collection.items[info.row]
         var column = UI.coldefs.files[info.cell]
         if (type == 'files') {
-            console.log('clicked in files on item',item,info.cell)
+            console.log('clicked in files',file, info.cell)
             if (evt.target.tagName == 'A' && column.name == 'Action') {
                 // clicking on file action (like Play)
-                var url = file.getPlayerURL()
-                var msg = {command:'openWindow',url:url}
-                console.log('sending message',msg)
-                chrome.runtime.sendMessage(msg)
+                if (file.streamable()) {
+                    var url = file.getPlayerURL()
+                    var msg = {command:'openWindow',url:url}
+                    chrome.runtime.sendMessage(msg)
+                } else {
+                    file.getPlayableSRCForVideo( function(url) {
+                        var msg = {command:'openWindow',url:url}
+                        chrome.runtime.sendMessage(msg)
+                    })
+                }
             }
         }
     },
@@ -657,7 +663,8 @@ App.prototype = {
         //app.analytics.sendEvent("MainWindow", "Drop")
         // handle drop in file event
         var files = evt.dataTransfer.files, file, item
-        
+        var file
+
         if (files) {
             for (var i=0; i<files.length; i++) {
                 file = files[i]
