@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+
+<!-- jstorrent imports -->
+
+  <script src="../js/deps/google-analytics-bundle.js"></script> <!-- throwing exceptions. -->
+  <script src="../js/deps/underscore.js"></script>
+  <script src="../js/deps/digest.js"></script>
+  <script src="../js/deps/encoding-indexes.js"></script>
+  <script src="../js/deps/encoding.js"></script>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/ringbuffer.js"></script>
+  <script src="../js/analytics.js"></script>
+  <script src="../js/bencode.js"></script>
+  <script src="../js/collection.js"></script>
+  <script src="../js/item.js"></script>
+
+  <script src="../js/disk.js"></script>
+  <script src="../js/diskio.js"></script>
+  <script src="../js/chromesocketxhr.js"></script>
+  <script src="../js/tracker.js"></script>
+  <script src="../js/torrent.js"></script>
+  <script src="../js/torrentsettings.js"></script>
+  <script src="../js/protocol.js"></script>
+  <script src="../js/dht.js"></script>
+  <script src="../js/buffer.js"></script>
+  <script src="../js/peer.js"></script>
+  <script src="../js/piece.js"></script>
+  <script src="../js/piececache.js"></script>
+  <script src="../js/file.js"></script>
+  <script src="../js/workerthread.js"></script>
+  <script src="../js/peerconnection.js"></script>
+  <script src="../js/swarm.js"></script>
+  <script src="../js/client.js"></script>
+  <script src="../js/options.js"></script>
+  <script src="../js/notification.js"></script>
+
+
+
+  <script src="../js/web-server-chrome/common.js"></script>
+  <script src="../js/web-server-chrome/mime.js"></script>
+  <script src="../js/web-server-chrome/buffer.js"></script>
+  <script src="../js/web-server-chrome/request.js"></script>
+  <script src="../js/web-server-chrome/stream.js"></script>
+  <script src="../js/web-server-chrome/connection.js"></script>
+  <script src="../js/web-server-chrome/webapp.js"></script>
+  <script src="../js/web-server-chrome/handlers.js"></script>
+  <script src="../js/web-server-chrome/httplib.js"></script>
+
+
+  <script src="../js/webhandlers.js"></script>
+  <script src="../js/app.js"></script>
+<!--<script src="../concat-compiled.js"></script>-->
+
+
+  <script src="index.js"></script>
+
+
+<!-- /jstorrent imports -->
+
+
+
+
+
+
+
+  <title>listtest</title>
+
+  <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
+
+  <link rel="import" href="bower_components/core-icons/core-icons.html">
+  <link rel="import" href="bower_components/core-icons/av-icons.html">
+  <link rel="import" href="bower_components/core-icons/device-icons.html">
+
+  <link rel="import" href="bower_components/core-toolbar/core-toolbar.html">
+  <link rel="import" href="bower_components/core-list/core-list.html">
+  <link rel="import" href="bower_components/core-splitter/core-splitter.html">
+  <link rel="import" href="bower_components/core-dropdown/core-dropdown.html">
+  
+  <link rel="import" href="bower_components/font-roboto/roboto.html">
+  <link rel="import" href="bower_components/paper-button/paper-button.html">
+  <link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
+  <link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="bower_components/paper-fab/paper-fab.html">
+  <link rel="import" href="bower_components/paper-tabs/paper-tabs.html">
+  <link rel="import" href="bower_components/paper-toast/paper-toast.html">
+  <link rel="import" href="bower_components/paper-input/paper-input.html">
+  <link rel="import" href="bower_components/paper-progress/paper-progress.html">
+
+<link rel="import" href="torrents-list.html">
+<link rel="import" href="torrent-files.html">
+<link rel="import" href="jstorrent-header.html">
+
+  <style>
+    html, body {
+      margin: 0;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+    
+    torrents-list {
+      display: block;
+      height: 100%;
+      margin: 0 auto;
+    }
+
+    torrent-files {
+      display: block;
+      height: 100%;
+      margin: 0 auto;
+    }
+
+    .stuff {
+      min-height: 60px;
+      background: red !important;
+      border-bottom: 1px solid black;
+    }
+
+ 
+    .container {
+      height: 450px;
+      border: 1px solid #aaa;
+    }
+
+    .ttab-icon {
+      margin-right:4px;
+    }
+
+    .ttab-style.core-selected {
+      color: rgb(27, 168, 243)
+    }
+
+    .ttab-style {
+      background: transparent; 
+      color:rgb(90,90,90)
+    
+    }
+
+    .maintoolbar {
+    margin-bottom: 0;
+    }
+
+
+  </style>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<!--body unresolved-->
+<!--body unresolved-->
+
+
+
+<body fullbleed vertical layout unresolved>
+
+
+<jstorrent-header></jstorrent-header>
+
+
+
+
+
+
+
+
+
+<div class="container" vertical layout>
+  <div style="overflow:auto; height: 200px">
+    <!-- top tab -->
+    <torrents-list></torrents-list>
+  </div>
+
+  <core-splitter direction="up"></core-splitter>
+
+  <div flex>
+    <!-- bottom tab -->
+<style>
+paper-tabs.pink::shadow #selectionBar {
+  background-color: rgb(27, 168, 243)
+}
+paper-tabs.pink paper-tab::shadow #ink {
+  color: rgb(27, 168, 243)
+}
+</style>
+
+      <paper-tabs class="pink ttab-style" selected="0">
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="list"></core-icon> 
+          Info
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="save"></core-icon> 
+          Files
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="account-circle"></core-icon> 
+          Peers
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="cloud"></core-icon> 
+          Swarm
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="settings-input-antenna"></core-icon> 
+          Trackers
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="view-stream"></core-icon> 
+          Pieces
+        </paper-tab>
+        <paper-tab>
+          <core-icon class="ttab-icon" icon="device:sd-storage"></core-icon> 
+          DiskIO
+        </paper-tab>
+      </paper-tabs>
+      <p>
+
+  <div style="overflow:auto; height: 200px">
+    <torrent-files></torrent-files>
+  </div>
+
+      </p>
+
+
+
+  </div>
+
+</div>
+
+  
+
+  
+  <!--section>
+    <template id="toastGroup" is="auto-binding">
+      <paper-button raised right on-click="{{showToast}}">
+        Show Toast
+      </paper-button>
+      <paper-toast id="toast" text="Sample toast here."></paper-toast>
+    </template>
+  </section-->
+
+
+
+  <!--section>
+    <p>A simple Polymer
+      <a href="http://www.polymer-project.org/docs/elements/paper-elements.html">
+      paper elements</a> example that demonstrates using <code>&lt;core-toolbar&gt;,
+      &lt;paper-button&gt;, &lt;paper-checkbox&gt;, &lt;paper-icon-button&gt;,
+      &lt;paper-fab&gt;, &lt;paper-tabs&gt;</code>, and <code>&lt;paper-toast&gt;</code>.
+    </p>
+    <paper-checkbox label="Got it!"></paper-checkbox>
+  </section-->
+
+
+
+  <!--script src="main.js"></script-->
+<script src="common.js"></script>
+
+</body>
+</html>

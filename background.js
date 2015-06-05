@@ -25,7 +25,8 @@ function WindowManager() {
     // will be remembered. so put it in.
     this.mainWindowOpts = {
         width: 865,
-        frame: 'none',
+//        frame: 'none',
+            frame:{color:'#1687d0'},
         height: 610,
         resizable: true,
         minHeight: 32,
@@ -66,7 +67,9 @@ WindowManager.prototype = {
         var _this = this;
         console.log('creating main window')
         this.creatingMainWindow = true
-        chrome.app.window.create('gui/index.html',
+        var page = 'gui/index.html'
+        //var page = 'jstorrent-polymer-test/index.html'
+        chrome.app.window.create(page,
                                  this.mainWindowOpts,
                                  function(mainWindow) {
                                      ensureAlive()

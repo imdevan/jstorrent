@@ -1504,7 +1504,7 @@ Torrent.prototype = {
         }
 
         this.pieces.clear()
-        app.entryCache.clearTorrent(this)
+        if (app.entryCache) app.entryCache.clearTorrent(this)
         this.unflushedPieceDataSize = 0
         this.save()
     },

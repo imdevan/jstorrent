@@ -141,7 +141,7 @@
 
     function recursiveGetEntryReadOnly(disk, inpath, callback) {
         var cacheKey = disk.key + '/' + inpath.join('/')
-        var inCache = app.entryCache.get(cacheKey)
+        var inCache = app.entryCache && app.entryCache.get(cacheKey)
         if (inCache) { 
             //console.log('cachehit',cacheKey)
             callback(inCache); 

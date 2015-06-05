@@ -1,0 +1,52 @@
+<polymer-element name="jstorrent-header" layout vertical>
+
+
+  <template>
+<style>
+  
+.dialog-header {
+  align-items: center;
+/*  background: rgba(27, 168, 243, 1.0); */
+  border-bottom: 1px solid rgb(56, 179, 244);
+/*  color: white; */
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  height: 48px;
+  margin: 0;
+  transition: background 220ms ease;
+}
+</style>
+
+    <div class="dialog-header" relative>
+
+      <span flex><img src="../js-mini-logo.png" /></span>
+
+
+      <paper-icon-button on-click="{{ btnPlay }}" style="color:green" icon="av:play-arrow"></paper-icon-button>
+      <paper-icon-button on-click="{{ btnStop }}" icon="av:pause"></paper-icon-button>
+      <paper-icon-button on-click="{{ btnDelete }}" icon="delete"></paper-icon-button>
+
+
+      <paper-input label="Add Torrent URL"></paper-input>
+
+      <core-icon icon="play-circle-fill"></core-icon>
+
+      <paper-icon-button icon="add-circle"></paper-icon-button>
+
+
+      <paper-icon-button id="trigger" icon="more-vert" on-tap="{{toggle}}"></paper-icon-button>
+
+      <core-dropdown relatedTarget="{{$.trigger}}">
+        <core-menu>
+          <core-item>Cut</core-item>
+          <core-item>Copy</core-item>
+          <core-item>Paste</core-item>
+        </core-menu>
+      </core-dropdown>
+
+
+    </div>
+  </template>
+  <script src="jstorrent-header.js"></script>
+</polymer-element>
