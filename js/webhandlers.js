@@ -18,7 +18,7 @@
         },
         onResult: function(evt) {
             if (evt.error) {
-                this.write('disk access error, perhaps restart JSTorrent')
+                this.write('Error:' + evt.error + ', ' + evt.error.message)
             } else {
                 this.write(evt)
             }
@@ -124,7 +124,7 @@
                 console.assert(bytesToRead > 0)
                 //console.log('readbytes',this.fileOffset, this.fileOffset + bytesToRead - 1)
                 console.assert(this.file.startByte + fileOffset + bytesToRead <= this.torrent.size) // confirmed <=
-                this.file.readBytes(fileOffset, bytesToRead, this.onReadChunk.bind(this))
+                this.file.readBytes(fileOffset, bytesToRead, this.onReadChunk.bind(this), {priority:'high'})
             } else {
                 //console.log('dont have data at',this.file.startByte + fileOffset)
                 //console.log('streamhandler.await')

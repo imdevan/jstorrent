@@ -36,6 +36,7 @@
         "storage",
         "unlimitedStorage",
         "system.storage",
+	"system.network",
         "idle",
         "power",
         "notifications",

@@ -23,10 +23,10 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    if (false && chrome.sockets && chrome.WebApplication) { // temporarily disabled, too buggy
+    if (chrome.WebApplication) { // temporarily disabled, too buggy
         // :-( options not yet loaded
         // let this work without submodule
-        this.webapp = new chrome.WebApplication({handlers:handlers, port:8543})
+        this.webapp = new chrome.WebApplication({host:'0.0.0.0',handlers:handlers, port:8543})
     } else {
         this.webapp = null
     }
@@ -382,9 +382,13 @@ App.prototype = {
             if (evt.target.tagName == 'A' && column.name == 'Action') {
                 // clicking on file action (like Play)
                 if (file.streamable()) {
-                    var url = file.getPlayerURL()
-                    var msg = {command:'openWindow',url:url}
-                    chrome.runtime.sendMessage(msg)
+                    if (file.isComplete()) {
+                        var url = file.getPlayerURL()
+                        var msg = {command:'openWindow',url:url}
+                        chrome.runtime.sendMessage(msg)
+                    } else {
+                        window.open( file.torrent.getStreamPlayerPageURL(file.num) )
+                    }
                 } else {
                     file.getPlayableSRCForVideo( function(url) {
                         var msg = {command:'openWindow',url:url}

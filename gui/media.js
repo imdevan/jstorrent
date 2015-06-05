@@ -1,3 +1,4 @@
+
 function fillinrange(canvas, range, total, opt_color, animate) {
     // make it fancy pantsy
     if (opt_color === undefined) { opt_color = [0,170,0,255] }
@@ -186,9 +187,8 @@ function handleerror(evt) {
     return errtxt
 }
 
-document.addEventListener("DOMContentLoaded", function(){
-    onload()
-})
+
+
 
 function reload() { window.location.reload() }
 function addevents(video) {
@@ -262,10 +262,10 @@ function addevents(video) {
         video.addEventListener("pause", onevent);
         video.addEventListener("play", onevent );
         //video.addEventListener("suspend", onevent);
-/*
-        window.onkeydown = function(evt) {
-            console.log('onkeydown',evt.keyCode)
-        }*/
+        /*
+          window.onkeydown = function(evt) {
+          console.log('onkeydown',evt.keyCode)
+          }*/
 
         var keys = {37:'left',
                     39:'right',
@@ -288,3 +288,8 @@ function addevents(video) {
 
 
 }
+
+
+document.addEventListener("DOMContentLoaded", function(){
+    onload()
+})

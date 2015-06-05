@@ -12,7 +12,11 @@ function UI(opts) {
         var streamable = val.streamable()
         var openable = val.openable()
         if (streamable) {
-            return '<a href="#"><span class="glyphicon glyphicon-play"></span>Play</a>'
+            if (val.isComplete()) {
+                return '<a href="#"><span class="glyphicon glyphicon-play"></span>Play</a>'
+            } else {
+                return '<a href="#"><span class="glyphicon glyphicon-play"></span>Stream</a>'
+            }
         } else if (openable) {
             return '<a href="#"><span class="glyphicon glyphicon-folder-open"></span>View</a>'
         } else if (streamable && app.webapp) {

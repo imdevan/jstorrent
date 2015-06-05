@@ -31,7 +31,7 @@ BasicCollection.prototype = {
     },
     addAt: function(item, idx) {
         item._collections = [this]
-        console.assert(idx === undefined)
+        console.assert (idx === undefined)
         this.items.push(item)
         for (var i=0; i<this.items.length; i++) {
             this.items[i].key = i

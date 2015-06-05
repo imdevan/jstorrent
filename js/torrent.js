@@ -1628,7 +1628,7 @@ Torrent.prototype = {
     getMaxConns: function() {
         return this.get('maxconns') || this.client.app.options.get('maxconns')
     },
-    getPlayerURL: function(filenum, streamable) {
+    getStreamPlayerPageURL: function(filenum, streamable) {
         if (! this.client.app.webapp) { debugger; return }
         var s = 'abcdefghijklmnopqrstuvwxyz'
         var token = ''

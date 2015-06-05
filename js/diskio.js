@@ -463,7 +463,7 @@
                 this[type].apply(this, args)
             }
         },
-        addToQueue: function() {
+        addToQueue: function(_type, _args, qopts) {
             var opts = arguments[1][0]
             opts.type = arguments[0]
             if (opts.piece) {
@@ -475,7 +475,11 @@
             }
 
             var job = new BasicJob(opts)
-            this.addAt(job)
+            if (qopts && qopts.priority == 'high') {
+                this.unshift(job)
+            } else {
+                this.addAt(job)
+            }
             this.doQueue()
         },
         getFileEntryWriteable: function(disk, path, callback) {
@@ -540,8 +544,8 @@
         writeWholeContents: function() {
             this.addToQueue('doWriteWholeContents',arguments)
         },
-        getContentRange: function() {
-            this.addToQueue('doGetContentRange',arguments)
+        getContentRange: function(args, callback, opts) {
+            this.addToQueue('doGetContentRange',arguments, opts)
         },
         doWriteWholeContents: function(opts, callback, job) {
             if (this.checkShouldBail(job)) return

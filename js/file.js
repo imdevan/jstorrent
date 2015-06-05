@@ -124,7 +124,7 @@ File.prototype = {
                 ext.endsWith('.txt') ||
                 ext.endsWith('.png')
     },
-    readBytes: function(start, size, callback) {
+    readBytes: function(start, size, callback, opts) {
         var storage = this.torrent.getStorage()
         console.assert(size > 0)
         storage.diskio.getContentRange({file:this,
@@ -133,7 +133,7 @@ File.prototype = {
                                         size:size,
                                         torrent:this.torrent.hashhexlower
                                        },
-                                       callback)
+                                       callback, opts)
     },
     getSpanningPiecesInfo: function(startByte, endByte) { // similar to piece.getSpanningFilesInfo
         if (startByte === undefined) { startByte = this.startByte }
@@ -255,6 +255,9 @@ File.prototype = {
             })
         })
         
+    },
+    getStreamURL: function() {
+        return 'http://127.0.0.1:' + this.torrent.client.app.webapp.port + '/stream' + '?hash=' + this.torrent.hashhexlower + '&file=' + this.num
     },
     getPlayableSRCForVideo: function(callback) {
         this.getEntry( function(entry) {
