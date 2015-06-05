@@ -2,7 +2,7 @@
 
 // rather should have a better separation ...
 
-function App() {
+function App(opts) {
     //console.log('creating app')
     this.id = 'app01' // device ID...
     if (chrome.system && chrome.system.storage) {
@@ -23,7 +23,10 @@ function App() {
         ['/package/(.*)',jstorrent.PackageHandler]
 //        ['.*', jstorrent.WebHandler]
     ]
-    if (chrome.WebApplication) { // temporarily disabled, too buggy
+    if (opts && opts.tab) {
+        this.webapp = null
+        // dont start server for browser tab instance
+    } else if (chrome.WebApplication) { // temporarily disabled, too buggy
         // :-( options not yet loaded
         // let this work without submodule
         this.webapp = new chrome.WebApplication({host:'0.0.0.0',handlers:handlers, port:8543})

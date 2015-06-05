@@ -28,7 +28,7 @@ window.parsed = parse_location_hash()
 
 
 function onready() {
-    window.app = new jstorrent.App;
+    window.app = new jstorrent.App({tab:true});
     app.initialize( onappready )
 }
 
@@ -42,7 +42,8 @@ function onfileready(file) {
         file.getPlayableSRCForVideo( function(src) {
 
             if (src.error) {
-                set_status("Error: " + src.message)
+                debugger
+                set_status("Error: " + src.error + src.message)
             } else if (file.streamable()) {
                 document.getElementById('info').innerText = "Currently playing: " + file.name
                 console.log('video src',src)

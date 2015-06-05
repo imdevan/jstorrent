@@ -475,7 +475,7 @@
             }
 
             var job = new BasicJob(opts)
-            if (qopts && qopts.priority == 'high') {
+            if (false && qopts && qopts.priority == 'high') {
                 this.unshift(job)
             } else {
                 this.addAt(job)
