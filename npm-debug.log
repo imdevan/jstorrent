@@ -1,0 +1,172 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'node',
+1 verbose cli   '/usr/local/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   '-g',
+1 verbose cli   'generator-polymer-gulp' ]
+2 info using npm@2.10.1
+3 info using node@v0.12.4
+4 verbose install initial load of /usr/local/lib/package.json
+5 verbose readDependencies loading dependencies from /usr/local/lib/package.json
+6 silly cache add args [ 'generator-polymer-gulp', null ]
+7 verbose cache add spec generator-polymer-gulp
+8 silly cache add parsed spec { raw: 'generator-polymer-gulp',
+8 silly cache add   scope: null,
+8 silly cache add   name: 'generator-polymer-gulp',
+8 silly cache add   rawSpec: '',
+8 silly cache add   spec: '*',
+8 silly cache add   type: 'range' }
+9 silly addNamed generator-polymer-gulp@*
+10 verbose addNamed "*" is a valid semver range for generator-polymer-gulp
+11 silly addNameRange { name: 'generator-polymer-gulp', range: '*', hasData: false }
+12 silly mapToRegistry name generator-polymer-gulp
+13 silly mapToRegistry using default registry
+14 silly mapToRegistry registry https://registry.npmjs.org/
+15 silly mapToRegistry uri https://registry.npmjs.org/generator-polymer-gulp
+16 verbose addNameRange registry:https://registry.npmjs.org/generator-polymer-gulp not in flight; fetching
+17 verbose request uri https://registry.npmjs.org/generator-polymer-gulp
+18 verbose request no auth needed
+19 info attempt registry request try #1 at 11:38:04 PM
+20 verbose request id edfc1c1dc84c6db9
+21 http request GET https://registry.npmjs.org/generator-polymer-gulp
+22 http 200 https://registry.npmjs.org/generator-polymer-gulp
+23 silly get cb [ 200,
+23 silly get   { server: 'CouchDB/1.5.0 (Erlang OTP/R16B03)',
+23 silly get     etag: '"874HTMFIUSF0LW7VX2785WBRN"',
+23 silly get     'content-type': 'application/json',
+23 silly get     'cache-control': 'max-age=60',
+23 silly get     'content-length': '25659',
+23 silly get     'accept-ranges': 'bytes',
+23 silly get     date: 'Thu, 22 Oct 2015 04:38:04 GMT',
+23 silly get     via: '1.1 varnish',
+23 silly get     age: '0',
+23 silly get     connection: 'keep-alive',
+23 silly get     'x-served-by': 'cache-ord1730-ORD',
+23 silly get     'x-cache': 'MISS',
+23 silly get     'x-cache-hits': '0',
+23 silly get     'x-timer': 'S1445488684.729752,VS0,VE128',
+23 silly get     vary: 'Accept' } ]
+24 verbose get saving generator-polymer-gulp to /Users/devanhuapaya/.npm/registry.npmjs.org/generator-polymer-gulp/.cache.json
+25 silly addNameRange number 2 { name: 'generator-polymer-gulp', range: '*', hasData: true }
+26 silly addNameRange versions [ 'generator-polymer-gulp',
+26 silly addNameRange   [ '0.1.1',
+26 silly addNameRange     '0.1.2',
+26 silly addNameRange     '0.1.3',
+26 silly addNameRange     '0.1.4',
+26 silly addNameRange     '0.1.5',
+26 silly addNameRange     '0.1.6',
+26 silly addNameRange     '0.1.7',
+26 silly addNameRange     '0.1.8',
+26 silly addNameRange     '0.1.9',
+26 silly addNameRange     '0.1.10',
+26 silly addNameRange     '0.2.0',
+26 silly addNameRange     '0.2.1',
+26 silly addNameRange     '0.2.2',
+26 silly addNameRange     '0.2.3',
+26 silly addNameRange     '0.3.0',
+26 silly addNameRange     '0.4.0' ] ]
+27 silly addNamed generator-polymer-gulp@0.4.0
+28 verbose addNamed "0.4.0" is a plain semver version for generator-polymer-gulp
+29 silly mapToRegistry name generator-polymer-gulp
+30 silly mapToRegistry using default registry
+31 silly mapToRegistry registry https://registry.npmjs.org/
+32 silly mapToRegistry uri https://registry.npmjs.org/generator-polymer-gulp
+33 verbose addRemoteTarball https://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz not in flight; adding
+34 verbose addRemoteTarball [ 'https://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz',
+34 verbose addRemoteTarball   '6a6469b894985141735c6726949f9d55ad540b41' ]
+35 info retry fetch attempt 1 at 11:38:04 PM
+36 info attempt registry request try #1 at 11:38:04 PM
+37 http fetch GET https://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz
+38 http fetch 200 https://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz
+39 silly fetchAndShaCheck shasum 6a6469b894985141735c6726949f9d55ad540b41
+40 verbose addTmpTarball /var/folders/dy/kw27zc3n5zdg4vbl8dbwr1_h0000gp/T/npm-3304-3648d1eb/registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz not in flight; adding
+41 verbose addTmpTarball already have metadata; skipping unpack for generator-polymer-gulp@0.4.0
+42 silly cache afterAdd generator-polymer-gulp@0.4.0
+43 verbose afterAdd /Users/devanhuapaya/.npm/generator-polymer-gulp/0.4.0/package/package.json not in flight; writing
+44 verbose afterAdd /Users/devanhuapaya/.npm/generator-polymer-gulp/0.4.0/package/package.json written
+45 silly install resolved [ { name: 'generator-polymer-gulp',
+45 silly install resolved     version: '0.4.0',
+45 silly install resolved     description: 'A Yeoman generator for Polymer projects using Gulp',
+45 silly install resolved     licenses: [ [Object] ],
+45 silly install resolved     main: 'app/index.js',
+45 silly install resolved     repository:
+45 silly install resolved      { type: 'git',
+45 silly install resolved        url: 'git://github.com/NicoArbogast/generator-polymer-gulp.git' },
+45 silly install resolved     homepage: 'https://github.com/NicoArbogast/generator-polymer-gulp',
+45 silly install resolved     bugs: { url: 'https://github.com/NicoArbogast/generator-polymer-gulp/issues' },
+45 silly install resolved     author:
+45 silly install resolved      { name: 'NicoArbogast',
+45 silly install resolved        email: 'nico@rboga.st',
+45 silly install resolved        url: 'https://github.com/NicoArbogast' },
+45 silly install resolved     engines: { node: '>=0.10.0', npm: '>=1.3.8' },
+45 silly install resolved     scripts: { test: 'mocha --reporter spec' },
+45 silly install resolved     files: [ 'app', 'test' ],
+45 silly install resolved     keywords: [ 'yeoman-generator', 'gulp', 'polymer', 'web', 'app', 'front-end' ],
+45 silly install resolved     dependencies:
+45 silly install resolved      { 'yeoman-generator': '~0.16.0',
+45 silly install resolved        chalk: '~0.4.0',
+45 silly install resolved        yosay: '^0.3.0' },
+45 silly install resolved     devDependencies: { mocha: '*' },
+45 silly install resolved     peerDependencies: { yo: '>=1.0.0' },
+45 silly install resolved     gitHead: '166ccc7252adf100edfc3d058c95c1b03f3bd40f',
+45 silly install resolved     _id: 'generator-polymer-gulp@0.4.0',
+45 silly install resolved     _shasum: '6a6469b894985141735c6726949f9d55ad540b41',
+45 silly install resolved     _from: 'generator-polymer-gulp@*',
+45 silly install resolved     _npmVersion: '2.5.1',
+45 silly install resolved     _nodeVersion: '0.10.36',
+45 silly install resolved     _npmUser: { name: 'nicoarbogast', email: 'nico@rboga.st' },
+45 silly install resolved     maintainers: [ [Object] ],
+45 silly install resolved     dist:
+45 silly install resolved      { shasum: '6a6469b894985141735c6726949f9d55ad540b41',
+45 silly install resolved        tarball: 'http://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz' },
+45 silly install resolved     directories: {},
+45 silly install resolved     _resolved: 'https://registry.npmjs.org/generator-polymer-gulp/-/generator-polymer-gulp-0.4.0.tgz' } ]
+46 info install generator-polymer-gulp@0.4.0 into /usr/local/lib
+47 info installOne generator-polymer-gulp@0.4.0
+48 verbose installOne of generator-polymer-gulp to /usr/local/lib not in flight; installing
+49 verbose lock using /Users/devanhuapaya/.npm/_locks/generator-polymer-gulp-ea3bc9dc39cde3ab.lock for /usr/local/lib/node_modules/generator-polymer-gulp
+50 silly install write writing generator-polymer-gulp 0.4.0 to /usr/local/lib/node_modules/generator-polymer-gulp
+51 verbose unbuild lib/node_modules/generator-polymer-gulp
+52 silly gentlyRm /usr/local/lib/node_modules/generator-polymer-gulp is being purged from base /usr/local
+53 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/generator-polymer-gulp
+54 verbose tar unpack /Users/devanhuapaya/.npm/generator-polymer-gulp/0.4.0/package.tgz
+55 verbose tar unpacking to /usr/local/lib/node_modules/generator-polymer-gulp
+56 silly gentlyRm /usr/local/lib/node_modules/generator-polymer-gulp is being purged
+57 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/generator-polymer-gulp
+58 silly gunzTarPerm modes [ '755', '644' ]
+59 error tar.unpack untar error /Users/devanhuapaya/.npm/generator-polymer-gulp/0.4.0/package.tgz
+60 verbose unlock done using /Users/devanhuapaya/.npm/_locks/generator-polymer-gulp-ea3bc9dc39cde3ab.lock for /usr/local/lib/node_modules/generator-polymer-gulp
+61 verbose fstream_path /usr/local/lib/node_modules/generator-polymer-gulp
+62 verbose fstream_type Directory
+63 verbose fstream_class DirWriter
+64 verbose stack Error: EACCES, mkdir '/usr/local/lib/node_modules/generator-polymer-gulp'
+64 verbose stack     at Error (native)
+65 verbose fstream_stack /usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:35:25
+65 verbose fstream_stack /usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:47:53
+65 verbose fstream_stack FSReqWrap.oncomplete (fs.js:95:15)
+66 verbose cwd /Users/devanhuapaya/Documents/All Things Code/Side Stuff/jstorrent
+67 error Darwin 14.5.0
+68 error argv "node" "/usr/local/bin/npm" "install" "-g" "generator-polymer-gulp"
+69 error node v0.12.4
+70 error npm  v2.10.1
+71 error path /usr/local/lib/node_modules/generator-polymer-gulp
+72 error code EACCES
+73 error errno -13
+74 error Error: EACCES, mkdir '/usr/local/lib/node_modules/generator-polymer-gulp'
+74 error     at Error (native)
+74 error  { [Error: EACCES, mkdir '/usr/local/lib/node_modules/generator-polymer-gulp']
+74 error   errno: -13,
+74 error   code: 'EACCES',
+74 error   path: '/usr/local/lib/node_modules/generator-polymer-gulp',
+74 error   fstream_type: 'Directory',
+74 error   fstream_path: '/usr/local/lib/node_modules/generator-polymer-gulp',
+74 error   fstream_class: 'DirWriter',
+74 error   fstream_stack:
+74 error    [ '/usr/local/lib/node_modules/npm/node_modules/fstream/lib/dir-writer.js:35:25',
+74 error      '/usr/local/lib/node_modules/npm/node_modules/mkdirp/index.js:47:53',
+74 error      'FSReqWrap.oncomplete (fs.js:95:15)' ] }
+75 error Please try running this command again as root/Administrator.
+76 verbose exit [ -13, true ]
+77 verbose unbuild lib/node_modules/generator-polymer-gulp
+78 silly gentlyRm /usr/local/lib/node_modules/generator-polymer-gulp is being purged from base /usr/local
+79 verbose gentlyRm don't care about contents; nuking /usr/local/lib/node_modules/generator-polymer-gulp

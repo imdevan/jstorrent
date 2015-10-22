@@ -208,7 +208,7 @@ SlickCollectionTable.prototype = {
             }
         }
 
-        this.grid.invalidateAllRows()
+        this.grid.invalidateAllRows()   
         this.grid.updateRowCount() // triggers exception (caught in slick.grid though), but if we dont do this, get the dreaded bug...
         this.grid.render()
     },
